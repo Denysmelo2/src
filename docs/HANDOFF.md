@@ -45,8 +45,15 @@ This repo is public: nothing here is a secret, and no secret belongs here.
    - **Offers older than 30 days hidden** on the site (`hiddenBeforeIso`
      in `src/lib/dataFreshness.js`); rows are kept, `/admin/rates` still
      shows them.
-   Still open: `topcashback` exits non-zero every run (only ~330 of ~1,600
-   refresh; needs a logged-in session). Do not build anti-bot evasion.
+   - **Member scrape at 21:00 UK** (owner's call, 2026-10-11): topcashback,
+     tc-giftcards and quidco-giftcards left the 04:00 list and run in
+     `scrape-member.yml` through the real Chrome on Bárbara's Mac
+     (Tailscale + CDP), logged in by hand with accounts created only for
+     SnapGain. pg_cron `member-scrape-dispatch` (jobid 8, migration 0011)
+     fires at 21:00 Europe/London with the same Vault token. In
+     real-Chrome mode the scrapers never move cookies or type passwords;
+     if the Mac does not answer, the run fails and scrapes nothing.
+   Do not build anti-bot evasion.
    Job logs are not readable through this environment's GitHub proxy;
    check-run annotations are. `source-probe` (v6) is how pages that this
    environment cannot reach get inspected; call it from SQL with
