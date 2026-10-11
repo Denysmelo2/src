@@ -1,0 +1,5 @@
+# Downloaded by fetch_fonts.sh — SIL OFL, not vendored
+fonts/
+# Rendered artwork
+out/
+*.zip

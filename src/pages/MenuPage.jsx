@@ -11,12 +11,14 @@ import {
   HelpCircle,
   LogOut,
   Zap,
+  PencilLine,
   Calculator,
   Search,
   ChevronRight,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 
 function MenuRow({ to, icon: Icon, label, sublabel, onClick, danger = false }) {
   const Inner = (
@@ -48,7 +50,11 @@ function MenuRow({ to, icon: Icon, label, sublabel, onClick, danger = false }) {
 function MenuPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.user_metadata?.role === 'admin';
+  // Admin comes from `user_profiles.role`, surfaced by useSubscription.
+  // It used to read `user.user_metadata.role` — the bag
+  // `supabase.auth.updateUser({ data })` writes, so any user could set
+  // `role: 'admin'` on themselves. See migration 0007.
+  const { isAdmin } = useSubscription();
 
   const displayName =
     user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
@@ -94,6 +100,7 @@ function MenuPage() {
           <Card>
             <CardContent className="p-0 divide-y">
               <MenuRow to="/admin/hot-deals" icon={Zap}         label="Manage hot deals" sublabel="Admin · live updates" />
+              <MenuRow to="/admin/rates"     icon={PencilLine} label="Rate entry"       sublabel="Admin · the four sources with no feed" />
             </CardContent>
           </Card>
         )}

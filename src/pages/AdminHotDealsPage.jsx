@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useAdminHotDeals, useStores } from '@/hooks/useCatalog';
 
 const SELECT_CLS =
@@ -305,7 +306,11 @@ function AdminHotDealsPage() {
   const { deals, loading, create, update, remove } = useAdminHotDeals();
   const [adding, setAdding] = useState(false);
 
-  const isAdmin = user?.user_metadata?.role === 'admin';
+  // Admin comes from `user_profiles.role`, surfaced by useSubscription.
+  // It used to read `user.user_metadata.role` — the bag
+  // `supabase.auth.updateUser({ data })` writes, so any user could set
+  // `role: 'admin'` on themselves. See migration 0007.
+  const { isAdmin } = useSubscription();
 
   const sortedDeals = useMemo(
     () => [...deals].sort((a, b) => a.rank - b.rank),
@@ -320,11 +325,14 @@ function AdminHotDealsPage() {
         <ShieldAlert className="w-12 h-12 text-secondary mx-auto" />
         <h1 className="text-2xl font-bold">Admin only</h1>
         <p className="text-sm text-muted-foreground">
-          Your account doesn&rsquo;t have admin access. Set
+          Your account doesn&rsquo;t have admin access. Admin is granted
+          server-side only &mdash; run
           <code className="text-xs px-1 bg-muted rounded mx-1">
-            user_metadata.role = "admin"
+            update public.user_profiles set role = 'admin' where user_id = &hellip;
           </code>
-          on your auth user in the Supabase dashboard to manage hot deals.
+          in the SQL editor. Setting it on the auth user&rsquo;s
+          user_metadata no longer works, because that field is writable by
+          the account holder.
         </p>
         <Button asChild variant="outline">
           <Link to="/home">Back to home</Link>

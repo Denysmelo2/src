@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   AlertCircle,
   BookOpen,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,19 +35,13 @@ import { computeStrategies, buildStrategySteps } from '@/lib/strategies';
 import { buildWalletFilter } from '@/lib/walletFilter';
 import { RateBreakdown } from '@/components/RateBreakdown';
 import { gbpToAviosBooster } from '@/lib/aviosMath';
-
-function fmtTimeAgo(iso) {
-  if (!iso) return null;
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms)) return null;
-  const mins = Math.round(ms / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  return `${days}d ago`;
-}
+// This page used to print the age with its own copy of a fmtTimeAgo
+// helper, in flat grey, and only when the strategy carried a top-level
+// lastVerifiedAt — which a STACK never does, so the one route built
+// from two possibly-stale sources was the one route that showed no date
+// at all. DataAge + oldestVerifiedAt fix both halves of that.
+import { DataAge } from '@/components/DataAge';
+import { oldestVerifiedAt } from '@/lib/dataFreshness';
 
 function StrategyPage() {
   const [searchParams] = useSearchParams();
@@ -335,12 +328,9 @@ function StrategyPage() {
                   </div>
                   <div className="text-2xl font-bold">£{amount}</div>
                 </div>
-                {highlighted.lastVerifiedAt && (
-                  <div className="text-xs text-muted-foreground inline-flex items-center gap-1 self-end">
-                    <Clock className="w-3 h-3" />
-                    Rate verified {fmtTimeAgo(highlighted.lastVerifiedAt)}
-                  </div>
-                )}
+                <div className="self-end">
+                  <DataAge verifiedAt={oldestVerifiedAt(highlighted.layers)} />
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-3">

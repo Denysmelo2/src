@@ -84,7 +84,7 @@ function PlaybookPage() {
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl">
             Every curated multi-step strategy we&rsquo;ve built into SnapGain
-            &mdash; from the famous 35% Sainsbury&rsquo;s chain to lifestyle
+            &mdash; from the 21% Deliveroo triple stack to lifestyle
             plays like earning Avios on your rent. Each step opens the right
             platform with one tap.
           </p>

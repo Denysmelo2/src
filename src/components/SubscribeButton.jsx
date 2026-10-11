@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
  * Trial-first flow (Alt A — 2026-05-17):
  *   - Visitor signs up (free, 7-day trial starts)
  *   - During trial they have access to Comparison Engine, Calculator,
- *     and the One4all+NX Strategy card
+ *     and the Discounted Gift Cards Strategy card
  *   - Other 8 strategies, Wallet, Alerts, Saved Strategies stay locked
  *   - Clicking Subscribe triggers Stripe Checkout (auth required)
  *   - On post-trial expiry, ProtectedRoute bounces them to /pricing

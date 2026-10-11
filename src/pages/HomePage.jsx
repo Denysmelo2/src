@@ -94,7 +94,7 @@ const QUICK_ACTIONS = [
 const COMPARE_LINKS = [
   {
     label: 'The Playbook',
-    sub: 'Every curated multi-step strategy — 35% Sainsbury\'s chain, 25% Deliveroo, more',
+    sub: 'Every curated multi-step strategy — 21% Deliveroo stack, 11% Sainsbury\'s, more',
     to: '/playbook',
     Icon: BookOpen,
     gradient: 'from-primary to-secondary',

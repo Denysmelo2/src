@@ -2,7 +2,15 @@
 // ebook, presented as an interactive library inside the app.
 //
 // Trial-first model (Alt A): trial users see all 9 cards but only
-// "One4all + NX" is fully expandable (the unlocked teaser stack).
+// "Discounted Gift Cards" is fully expandable (the unlocked teaser stack).
+//
+// Sept 2026: NX Rewards stopped selling One4all, and stopped paying
+// cashback on Sainsbury's orders settled with a gift card. Every stack
+// that opened with "buy One4all at 20% off on NX" now opens with the
+// store's own discounted gift card (EverUp / Cheddar / JamDoughnut),
+// and the Sainsbury's card keeps its two routes apart: gift card +
+// Avios eStore, or NX + points card. Mirrors the curated_strategies
+// rows rewritten in supabase/migrations/0004.
 // The other 8 show their title + return + tier badge with a "lock"
 // overlay that links to /pricing. Paying users see everything.
 
@@ -31,33 +39,33 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/useSubscription';
 
 // Which strategy ID is unlocked during the free trial.
-// Chosen for: instant savings, point-of-sale usable, 150+ UK retailers,
-// 5-min setup, the entry-level stack that builds trust without giving
-// away the advanced playbooks.
-const TRIAL_UNLOCKED_ID = 'one4all-nx';
+// Chosen for: instant savings, point-of-sale usable, works at any
+// retailer the gift-card apps list, 5-min setup, no subscription — the
+// entry-level stack that builds trust without giving away the
+// advanced playbooks.
+const TRIAL_UNLOCKED_ID = 'discount-gift-cards';
 
 // ────────────────────────────────────────────────────────────────────
 // Strategy catalogue — sourced from the SnapGain ebook
 // ────────────────────────────────────────────────────────────────────
 const STRATEGIES = [
   {
-    id: 'one4all-nx',
+    id: 'discount-gift-cards',
     icon: Wallet,
-    name: 'One4all + NX Rewards',
+    name: 'Discounted Gift Cards',
     tier: 'Beginner',
     tierColor: 'bg-green-100 text-green-800',
-    return: '20%',
-    returnDetail: 'guaranteed on every gift card',
-    teaser: 'Buy a £100 gift card for £80. The simplest stack in the UK, and the foundation everything else builds on.',
+    return: '3% to 8%',
+    returnDetail: 'off, instantly, plus card points',
+    teaser: 'Before you pay any UK retailer, check three apps for its gift card. One of them is usually 3 to 8 percent off. The foundation everything else builds on.',
     timeToSetup: '5 min',
     steps: [
-      'Sign up to NX Rewards (free with one partner purchase per month).',
-      'Buy a One4all gift card at 20 percent off (£100 face value for £80).',
-      'Download the One4all app and redeem the code into your digital wallet.',
-      'Use it like a prepaid debit card in any One4all partner store.',
-      'Pay the original £80 with an Avios-earning card (Amex BA or Barclays Avios) for an extra 80 Avios.',
+      'Install EverUp, Cheddar and JamDoughnut (all free).',
+      'Search the retailer in all three. Rates move weekly, so buy from whichever is highest today: Currys 6.5 percent on Cheddar, Treatwell 7.8 percent on EverUp, Sainsbury\'s 3.9 percent on EverUp.',
+      'Pay for the gift card with a card that earns 1 point per £1 (Revolut Metal, Barclaycard Avios, Amex) or 1 percent cashback. The gift card purchase itself earns.',
+      'Spend it in-store (barcode at the till) or online (paste the code at checkout). Buy the exact amount of your basket so nothing sits unused.',
     ],
-    bestFor: 'Boots, Currys, Argos, M&S, Sainsbury\'s, and 150+ other UK retailers.',
+    bestFor: 'Currys, Argos, Boots, Tesco, Sainsbury\'s, Deliveroo, Just Eat, Treatwell and every other retailer the three apps list.',
   },
   {
     id: 'nx-airtime',
@@ -65,38 +73,37 @@ const STRATEGIES = [
     name: 'NX + Airtime Rewards',
     tier: 'Intermediate',
     tierColor: 'bg-blue-100 text-blue-800',
-    return: '24%',
-    returnDetail: '20 percent + 4 percent stacked',
-    teaser: 'Layer Airtime Rewards on top of your One4all gift card and earn extra cashback at partner retailers.',
+    return: 'up to 15%',
+    returnDetail: 'NX 10% + card 1% + Airtime 4%',
+    teaser: 'Register every points card you own in Airtime, then route each shop through NX online or pay in-store. Airtime pays on the card, never on a gift card.',
     timeToSetup: '10 min',
     steps: [
-      'Buy your One4all gift card via NX Rewards as in the beginner stack (20 percent saved).',
-      'Add the One4all card to the Airtime Rewards app.',
-      'Shop at any Airtime partner (Boots, Halfords, Pizza Express, etc.).',
-      'Airtime auto-credits an extra 4 percent cashback to your mobile bill.',
-      'Pay the original £80 with an Avios card for the third layer.',
+      'Register all your points and cashback cards (credit and debit) in the Airtime Rewards app: Revolut Metal, Barclaycard Avios, Amex, and any 1 percent cashback card.',
+      'Check the partner in the Airtime app first: some are in-store only. Boots and Argos work in-store.',
+      'Online at an NX-network partner (Boots): click through NX Rewards and pay with the registered card. 10 percent minimum plus the card\'s 1 point per £1 or 1 percent.',
+      'In-store (Boots, Argos): pay with the registered card. Card earns its point per £1 or 1 percent, Airtime credits up to 4 percent to your mobile bill.',
+      'Skip the gift card here: a gift-card payment is invisible to Airtime, so use the Beginner stack instead when the partner is not tracking.',
     ],
-    bestFor: 'Anywhere the Airtime partner list overlaps with One4all acceptance.',
+    bestFor: 'Boots, Argos and any other Airtime partner that also sits in the NX network.',
   },
   {
-    id: 'sainsburys-triple',
+    id: 'sainsburys-stack',
     icon: Layers,
-    name: 'Sainsbury\'s Triple Stack',
+    name: 'Sainsbury\'s Stack',
     tier: 'Advanced',
     tierColor: 'bg-purple-100 text-purple-800',
-    return: '34%+',
-    returnDetail: '20% + 10% + 10% + Avios via Nectar',
-    teaser: 'The jewel of the SnapGain library. Multi-layer stack that compounds cashback at every step.',
-    timeToSetup: '20 min',
+    return: '5% to 11%',
+    returnDetail: 'plus Avios and Nectar, two routes',
+    teaser: 'Two routes that must never be mixed: gift card plus the Avios eStore, or NX plus a points card. NX no longer pays when a Sainsbury\'s order is settled with a gift card.',
+    timeToSetup: '15 min',
     steps: [
-      'Buy a One4all £100 gift card for £80 via NX Rewards (20 percent).',
-      'Walk into a Currys store and buy a £100 Currys gift card with the One4all.',
-      'Back to NX Rewards. Use the Currys gift card to buy a YouChoose or Every-wish gift card (+10 percent NX cashback).',
-      'On YouChoose, swap that gift card for a Sainsbury\'s gift card.',
-      'Go to Sainsbury\'s online via the NX Rewards portal (+10 percent NX cashback again).',
-      'Pay with the Sainsbury\'s gift card — earns Nectar Points (which convert to Avios at 0.625 ratio).',
+      'Route A (max, online): click through NX Rewards to Sainsbury\'s (10 percent), pay with a card that earns 1 point per £1 (Revolut Metal, Barclaycard Avios, Amex) or 1 percent cashback, scan Nectar. Card only, no gift card.',
+      'Route B (easy, online or in-store): buy a Sainsbury\'s gift card at up to 3.9 percent off (EverUp; check Cheddar and JamDoughnut), pay for it with the same kind of points or cashback card.',
+      'Route B, continued: open Sainsbury\'s from the Avios eStore (1 Avios per £1), pay with the gift card and scan Nectar. Gift-card payment does not affect the eStore Avios.',
+      'Either route: 100 Nectar per £100 converts at 400 Nectar = 250 Avios, so £100 of groceries is 62 Avios on top.',
+      'Example, £100 shop: Route A = £10 NX + 100 Amex points + 100 Nectar. Route B = £4 gift card + 100 card points + 100 Avios + 100 Nectar.',
     ],
-    bestFor: 'Your monthly grocery shop. Every £100 spent returns ~£40 plus Avios.',
+    bestFor: 'Your monthly grocery shop. Route A for cash back, Route B when you are collecting Avios.',
   },
   {
     id: 'amazon-optimiser',
@@ -104,13 +111,13 @@ const STRATEGIES = [
     name: 'Amazon Optimiser',
     tier: 'Intermediate',
     tierColor: 'bg-blue-100 text-blue-800',
-    return: '5% to 26%',
-    returnDetail: 'simple to advanced',
-    teaser: 'Amazon doesn\'t do direct cashback. But you can route through gift cards to capture 5 to 26 percent anyway.',
+    return: '5% to 6%',
+    returnDetail: 'plus Clubcard, via gift cards',
+    teaser: 'Amazon doesn\'t do direct cashback. But you can route through gift cards to capture 5 to 6 percent anyway.',
     timeToSetup: '10 min',
     steps: [
       'Simple route: Uphold Mastercard (1 percent) plus JamDoughnut Tesco gift card (4 percent), pay for Amazon gift card at Tesco. Total: 5 percent.',
-      'Advanced: NX Rewards One4all (20 percent) plus Airtime at partner (4 percent) plus receipt scanning apps (2 percent). Total: 26 percent.',
+      'Better: Cheddar or EverUp Tesco gift card (4.5 percent) plus a points card (1 point per £1 on Revolut Metal, Barclaycard Avios or Amex, or 1 percent cashback) plus Clubcard points, then buy the Amazon gift card in Tesco. Total: about 5.5 percent plus Clubcard.',
       'Either way, top up Amazon balance with the discounted gift card.',
       'Pay all Amazon purchases from your topped-up balance.',
     ],
@@ -388,7 +395,7 @@ function StrategyLibraryPage() {
         <title>Strategy Library — SnapGain</title>
         <meta
           name="description"
-          content="9 stacking strategies, from beginner 20 percent guaranteed to advanced 34 percent plus Avios."
+          content="9 stacking strategies, from beginner discounted gift cards to the 21 percent Deliveroo triple stack and Avios on rent."
         />
       </Helmet>
 
@@ -402,9 +409,9 @@ function StrategyLibraryPage() {
             The Strategy Library
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            9 tested stacks, from the beginner 20 percent guaranteed
-            return to the advanced 34 percent plus Avios. Click any card
-            to see the step-by-step.
+            9 tested stacks, from the beginner gift-card discount to the
+            21 percent Deliveroo triple stack and Avios on your rent. Click
+            any card to see the step-by-step.
           </p>
           {!isPaying && (
             <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm text-primary">
@@ -444,8 +451,8 @@ function StrategyLibraryPage() {
             <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
               You don&rsquo;t need to run all 9 to see results. Start with the
               Beginner stack today, master it in a week, then layer in the
-              next one. The Triple Stack alone returns about £400 over a
-              year of normal grocery spending.
+              next one. The Sainsbury&rsquo;s stack alone returns about £130
+              plus 700 Avios over a year of normal grocery spending.
             </p>
             <Button asChild size="lg" className="px-8">
               <Link to="/home">

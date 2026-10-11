@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RateBreakdown } from '@/components/RateBreakdown';
+import { DataAge } from '@/components/DataAge';
+import { oldestVerifiedAt } from '@/lib/dataFreshness';
 import { cn } from '@/lib/utils';
 
 /**
@@ -90,6 +92,12 @@ export function AutoStrategyCard({
                 {strategy.subtitle}
               </p>
             )}
+            {/* When the figure above was last checked against the
+                provider. For a stack this is the OLDEST of its layers:
+                the route is only as current as its stalest part. */}
+            <div className="mt-1">
+              <DataAge verifiedAt={oldestVerifiedAt(strategy.layers)} />
+            </div>
           </div>
           <div className="text-right shrink-0">
             <div className="text-xl font-bold gradient-text leading-none">

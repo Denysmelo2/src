@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/lib/customSupabaseClient';
 
 // AdminPlatformChangesPage
@@ -182,7 +183,11 @@ export default function AdminPlatformChangesPage() {
   const [filter, setFilter] = useState('pending');
   const [triggering, setTriggering] = useState(false);
 
-  const isAdmin = user?.user_metadata?.role === 'admin';
+  // Admin comes from `user_profiles.role`, surfaced by useSubscription.
+  // It used to read `user.user_metadata.role` — the bag
+  // `supabase.auth.updateUser({ data })` writes, so any user could set
+  // `role: 'admin'` on themselves. See migration 0007.
+  const { isAdmin } = useSubscription();
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -290,8 +295,13 @@ export default function AdminPlatformChangesPage() {
         <ShieldAlert className="w-12 h-12 text-secondary mx-auto" />
         <h1 className="text-2xl font-bold">Admin only</h1>
         <p className="text-sm text-muted-foreground">
-          Set <code className="text-xs px-1 bg-muted rounded">user_metadata.role = "admin"</code>{' '}
-          on your auth user to access this page.
+          Admin is granted server-side only &mdash; run{' '}
+          <code className="text-xs px-1 bg-muted rounded">
+            update public.user_profiles set role = 'admin' where user_id = &hellip;
+          </code>{' '}
+          in the SQL editor. Setting it on the auth user&rsquo;s user_metadata
+          no longer works, because that field is writable by the account
+          holder.
         </p>
         <Button asChild variant="outline">
           <Link to="/home">Back to home</Link>

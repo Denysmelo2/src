@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -16,14 +16,41 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 export function useSubscription() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Which user the current `profile` was fetched for: a user id, `null`
+  // for "no user", or `undefined` before the first fetch settles.
+  //
+  // `loading` is DERIVED from this rather than kept as its own flag, to
+  // close a race. AuthContext resolves the session asynchronously, so the
+  // first render has user = null; the old code fetched for that null
+  // user, set loading=false, and when the real user arrived a render
+  // later it still said "not loading" with profile = null. ProtectedRoute
+  // read that as "signed in, no plan, not admin" and redirected to
+  // /pricing. It was invisible until 2026-10-09 only because admins had a
+  // second, insecure route in via user_metadata.role (removed in
+  // migration 0007's frontend change) that did not need the profile.
+  //
+  // Deriving it means the moment the user changes, loading is true in
+  // that same render, with no gap. A realtime-triggered refresh for the
+  // same user does not flip it, so the splash screen does not flash on
+  // every webhook.
+  const [loadedFor, setLoadedFor] = useState(undefined);
+  const loading = loadedFor === undefined || loadedFor !== (user?.id ?? null);
+
+  // The user this hook is rendering for RIGHT NOW. A fetch started for a
+  // previous user (sign-out then sign-in as someone else while it is in
+  // flight) must not write its answer over the current one: that would
+  // show the wrong person's plan and leave `loading` stuck, because
+  // loadedFor would name a user who is no longer here.
+  const currentUid = useRef(user?.id ?? null);
+  currentUid.current = user?.id ?? null;
 
   const refresh = useCallback(async () => {
     if (!user) {
       setProfile(null);
-      setLoading(false);
+      setLoadedFor(null);
       return;
     }
+    const uid = user.id;
     try {
       const { data, error } = await supabase
         .from('user_profiles')
@@ -32,17 +59,19 @@ export function useSubscription() {
         )
         .eq('user_id', user.id)
         .maybeSingle();
+      if (currentUid.current !== uid) return; // superseded, see currentUid
       if (error) {
         console.warn('[useSubscription] profile fetch error:', error.message);
         setProfile(null);
       } else {
         setProfile(data);
       }
+      setLoadedFor(uid);
     } catch (err) {
+      if (currentUid.current !== uid) return;
       console.warn('[useSubscription] unexpected error:', err);
       setProfile(null);
-    } finally {
-      setLoading(false);
+      setLoadedFor(uid);
     }
   }, [user]);
 
@@ -84,7 +113,13 @@ export function useSubscription() {
   const isActive = status === 'active' || status === 'trialing';
   const inTrial = !isActive && trialEndMs > now;
   const isPremium = isActive || inTrial;
-  const isAdmin = (profile?.role || user?.user_metadata?.role) === 'admin';
+  // `profile.role` only. The old `|| user?.user_metadata?.role` fallback
+  // read the bag that `supabase.auth.updateUser({ data })` writes, so a
+  // user could set `role: 'admin'` on themselves in one call and land
+  // here — and `isAdmin` bypasses the premium gates. See migration 0007;
+  // granting admin is now a deliberate server-side update of
+  // `user_profiles.role`.
+  const isAdmin = profile?.role === 'admin';
 
   // Days remaining (rounded UP so the day of signup counts — matches
   // what users expect from "Trial: 7 days" right after sign-up).

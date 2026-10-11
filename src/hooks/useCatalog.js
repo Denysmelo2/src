@@ -258,8 +258,8 @@ export function useStoreOffers(storeId) {
 /**
  * useCuratedStrategies — multi-step "Pro Strategies" curated from
  * Bárbara's playbook (ebook). These are the marquee multi-platform
- * routes (e.g. "Buy One4all on NX → swap at Currys → convert via
- * YouChoose → pay at Sainsbury's").
+ * routes (e.g. "Buy a Sainsbury's gift card on EverUp → open Sainsbury's
+ * from the Avios eStore → pay with the gift card → scan Nectar").
  *
  * Targeting model:
  *   - target_store_id            — primary store the strategy is for

@@ -64,11 +64,23 @@ function ProtectedRoute({
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Admins bypass ALL premium gates (founder + support access). Source of
-  // truth is profile.role; fallback to JWT user_metadata.role in case the
-  // sync trigger hasn't propagated yet for a brand-new admin.
-  const isAdmin =
-    profile?.role === 'admin' || user?.user_metadata?.role === 'admin';
+  // Admins bypass ALL premium gates (founder + support access).
+  //
+  // `profile.role` is the ONLY source of truth. This used to fall back to
+  // `user.user_metadata.role`, reasoning that the role-sync trigger might
+  // not have propagated yet for a brand-new admin. But `user_metadata` is
+  // the bag `supabase.auth.updateUser({ data })` writes, so the user
+  // controls it: one client call setting `role: 'admin'` passed this
+  // check. And the trigger that fallback was waiting on was itself the
+  // escalation path — it copied the same user-written field into
+  // `user_profiles.role` — so it was neutralised in migration 0007. The
+  // reason for the fallback is gone; only the hole was left.
+  //
+  // Consequence worth knowing: an account that was admin ONLY via
+  // user_metadata is no longer admin here. Granting admin is now a
+  // deliberate server-side act:
+  //   update public.user_profiles set role = 'admin' where user_id = '<uuid>';
+  const isAdmin = profile?.role === 'admin';
 
   // Derive premium flags once
   const stripeActive =

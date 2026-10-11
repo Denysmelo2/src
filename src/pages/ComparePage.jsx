@@ -60,6 +60,8 @@ import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { RateBreakdown } from '@/components/RateBreakdown';
 import { labelForStrategy } from '@/components/AutoStrategyCard';
 import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
+import { oldestVerifiedAt } from '@/lib/dataFreshness';
+import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -132,6 +134,12 @@ function autoToItem(s) {
     subtitle: s.subtitle,
     gbpReturn: Number(s.gbpReturn) || 0,
     gbpReturnDisplay: s.gbpReturnDisplay,
+    // When this route's numbers were last checked against the provider.
+    // Taken from the layers rather than the strategy's own field, because
+    // a stack has no single date and the honest one is the oldest of its
+    // parts — see lib/dataFreshness.js. Dropping this on the way up is
+    // what let a rate from May render exactly like one from this morning.
+    verifiedAt: oldestVerifiedAt(s.layers),
     strategy: s,
   };
 }
@@ -427,6 +435,7 @@ function RouteBox({
   storeSlug,
   directAvios = 0,
   defaultOpen = false,
+  now,
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const badge = routeBadge(item);
@@ -556,6 +565,15 @@ function RouteBox({
                 {item.subtitle}
               </p>
             )}
+            {/* How old the numbers above are. Auto routes only: those
+                come from the ingestion pipeline and carry
+                last_verified_at. Curated strategies are hand-written
+                editorial content with no such column, and inventing a
+                date for them would be exactly the dishonesty this is
+                here to remove. */}
+            {!isCurated && (
+              <DataAge verifiedAt={item.verifiedAt} now={now} />
+            )}
           </div>
 
           {/* ── RIGHT COLUMN: badge + value + Avios + verdict ── */}
@@ -675,6 +693,7 @@ function RouteBox({
               strategy={item.strategy}
               storeSlug={storeSlug}
               amount={amount}
+              now={now}
             />
           )}
         </div>
@@ -688,7 +707,7 @@ function RouteBox({
  * layer of the stack as a step-like row, then a primary "Open" button
  * that resolves the affiliate URL via lib/affiliateLinks.
  */
-function AutoRouteDetail({ strategy, storeSlug, amount }) {
+function AutoRouteDetail({ strategy, storeSlug, amount, now }) {
   const layers = strategy.layers || [];
   const openUrl =
     strategy.openUrl ||
@@ -720,6 +739,18 @@ function AutoRouteDetail({ strategy, storeSlug, amount }) {
                 {layer.gbpDisplay && (
                   <div className="text-xs text-muted-foreground">
                     {layer.gbpDisplay}
+                  </div>
+                )}
+                {/* Per-layer age, for stacks only. The header already
+                    shows the oldest of the layers, so repeating it on a
+                    single-layer route would just say the same thing
+                    twice. On a stack it says WHICH part is the old one:
+                    a user looking at "Verified 143 days ago" can see
+                    that the gift card was checked this week and only
+                    the cashback rate is stale. */}
+                {layers.length > 1 && (
+                  <div className="mt-0.5">
+                    <DataAge verifiedAt={layer.lastVerifiedAt} now={now} />
                   </div>
                 )}
                 {/* 2026-07-05 (Bárbara): breakdown was already threaded
@@ -1089,6 +1120,12 @@ function ComparePage() {
     milesPrograms,
   ]);
 
+  // One clock for every card in this result set. Without it each
+  // DataAge would read Date.now() at its own mount, so two rates
+  // verified on the same day could render as different ages if the list
+  // re-rendered across midnight.
+  const routesComputedAt = useMemo(() => Date.now(), [rankedRoutes]);
+
   // ── Browse → pick a store directly + scroll to the form ──────────
   const handlePickFromBrowse = (store) => {
     setSelected(store);
@@ -1271,6 +1308,7 @@ function ComparePage() {
                     storeSlug={selected.slug}
                     directAvios={bestDirectAvios}
                     defaultOpen={false}
+                    now={routesComputedAt}
                   />
                 ))}
               </>

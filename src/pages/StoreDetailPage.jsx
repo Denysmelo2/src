@@ -8,7 +8,6 @@ import {
   ExternalLink,
   Trophy,
   Calculator,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RateBreakdown } from '@/components/RateBreakdown';
@@ -34,6 +33,12 @@ import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { computeStrategies, withSyntheticNxOffer } from '@/lib/strategies';
 import { buildWalletFilter } from '@/lib/walletFilter';
 import { StoreLogo } from '@/components/StoreLogo';
+// The age of a rate used to render here as a flat grey "Verified 144d
+// ago" — the same weight as "Verified 2h ago" — via a local copy of a
+// fmtTimeAgo helper that two other pages also carried. DataAge is the
+// single place that decides how an age reads, and it colours a stale
+// one. See lib/dataFreshness.js.
+import { DataAge } from '@/components/DataAge';
 
 // 2026-05-18: collapsed from 5 tabs to 2 per Bárbara's UX feedback —
 // "as pessoas não gostam de pensar, querem a resposta pronta". The
@@ -46,19 +51,6 @@ const TABS = [
 ];
 
 const DEFAULT_AMOUNT = 100;
-
-function fmtTimeAgo(iso) {
-  if (!iso) return null;
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms)) return null;
-  const mins = Math.round(ms / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  return `${days}d ago`;
-}
 
 // "Up to" appears when the platform exposes a multi-tier rate (the
 // rate column holds the MAX). We show it explicitly so the headline
@@ -89,12 +81,11 @@ function CashbackOfferCard({ offer }) {
 
         <RateBreakdown breakdown={offer.rate_breakdown} />
 
-        {offer.last_verified_at && (
-          <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            Verified {fmtTimeAgo(offer.last_verified_at)}
-          </div>
-        )}
+        {/* Rendered unconditionally: an offer with no recorded check
+            date used to show nothing here, which read as "fine". */}
+        <div>
+          <DataAge verifiedAt={offer.last_verified_at} />
+        </div>
         {(() => {
           const href = resolveOpenUrl({
             rowUrl: offer.affiliate_link,
@@ -139,12 +130,11 @@ function PointOfferCard({ offer }) {
             Booster available
           </span>
         )}
-        {offer.last_verified_at && (
-          <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            Verified {fmtTimeAgo(offer.last_verified_at)}
-          </div>
-        )}
+        {/* Rendered unconditionally: an offer with no recorded check
+            date used to show nothing here, which read as "fine". */}
+        <div>
+          <DataAge verifiedAt={offer.last_verified_at} />
+        </div>
       </CardContent>
     </Card>
   );
