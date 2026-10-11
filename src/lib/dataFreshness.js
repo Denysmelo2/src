@@ -14,7 +14,8 @@
 // runs roughly every six days — not to the daily one it was assumed to
 // have.
 //
-// Nothing here hides a number or changes a ranking. It only labels.
+// The labels below never hide anything. Hiding is a separate, single
+// rule — `hiddenBeforeIso()` — applied in the offer queries themselves.
 
 /** At or under this many days, the figure is as fresh as the pipeline gets. */
 export const FRESH_DAYS = 8;
@@ -22,6 +23,25 @@ export const FRESH_DAYS = 8;
 export const STALE_DAYS = 30;
 
 const DAY_MS = 86_400_000;
+
+/**
+ * The cut-off for showing an offer at all (owner's call, 2026-10-10).
+ *
+ * An offer last verified more than STALE_DAYS ago is not shown anywhere
+ * a user can act on it: in practice that means a source whose scraper
+ * has broken (EverUp since July, the TC and Quidco gift-card shops since
+ * May) or one kept by hand in /admin/rates that nobody has re-checked.
+ * The row stays in the database, untouched; the moment a scrape or a
+ * hand entry stamps `last_verified_at` again, it reappears.
+ *
+ * Use it as `.gte('last_verified_at', hiddenBeforeIso())`. A NULL
+ * `last_verified_at` fails that filter too, which is right: "we don't
+ * know when" is not "recent". /admin/rates deliberately does not use
+ * this, since its job is to find and refresh exactly these rows.
+ */
+export function hiddenBeforeIso(now = Date.now()) {
+  return new Date(now - STALE_DAYS * DAY_MS).toISOString();
+}
 
 /**
  * The verification date of a whole route.

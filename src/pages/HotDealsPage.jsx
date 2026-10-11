@@ -23,6 +23,7 @@ import { useUserWallet } from '@/hooks/useUserState';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { buildWalletFilter } from '@/lib/walletFilter';
 import { supabase } from '@/lib/customSupabaseClient';
+import { hiddenBeforeIso } from '@/lib/dataFreshness';
 import { StoreLogo } from '@/components/StoreLogo';
 import { FilterChip } from '@/components/FilterChip';
 import { resolveOpenUrl } from '@/lib/affiliateLinks';
@@ -99,6 +100,7 @@ function HotDealsPage() {
   useEffect(() => {
     let alive = true;
     (async () => {
+      const cutoff = hiddenBeforeIso();
       const STORE_SEL =
         'store:stores(id, slug, name, category, logo_url, domain, is_active)';
       const [{ data: cbRows, error: cbErr }, { data: gcRows, error: gcErr }] =
@@ -108,6 +110,7 @@ function HotDealsPage() {
             .select(`id, platform, rate, rate_breakdown, affiliate_link, conditions, valid_to, ${STORE_SEL}`)
             .eq('is_active', true)
             .eq('is_boosted', true)
+            .gte('last_verified_at', cutoff)
             .order('rate', { ascending: false })
             .limit(200),
           supabase
@@ -115,6 +118,7 @@ function HotDealsPage() {
             .select(`id, platform, discount_pct, affiliate_link, conditions, valid_to, ${STORE_SEL}`)
             .eq('is_active', true)
             .eq('is_boosted', true)
+            .gte('last_verified_at', cutoff)
             .order('discount_pct', { ascending: false })
             .limit(200),
         ]);

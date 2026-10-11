@@ -23,25 +23,41 @@ This repo is public: nothing here is a secret, and no secret belongs here.
    white-screen fix (f2f4dcc) and the post-login `/pricing` redirect fix
    (febb11b). The PR body still lacks sections for f2f4dcc, febb11b, ca77500.
 2. **Daily robot (`Denysmelo2/snapgain-scraper`, workflow `daily-scrape`)**.
-   Diagnosed 2026-10-10:
-   - Cron is already `0 4 * * *`, but GitHub starts it 5–7 h late
-     (runs begin 09:00–11:00 UTC). An exact 04:00 needs an external trigger
-     (e.g. pg_cron → `workflow_dispatch` with a token kept in the vault).
-   - Red every day since 2026-07-10 (last green: 2026-07-09). Failing every
-     run: `topcashback`, `tc-giftcards`, `quidco-giftcards` — all need a
-     logged-in session. Anonymously, the TC gift-card shop redirects to
-     login and the Quidco one returns a Cloudflare challenge. Do not build
-     anti-bot evasion.
-   - Fresh daily: quidco (3,624), picodi, jamdoughnut, cheddar, Avios.
-     TopCashback only ~330 of ~1,600 refresh. EverUp reports "ok" but has
-     written nothing since 2026-07-06 (markup changed, harvest is 0).
-     Rakuten has 0 active offers. TC and Quidco gift cards: last written
-     2026-05-18.
-   - Runs take ~90–110 min; on the Pro plan the private repo exhausts its
-     Actions minutes at month end (2026-09-29/30 runs never started).
-   - Job logs are not readable through this environment's GitHub proxy;
-     check-run annotations are, so per-scraper errors/timings should be
-     emitted as `::notice`/`::error` annotations.
+   Owner approved items 1–4 of the proposal on 2026-10-10. Done in
+   Denysmelo2/snapgain-scraper#31 and Denysmelo2/src#116 (both drafts,
+   waiting for "pode publicar"):
+   - **Exact 04:00 UTC**: pg_cron job `daily-scrape-dispatch` (jobid 7,
+     migration 0010, applied) calls `workflow_dispatch` at 04:00. It is
+     inert until the owner stores a fine-grained GitHub token (only
+     "Actions: read and write" on snapgain-scraper) as Vault secret
+     `github_dispatch_token`. Do that only after #31 is merged; the
+     GitHub `schedule` stays as a fallback that skips itself when a
+     dispatched run already started that day.
+   - **EverUp fixed**: `everup.uk/gift-card-deals` redirects to
+     `www.everup.com/brands` since ~2026-07-06. The scraper now reads the
+     RSC payload over plain HTTP (`cashback_perc`). Test run from the
+     branch on 2026-10-10 wrote 327 offers; 18 old ones were retired.
+   - **Shorter run** (was ~90 min: Picodi ~42, Quidco ~24, Avios ~10,
+     TC ~7): Picodi revisits known merchants Mon–Sat, full pass Sunday;
+     rakuten, tc-giftcards and quidco-giftcards are out of the default
+     list (still runnable by hand). Each scraper emits a `::notice` /
+     `::error` annotation with its duration.
+   - **Offers older than 30 days hidden** on the site (`hiddenBeforeIso`
+     in `src/lib/dataFreshness.js`); rows are kept, `/admin/rates` still
+     shows them.
+   - **Member scrape at 21:00 UK** (owner's call, 2026-10-11): topcashback,
+     tc-giftcards and quidco-giftcards left the 04:00 list and run in
+     `scrape-member.yml` through the real Chrome on Bárbara's Mac
+     (Tailscale + CDP), logged in by hand with accounts created only for
+     SnapGain. pg_cron `member-scrape-dispatch` (jobid 8, migration 0011)
+     fires at 21:00 Europe/London with the same Vault token. In
+     real-Chrome mode the scrapers never move cookies or type passwords;
+     if the Mac does not answer, the run fails and scrapes nothing.
+   Do not build anti-bot evasion.
+   Job logs are not readable through this environment's GitHub proxy;
+   check-run annotations are. `source-probe` (v6) is how pages that this
+   environment cannot reach get inspected; call it from SQL with
+   `net.http_post` and read `net._http_response`.
 3. **EverUp and Airtime**: no public data. The owner is emailing both
    companies for a feed. Until then their rates are kept by hand in
    `/admin/rates`.

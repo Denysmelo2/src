@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
+import { hiddenBeforeIso } from '@/lib/dataFreshness';
 import { StoreLogo } from '@/components/StoreLogo';
 import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,7 @@ function GiftCardDealsPage() {
           'id, store_id, platform, discount_pct, affiliate_link, conditions, store:stores(id, slug, name, category, logo_url, domain, is_active)'
         )
         .eq('is_active', true)
+        .gte('last_verified_at', hiddenBeforeIso())
         .range(0, 999);
       if (error) console.warn('[GiftCardDealsPage] error:', error.message);
       if (!alive) return;

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
+import { hiddenBeforeIso } from '@/lib/dataFreshness';
 import { StoreLogo } from '@/components/StoreLogo';
 import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { RateBreakdown } from '@/components/RateBreakdown';
@@ -59,6 +60,7 @@ function SupermarketDealsPage() {
         .from('cashback_offers')
         .select('id, store_id, platform, rate, affiliate_link, conditions, rate_breakdown')
         .eq('is_active', true)
+        .gte('last_verified_at', hiddenBeforeIso())
         .in('store_id', ids);
       if (oErr) console.warn('[SupermarketDealsPage] offers error:', oErr.message);
       if (!alive) return;

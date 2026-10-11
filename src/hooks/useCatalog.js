@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { hiddenBeforeIso } from '@/lib/dataFreshness';
 
 /**
  * useStores — list of UK retailers from public.stores.
@@ -202,27 +203,34 @@ export function useStoreOffers(storeId) {
     let alive = true;
     setLoading(true);
 
-    const fetchAll = () =>
-      Promise.all([
+    // Offers not verified in STALE_DAYS are hidden (see hiddenBeforeIso).
+    // Recomputed on every fetch so a long-open page keeps the same rule.
+    const fetchAll = () => {
+      const cutoff = hiddenBeforeIso();
+      return Promise.all([
         supabase
           .from('cashback_offers')
           .select('id, store_id, platform, rate, rate_breakdown, affiliate_link, conditions, last_verified_at, is_active')
           .eq('store_id', storeId)
           .eq('is_active', true)
+          .gte('last_verified_at', cutoff)
           .order('rate', { ascending: false }),
         supabase
           .from('point_offers')
           .select('id, store_id, airline, earn_rate, affiliate_link, booster_available, conditions, last_verified_at, is_active')
           .eq('store_id', storeId)
           .eq('is_active', true)
+          .gte('last_verified_at', cutoff)
           .order('earn_rate', { ascending: false }),
         supabase
           .from('gift_card_offers')
           .select('id, store_id, platform, discount_pct, affiliate_link, conditions, last_verified_at, is_active')
           .eq('store_id', storeId)
           .eq('is_active', true)
+          .gte('last_verified_at', cutoff)
           .order('discount_pct', { ascending: false }),
       ]);
+    };
 
     const apply = ([cbRes, ptRes, gcRes]) => {
       if (!alive) return;

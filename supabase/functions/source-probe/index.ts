@@ -47,6 +47,13 @@ const ALLOWED = new Set([
   // to check whether the rate is printed without a session.
   'www.topcashback.co.uk',
   'www.quidco.com',
+  // 2026-10-10: EverUp's public deals grid. The scraper has harvested 0
+  // cards since 2026-07-06; everup.uk/gift-card-deals now redirects to
+  // www.everup.com/brands, so both domains are here.
+  'www.everup.uk',
+  'everup.uk',
+  'www.everup.com',
+  'everup.com',
 ]);
 
 const MAX_BYTES = 3_000_000;
@@ -173,6 +180,12 @@ serve(async (req) => {
                 markup: html.slice(Math.max(0, i - 500), i + 700) };
         })()
       : null,
+    // Absolute URLs named in the page (scripts, API bases, CDNs). On a
+    // client-rendered page this is where the data endpoint shows up.
+    urlSamples: sample(
+      [...new Set((html.match(/https?:\/\/[a-z0-9.-]+\.[a-z]{2,}(?:\/[\w\-./]{0,80})?/gi) ?? []))],
+      60
+    ),
     listItemSamples: sample(
       [...(html.matchAll(/<li\b[^>]*>([\s\S]{0,160}?)<\/li>/gi))]
         .map(x => x[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
