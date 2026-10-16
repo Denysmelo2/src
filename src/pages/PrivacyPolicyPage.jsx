@@ -168,7 +168,7 @@ function PrivacyPolicyPage() {
                 alternative to reCAPTCHA, no Google tracking.
               </li>
               <li>
-                <strong>Affiliate networks</strong> (TopCashback, Quidco,
+                <strong>Affiliate networks</strong> (Quidco, JamDoughnut,
                 Awin-style partners) — when you click through to a partner site
                 they place their own cookies. We don't see your purchases,
                 only the fact that a click happened.

@@ -1,7 +1,6 @@
 /**
  * RateBreakdown — collapsible table that discloses the per-sub-category
- * cashback rate breakdown when a platform exposes one (TopCashback,
- * Quidco, etc.).
+ * cashback rate breakdown when a platform exposes one (Quidco, etc.).
  *
  * Why this exists: most aggregator sites only show the headline rate
  * (e.g. "30%"), which is the MAX across all sub-categories. The real

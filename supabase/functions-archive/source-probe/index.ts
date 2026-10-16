@@ -1,3 +1,4 @@
+// ARCHIVED 16/10/2026: deleted from Supabase on the owner's approval (unused probe). Not deployed.
 // source-probe — reconnaissance only. Fetches ONE allowlisted page and
 // describes its shape. It never touches the database and is never given
 // a service-role key.

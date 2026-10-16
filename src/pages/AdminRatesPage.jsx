@@ -10,6 +10,9 @@
  * Airtime likewise have nothing to read. So those four get typed in, and
  * this is where.
  *
+ * 16/10/2026: TopCashback gift cards and Quidco gift cards left the
+ * comparison (migration 0014), so they are no longer offered here.
+ *
  * The writes go through the `rate-entry` Edge Function, not straight to
  * PostgREST. `gift_card_offers` has no admin write policy, and the
  * policies on `cashback_offers` are keyed on `is_admin()`, which reads a
@@ -57,8 +60,6 @@ import { cn } from '@/lib/utils';
 // must not trust this list.
 const SOURCES = [
   { key: 'everup', label: 'EverUp', unit: '% off', what: 'gift card discount' },
-  { key: 'topcashback-giftcards', label: 'TopCashback gift cards', unit: '% off', what: 'gift card discount' },
-  { key: 'quidco-giftcards', label: 'Quidco gift cards', unit: '% off', what: 'gift card discount' },
   { key: 'airtime', label: 'Airtime', unit: '% cashback', what: 'cashback rate' },
 ];
 
