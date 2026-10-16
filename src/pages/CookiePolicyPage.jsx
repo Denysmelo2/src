@@ -124,7 +124,7 @@ function CookiePolicyPage() {
                   </tr>
                   <tr>
                     <td className="py-2 pr-3"><em>partner cookies</em></td>
-                    <td className="py-2 pr-3">Set by TopCashback / Quidco / Avios etc. when you click through. We don't read these.</td>
+                    <td className="py-2 pr-3">Set by Quidco / JamDoughnut / Avios etc. when you click through. We don't read these.</td>
                     <td className="py-2 pr-3">Varies</td>
                     <td className="py-2">Affiliate</td>
                   </tr>

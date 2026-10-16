@@ -191,7 +191,7 @@ const STRATEGIES = [
     steps: [
       'Buy a Boots or Superdrug gift card via JamDoughnut (5 to 10 percent cashback).',
       'Use the gift card in-store or online.',
-      'For Lookfantastic, route purchases through TopCashback or Quidco (5 to 10 percent variable).',
+      'For Lookfantastic, route purchases through Quidco (5 to 10 percent variable).',
       'Pay original gift card purchase with an Amex BA card for Avios.',
     ],
     bestFor: 'Monthly skincare, haircare, and pharmacy spend.',

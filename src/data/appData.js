@@ -14,17 +14,6 @@ export const stores = ukRetailers.map(retailer => ({
 
 export const rewardOptions = [
   {
-    id: 'topcashback',
-    name: 'TopCashback UK',
-    type: 'cashback',
-    rate: '1-8%',
-    amount: 5.50,
-    icon: '💰',
-    description: 'Up to 8% cashback',
-    clickCollect: true,
-    affiliateLink: 'https://www.topcashback.co.uk/ref/snapgainuk'
-  },
-  {
     id: 'jamdoughnut',
     name: 'JamDoughnut',
     type: 'cashback',
@@ -82,7 +71,7 @@ export const features = [
   {
     icon: <TrendingUp />,
     title: "Real-Time UK Comparison",
-    description: "Compare TopCashback, JamDoughnut, and Amazon UK offers instantly with GBP calculations."
+    description: "Compare Quidco, Picodi, JamDoughnut, EverUp and Cheddar offers side by side, with GBP calculations."
   },
   {
     icon: <Filter />,
@@ -140,7 +129,7 @@ export const marketConfig = {
   currency: 'GBP',
   symbol: '£',
   locale: 'en-GB',
-  primaryCashback: 'TopCashback',
+  primaryCashback: 'Quidco',
   studentCashback: 'JamDoughnut',
   marketplace: 'Amazon UK'
 };

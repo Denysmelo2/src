@@ -24,6 +24,9 @@
 //                  status='dry_run' but doesn't actually POST to Resend.
 //   user_id=<u> — only run for one user (debugging).
 //
+// 16/10/2026: the button gets a solid colour first (Gmail drops
+// gradients) and platforms are written by name (JamDoughnut, not
+// jamdoughnut).
 // 16/10/2026: recipients come from rpc('list_digest_recipients')
 // (migration 0015); the old fallback asked for a user_profiles.name
 // column that does not exist. Events from platforms retired on
@@ -41,6 +44,18 @@ const APP_URL = Deno.env.get('APP_URL') || 'https://snapgain.uk';
 
 // Platforms no longer compared on the site (migration 0014).
 const RETIRED_PLATFORMS = ['topcashback', 'topcashback-giftcards', 'quidco-giftcards'];
+
+// How each platform is written in the e-mail.
+const PLATFORM_LABELS: Record<string, string> = {
+  jamdoughnut: 'JamDoughnut',
+  everup: 'EverUp',
+  cheddar: 'Cheddar',
+  quidco: 'Quidco',
+  picodi: 'Picodi',
+  avios: 'Avios',
+  'british airways avios': 'Avios',
+};
+const platformLabel = (p: string) => PLATFORM_LABELS[(p || '').toLowerCase()] || p;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -98,10 +113,10 @@ function renderEmail(opts: {
         .map((e) => {
           const rateMsg =
             e.event === 'rate_up' && e.old_rate != null && e.new_rate != null
-              ? `${e.platform}: ${e.old_rate}% → <strong>${e.new_rate}%</strong>`
+              ? `${platformLabel(e.platform)}: ${e.old_rate}% → <strong>${e.new_rate}%</strong>`
               : e.event === 'entered_boost'
-              ? `${e.platform}: now boosted${e.new_rate != null ? ` (${e.new_rate}%)` : ''}`
-              : `${e.platform}: ${e.event}`;
+              ? `${platformLabel(e.platform)}: now boosted${e.new_rate != null ? ` (${e.new_rate}%)` : ''}`
+              : `${platformLabel(e.platform)}: ${e.event}`;
           return `<div style="font-size:14px;color:#555;line-height:20px;">${rateMsg}</div>`;
         })
         .join('');
@@ -113,7 +128,7 @@ function renderEmail(opts: {
     .join('');
 
   const text = `Hi${userName ? ' ' + userName : ''},\n\n${n} of your favourite store${n === 1 ? '' : 's'} got a cashback boost in the last 24 hours.\n\n${events
-    .map((e) => `- ${e.store_name || e.store_id} (${e.platform}): ${e.event}${e.new_rate ? ` → ${e.new_rate}%` : ''}`)
+    .map((e) => `- ${e.store_name || e.store_id} (${platformLabel(e.platform)}): ${e.event}${e.new_rate ? ` → ${e.new_rate}%` : ''}`)
     .join('\n')}\n\nSee the full list: ${appUrl}/home\n\nManage preferences: ${unsubscribeUrl}`;
 
   const html = `<!doctype html>
@@ -129,7 +144,7 @@ function renderEmail(opts: {
       <table role="presentation" cellpadding="0" cellspacing="0" width="100%">${rowsHtml}</table>
     </td></tr>
     <tr><td align="center" style="padding:24px;">
-      <a href="${appUrl}/home" style="display:inline-block;background:linear-gradient(90deg,#7D4DFB,#FF3FCE);color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Open SnapGain</a>
+      <a href="${appUrl}/home" style="display:inline-block;background-color:#7D4DFB;background-image:linear-gradient(90deg,#7D4DFB,#FF3FCE);color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Open SnapGain</a>
     </td></tr>
     <tr><td style="padding:0 24px 24px;">
       <p style="margin:0;color:#999;font-size:12px;line-height:18px;text-align:center;">

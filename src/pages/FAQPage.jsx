@@ -48,7 +48,7 @@ const faqs = [
   },
   {
     question: "Which UK platforms do you support?",
-    answer: "We support all major UK cashback platforms including TopCashback, Quidco, credit card programs like American Express, British Airways, and many more."
+    answer: "We compare UK cashback platforms such as Quidco and Picodi, discounted gift card apps such as JamDoughnut, EverUp and Cheddar, and British Airways Avios shopping."
   },
   {
     question: "Is my personal data secure?",

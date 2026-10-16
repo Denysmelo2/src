@@ -131,7 +131,7 @@ function TermsOfServicePage() {
             <h2 className="text-2xl font-bold mt-8 mb-3">6. Affiliate disclosure</h2>
             <p className="text-muted-foreground">
               SnapGain earns commissions from some of the partner platforms
-              we recommend (e.g. TopCashback, Quidco, Avios shopping). When
+              we recommend (e.g. Quidco, JamDoughnut, Avios shopping). When
               you click through and complete a qualifying action, the
               partner pays us a referral fee. This funds the service and
               does <strong>not</strong> affect:

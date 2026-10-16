@@ -141,7 +141,7 @@ function DealForm({ initial, stores, onCancel, onSubmit, submitLabel }) {
             id="d-platform"
             value={form.platform}
             onChange={(e) => update({ platform: e.target.value })}
-            placeholder="TopCashback, JamDoughnut, Amex Offers…"
+            placeholder="Quidco, JamDoughnut, Amex Offers…"
           />
         </div>
         <div className="space-y-1">

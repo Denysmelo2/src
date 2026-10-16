@@ -62,13 +62,13 @@ function RealTimePolicyPage() {
               <div>
                 <h2 className="text-2xl font-bold mb-4">Rate Update Frequency</h2>
                 <p className="text-muted-foreground mb-4">
-                  SnapGain updates cashback rates and promotional offers in real-time across all supported UK platforms. Our automated systems check for changes every 15 minutes during business hours and hourly during off-peak times.
+                  SnapGain checks cashback rates, gift card discounts and Avios offers automatically once a day, early in the morning (UK time). Every offer shows when it was last checked, and an offer that has not been confirmed for 30 days is hidden until it is checked again.
                 </p>
                 <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                  <li>Major platforms (TopCashback, Quidco): Every 15 minutes</li>
-                  <li>Credit card programs (Amex, BA): Every 30 minutes</li>
-                  <li>Promotional rates: Immediate updates when detected</li>
-                  <li>Special offers: Real-time notifications</li>
+                  <li>Cashback platforms (Quidco, Picodi): daily</li>
+                  <li>Gift card apps (JamDoughnut, EverUp, Cheddar): daily</li>
+                  <li>British Airways Avios shopping: daily</li>
+                  <li>Boosted rates on your favourite stores: one e-mail a day, if any</li>
                 </ul>
               </div>
             </div>
