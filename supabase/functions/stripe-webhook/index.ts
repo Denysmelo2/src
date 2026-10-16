@@ -1,24 +1,14 @@
-// stripe-webhook — Edge Function that receives Stripe webhook events
-// and syncs subscription state into public.user_profiles.
+// stripe-webhook — Trial-first flow.
 //
-// verify_jwt is FALSE because Stripe doesn't send a Supabase JWT.
-// Authentication is via the Stripe-Signature header, verified with
-// the STRIPE_WEBHOOK_SECRET that matches the endpoint we created in
-// the Stripe Dashboard.
+// User signed up first (free, 7-day trial). When they upgrade and
+// pay, this webhook simply updates their existing user_profiles row
+// with the Stripe data + subscription status.
 //
-// Requires Supabase Edge Function secrets:
-//   STRIPE_SECRET_KEY        for the Stripe SDK
-//   STRIPE_WEBHOOK_SECRET    whsec_... signing secret of THIS endpoint
-//   SUPABASE_URL             auto-provided
-//   SUPABASE_SERVICE_ROLE_KEY  auto-provided (full DB write access)
+// No user creation needed (signup happened pre-checkout) but we keep
+// a fallback inviteUserByEmail in case someone reaches checkout via
+// a direct Stripe link without going through signup.
 //
-// Handles:
-//   checkout.session.completed       → activate user's subscription
-//   customer.subscription.updated    → sync status / period
-//   customer.subscription.deleted    → mark canceled
-//   invoice.payment_succeeded        → log
-//   invoice.payment_failed           → log (past_due is also reflected
-//                                       via customer.subscription.updated)
+// verify_jwt is FALSE; we authenticate via Stripe-Signature instead.
 
 import Stripe from 'https://esm.sh/stripe@17.5.0?target=denonext';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -30,12 +20,25 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 
 const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '';
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
+const SITE_URL = 'https://snapgain.uk';
 
 function supabaseAdmin() {
   return createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
+}
+
+async function findUserByEmail(
+  supabase: ReturnType<typeof supabaseAdmin>,
+  email: string
+) {
+  const { data, error } = await supabase.auth.admin.listUsers({ perPage: 200 });
+  if (error) {
+    console.warn('[stripe-webhook] listUsers error:', error);
+    return null;
+  }
+  return data?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase()) || null;
 }
 
 Deno.serve(async (req) => {
@@ -60,7 +63,7 @@ Deno.serve(async (req) => {
       cryptoProvider
     );
   } catch (err) {
-    console.error('[stripe-webhook] signature verification failed:', err);
+    console.error('[stripe-webhook] signature failed:', err);
     return new Response(`Webhook signature error: ${(err as Error).message}`, {
       status: 400,
     });
@@ -72,21 +75,47 @@ Deno.serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.metadata?.supabase_user_id;
+
+        // Primary path: supabase_user_id was set in checkout metadata
+        // by create-checkout-session (signed-in flow).
+        let userId = session.metadata?.supabase_user_id || null;
+
+        // Fallback: derive user from email (direct Stripe link case).
+        if (!userId) {
+          const email =
+            session.customer_details?.email || session.customer_email || '';
+          if (email) {
+            const existing = await findUserByEmail(supabase, email);
+            if (existing) {
+              userId = existing.id;
+            } else {
+              // Last-ditch: invite (sends magic-link).
+              const { data: invited } =
+                await supabase.auth.admin.inviteUserByEmail(email, {
+                  redirectTo: `${SITE_URL}/auth/callback`,
+                });
+              userId = invited?.user?.id || null;
+            }
+          }
+        }
+
+        if (!userId) {
+          console.error('[stripe-webhook] could not resolve userId');
+          break;
+        }
+
         const plan = session.metadata?.plan ?? 'monthly';
         const customerId =
-          typeof session.customer === 'string' ? session.customer : session.customer?.id;
+          typeof session.customer === 'string'
+            ? session.customer
+            : session.customer?.id;
         const subscriptionId =
           typeof session.subscription === 'string'
             ? session.subscription
             : session.subscription?.id;
 
-        if (!userId) {
-          console.warn('[stripe-webhook] checkout.session.completed missing supabase_user_id');
-          break;
-        }
         if (!subscriptionId) {
-          console.warn('[stripe-webhook] checkout.session.completed missing subscription id');
+          console.warn('[stripe-webhook] missing subscription id');
           break;
         }
 
@@ -111,46 +140,29 @@ Deno.serve(async (req) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        const userId = subscription.metadata?.supabase_user_id;
-
         const payload = {
-          subscription_status: subscription.status,
+          subscription_status:
+            event.type === 'customer.subscription.deleted'
+              ? 'canceled'
+              : subscription.status,
           current_period_end: new Date(
             subscription.current_period_end * 1000
           ).toISOString(),
-          ...(event.type === 'customer.subscription.deleted'
-            ? { subscription_status: 'canceled' }
-            : {}),
         };
-
-        if (userId) {
-          await supabase
-            .from('user_profiles')
-            .update(payload)
-            .eq('user_id', userId);
-        } else {
-          // Fallback: locate by stripe_subscription_id
-          await supabase
-            .from('user_profiles')
-            .update(payload)
-            .eq('stripe_subscription_id', subscription.id);
-        }
+        await supabase
+          .from('user_profiles')
+          .update(payload)
+          .eq('stripe_subscription_id', subscription.id);
         break;
       }
 
-      case 'invoice.payment_succeeded': {
-        // Could insert into a payments_log table here in the future.
-        console.log('[stripe-webhook] invoice.payment_succeeded', event.data.object.id);
+      case 'invoice.payment_succeeded':
+      case 'invoice.payment_failed':
+        console.log('[stripe-webhook]', event.type, event.data.object.id);
         break;
-      }
-
-      case 'invoice.payment_failed': {
-        console.log('[stripe-webhook] invoice.payment_failed', event.data.object.id);
-        break;
-      }
 
       default:
-        console.log('[stripe-webhook] unhandled event:', event.type);
+        console.log('[stripe-webhook] unhandled:', event.type);
     }
 
     return new Response(JSON.stringify({ received: true }), {
