@@ -1,26 +1,35 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@17.5.0?target=denonext";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 // delete-account — UK GDPR: the right of access (export) and the right
 // to erasure (delete), for the calling user only.
 //
-// Deploy with verify_jwt = true. POST, Authorization: Bearer <user JWT>
+// Deploy with verify_jwt = true. Secrets: SUPABASE_URL,
+// SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY.
+// POST, Authorization: Bearer <user JWT>
 //
-//   { action: "export" }                  → 200, JSON of the user's rows
+//   { action: "export" }                    → 200, JSON of the user's rows
 //   { action: "delete", confirm: "DELETE" } → 200 { deleted: true }
-//                                           → 409 while a Stripe
-//                                             subscription is live
+//                                           → 502 if Stripe refuses
 //
 // WHO. The user is whoever the bearer token resolves to through
 // auth.getUser(token). There is no user id in the body to trust. A
 // service-role key is not a user and is refused by getUser().
 //
-// DELETE. Refuses while user_profiles.subscription_status says Stripe
-// may still bill (active, trialing, past_due, unpaid): the user cancels
-// first through Manage subscription, so we never delete an account that
-// Stripe keeps charging. Otherwise it removes the rows that have no
-// foreign key to auth.users (users, user_subscriptions, email_signups by
-// email), then calls auth.admin.deleteUser(), which cascades to every
+// DELETE, in this order, stopping at the first failure:
+//   1. Stripe. Owner's decision 17/10/2026: a user may delete their
+//      account even with a live (or cancel-at-period-end) subscription.
+//      If user_profiles.stripe_customer_id is set, the Stripe customer is
+//      deleted (stripe.customers.del), which cancels its subscriptions
+//      immediately; Stripe keeps its own payment records. No automatic
+//      refund. `resource_missing` (already gone) is fine; any other Stripe
+//      error → 502 and the Supabase user is NOT deleted, so we never
+//      leave a subscription billing an account that no longer exists.
+//      A live subscription_status with no customer id on file cannot be
+//      cancelled from here → 409, contact support.
+//   2. Rows with no foreign key to auth.users (users, user_subscriptions,
+//      email_signups by exact email).
+//   3. auth.admin.deleteUser(), which cascades to every
 // table keyed on auth.users (user_profiles, saved_strategies, user_cards,
 // user_favourites, user_miles_programs, user_cashback_platforms,
 // user_notification_prefs, user_preferences, recent_searches,
@@ -108,6 +117,9 @@ Deno.serve(async (req: Request) => {
   const email = (user.email ?? "").trim();
   const emailVariants = [...new Set([email, email.toLowerCase()])];
 
+  // Set once the Stripe customer is gone, so a later failure can say so.
+  let stripeClosed = false;
+
   try {
     if (body.action === "export") {
       const out: Record<string, unknown> = {
@@ -166,26 +178,58 @@ Deno.serve(async (req: Request) => {
 
       const { data: profile, error: profileErr } = await admin
         .from("user_profiles")
-        .select("subscription_status")
+        .select("subscription_status, stripe_customer_id")
         .eq("user_id", user.id)
         .maybeSingle();
       if (profileErr) throw profileErr;
 
       const status = (profile?.subscription_status ?? "").toLowerCase();
-      if (LIVE_SUBSCRIPTION.has(status)) {
+      const customerId = profile?.stripe_customer_id ?? null;
+
+      // 1. Stripe first: deleting the customer cancels its subscriptions
+      //    at once. If this fails, nothing else is touched.
+      if (customerId) {
+        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (!stripeKey) {
+          console.error("delete-account: STRIPE_SECRET_KEY missing");
+          return json(
+            { error: "We couldn't close your subscription, so your account was not deleted. Please contact support@snapgain.uk." },
+            502,
+          );
+        }
+        const stripe = new Stripe(stripeKey, {
+          apiVersion: "2024-12-18.acacia",
+          httpClient: Stripe.createFetchHttpClient(),
+        });
+        try {
+          await stripe.customers.del(customerId);
+          stripeClosed = true;
+        } catch (err) {
+          const code = (err as { code?: string })?.code;
+          if (code === "resource_missing") {
+            stripeClosed = true;
+          } else {
+            console.error("delete-account: Stripe customer delete failed", user.id, code, err);
+            return json(
+              { error: "We couldn't close your subscription with our payment provider, so your account was not deleted. Please try again or contact support@snapgain.uk." },
+              502,
+            );
+          }
+        }
+      } else if (LIVE_SUBSCRIPTION.has(status)) {
+        // Live subscription but no customer on file: we cannot cancel it,
+        // and deleting the account would leave it billing. Refuse.
         return json(
           {
-            error: "subscription_active",
+            error: "billing_unverifiable",
             message:
-              "You still have a subscription. Cancel it under Manage subscription first. " +
-              "Once it has ended you can delete your account here, or contact support if you need it sooner.",
-            subscription_status: status,
+              "We couldn't find your subscription with our payment provider, so your account was not deleted. Please contact support@snapgain.uk.",
           },
           409,
         );
       }
 
-      // Rows with no foreign key to auth.users, so the cascade misses them.
+      // 2. Rows with no foreign key to auth.users, so the cascade misses them.
       const cleanup = [
         admin.from("users").delete().eq("id", user.id),
         admin.from("email_signups").delete().eq("linked_user_id", user.id),
@@ -198,6 +242,7 @@ Deno.serve(async (req: Request) => {
         if (res.error) throw res.error;
       }
 
+      // 3. The account itself; everything keyed on auth.users cascades.
       const { error: delErr } = await admin.auth.admin.deleteUser(user.id);
       if (delErr) throw delErr;
 
@@ -209,7 +254,11 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error("delete-account error", user.id, err);
     return json(
-      { error: "Something went wrong and your account was not deleted. Please try again or contact support." },
+      {
+        error: stripeClosed
+          ? "Your subscription has been closed, but deleting your account failed. Please try again or contact support@snapgain.uk."
+          : "Something went wrong and your account was not deleted. Please try again or contact support@snapgain.uk.",
+      },
       500,
     );
   }

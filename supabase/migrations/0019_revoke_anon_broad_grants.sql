@@ -19,7 +19,8 @@
 --     deliberate public sign-up form. (Nothing in src/ writes it today.)
 --   INSERT/DELETE on doces_barbara_availability_blocks: left as is here
 --     on purpose. The doces app writes it with the publishable key today;
---     0021 is the change that takes this away, and is held separately so
+--     supabase/held-migrations/0021 (ON HOLD) is the change that takes
+--     this away, and is held separately so
 --     it can wait for that app to be ready.
 --
 -- WHAT ANON LOSES:

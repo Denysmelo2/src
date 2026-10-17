@@ -1,3 +1,11 @@
+-- ############################################################################
+-- DO NOT APPLY until the doces app has a real admin login (Supabase Auth,
+-- an account with user_profiles.role = 'admin') AND a signed-upload route
+-- for customers' inspiration photos. Owner's decision 17/10/2026: HOLD.
+-- Kept out of supabase/migrations/ on purpose so no "apply all" picks it
+-- up. When it is time, move it back under the next free number.
+-- ############################################################################
+--
 -- 0021 — Doces Bárbara: public may read, only admins may write
 --
 -- Doces Bárbara is a separate site (repo Denysmelo2/doces-barbara) that

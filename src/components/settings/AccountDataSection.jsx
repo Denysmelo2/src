@@ -99,13 +99,16 @@ export function AccountDataSection() {
         body: { action: 'delete', confirm: CONFIRM_WORD },
       });
       if (error) {
+        // Stripe refused (502), billing could not be verified (409) or
+        // the delete itself failed: keep the dialog open and say why.
         const body = await errorBody(error);
-        if (body?.error === 'subscription_active') {
-          setBlockedMessage(body.message);
+        const message = body?.message || body?.error;
+        if (message) {
+          setBlockedMessage(message);
           setDeleting(false);
           return;
         }
-        throw new Error(body?.error || error.message);
+        throw new Error(error.message);
       }
       // The account is gone server-side; only clear the local session.
       await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
@@ -156,8 +159,7 @@ export function AccountDataSection() {
             <p className="text-sm font-medium">Delete my account</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Permanently removes your account and everything linked to it.
-              This cannot be undone. If you have a subscription, cancel it
-              under Manage subscription first.
+              This cannot be undone. Any subscription ends immediately.
             </p>
           </div>
           <Button variant="destructive" onClick={() => setOpen(true)}>
@@ -177,6 +179,22 @@ export function AccountDataSection() {
               of your data first.
             </DialogDescription>
           </DialogHeader>
+
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm space-y-1.5">
+            <p>
+              <span className="font-semibold">If you have a subscription, deleting your
+              account ends it immediately.</span> There is no automatic refund for
+              unused time.
+            </p>
+            <p className="text-muted-foreground">
+              Subscribed in the last 14 days? Email{' '}
+              <a href="mailto:support@snapgain.uk" className="text-primary hover:underline">
+                support@snapgain.uk
+              </a>{' '}
+              for a proportional refund <span className="font-semibold">before</span>{' '}
+              deleting your account.
+            </p>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="delete-confirm" className="text-sm">
