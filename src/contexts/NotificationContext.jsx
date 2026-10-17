@@ -21,8 +21,9 @@ export function NotificationProvider({ children }) {
   const [settings, setSettings] = useState({
     newDeals: true,
     expiringDeals: true,
-    personalizedOffers: true,
-    weeklyDigest: true,
+    // Marketing-style emails default OFF (opt-in, PECR reg 22).
+    personalizedOffers: false,
+    weeklyDigest: false,
     priceAlerts: false
   });
 

@@ -89,7 +89,10 @@ function SettingsPage() {
   // DB-backed boost-email toggle. Separate from `prefs` (which is
   // localStorage-ish display settings) because this drives the
   // daily-boost-digest edge function and must persist server-side.
-  const [boostEmailEnabled, setBoostEmailEnabled] = useState(true);
+  // Default OFF (2026-10-17, legal package C): the digest is an optional
+  // email, so it needs an opt-in (PECR reg 22). A user only gets it after
+  // switching it on here, which writes boost_email_enabled = true.
+  const [boostEmailEnabled, setBoostEmailEnabled] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Load saved preferences
@@ -99,8 +102,10 @@ function SettingsPage() {
     loadUserPrefs(user.id).then((p) => {
       if (alive) setPrefs(p);
     });
-    // DB-backed notification prefs. Default true if row absent (matches
-    // table default; see migration notification_prefs_and_boost_digest_log).
+    // DB-backed notification prefs. No row = not opted in = OFF. (The
+    // table column still defaults to true; daily-boost-digest now only
+    // sends to rows with boost_email_enabled = true. DB default change
+    // is left to the migrations package.)
     supabase
       .from('user_notification_prefs')
       .select('boost_email_enabled')
@@ -108,9 +113,7 @@ function SettingsPage() {
       .maybeSingle()
       .then(({ data }) => {
         if (!alive) return;
-        if (data && data.boost_email_enabled === false) {
-          setBoostEmailEnabled(false);
-        }
+        setBoostEmailEnabled(data?.boost_email_enabled === true);
       });
     return () => {
       alive = false;
@@ -348,8 +351,8 @@ function SettingsPage() {
           <CardContent>
             <ToggleRow
               id="boost-email"
-              label="Daily boost email"
-              description="One email per day when a store you've favourited gets a cashback boost or rate increase. Sent around 9am UK."
+              label="Daily boost email (optional, off unless you switch it on)"
+              description="At most one email a day when a store you've favourited gets a cashback boost or rate increase, sent around 9am UK time. Every email has a link to turn it off, or switch it off here at any time."
               checked={boostEmailEnabled}
               onChange={setBoostEmail}
             />

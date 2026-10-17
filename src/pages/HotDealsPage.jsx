@@ -28,6 +28,7 @@ import { StoreLogo } from '@/components/StoreLogo';
 import { FilterChip } from '@/components/FilterChip';
 import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { cn } from '@/lib/utils';
+import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 
 const isExternal = (url) => /^https?:\/\//i.test(url || '');
 
@@ -262,6 +263,8 @@ function HotDealsPage() {
             page.
           </p>
         </motion.section>
+
+        <AffiliateDisclosure />
 
         {/* Filters */}
         {!loading && deals.length > 0 && (platforms.length > 1 || categories.length > 1) && (
@@ -554,7 +557,7 @@ function HotDealCard({ deal }) {
   if (!href) return <div>{inner}</div>;
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={href} target="_blank" rel="sponsored noopener noreferrer" className="block">
         {inner}
       </a>
     );
@@ -775,7 +778,7 @@ function OrganicTopDealCard({ offer, rank }) {
   if (!href) return <div>{inner}</div>;
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="block h-full">
+      <a href={href} target="_blank" rel="sponsored noopener noreferrer" className="block h-full">
         {inner}
       </a>
     );

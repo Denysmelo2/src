@@ -223,7 +223,7 @@ function PlatformCard({ platform }) {
           <a
             href={url}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="sponsored noopener noreferrer"
             className="block"
           >
             <Button className="w-full" size="sm">

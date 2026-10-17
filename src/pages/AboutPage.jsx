@@ -20,7 +20,7 @@ const VALUES = [
   {
     Icon: Heart,
     title: 'Inclusivity',
-    body: 'Built for everyone — multiple languages, accessibility themes and zero financial gatekeeping.',
+    body: 'Built for everyone, with multiple languages and accessibility themes.',
   },
 ];
 
@@ -89,8 +89,8 @@ function AboutPage() {
               In a world filled with countless loyalty programs, cashback
               offers, and credit card points, it&rsquo;s become incredibly
               complex to know if you&rsquo;re truly getting the best deal.
-              Are you better off getting 5% cashback, or earning 10 Avios per
-              pound? Should you buy a discounted gift card first? These
+              Are you better off getting 5% cashback, or earning 10 airline
+              miles per pound? Should you buy a discounted gift card first? These
               questions used to require spreadsheets, multiple browser tabs,
               and a lot of guesswork.
             </p>
@@ -101,22 +101,41 @@ function AboutPage() {
               <strong className="text-foreground">
                 SnapGain is your personal rewards strategist.
               </strong>{' '}
-              Our platform does the heavy lifting for you — running real-time
-              calculations across hundreds of partners to show you the single
-              best strategy to maximize your return on every single purchase.
-              We consolidate offers from cashback sites, airline loyalty
-              programs, bank rewards, and gift card platforms into one simple,
-              actionable recommendation.
+              Our platform does the heavy lifting for you: it calculates, for
+              each store, the routes available across the UK platforms we
+              cover and ranks them by estimated value to you. We bring
+              together offers from cashback sites, airline rewards
+              programmes, bank rewards and gift-card platforms into one
+              simple, actionable recommendation.
             </p>
 
             <h2 className="text-2xl md:text-3xl font-bold pt-3">
               Our Commitment
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Our goal is to empower you to make faster, smarter financial
-              decisions. We are committed to providing transparent, accurate,
-              and up-to-the-minute data to help you save money and earn more
-              rewards than you ever thought possible.
+              Our goal is to help you make faster, smarter decisions about
+              where you shop and how you pay. We work to keep our data
+              accurate and show the date each rate was last checked, but
+              platforms change their offers often, so always check the
+              platform before you buy. SnapGain is information, not
+              financial advice.
+            </p>
+
+            <h2 className="text-2xl md:text-3xl font-bold pt-3">
+              Who runs SnapGain and how it is funded
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              SnapGain is a trading name of Denys Ferreira Goncalves de Melo,
+              a sole trader based in London. It is funded by subscriptions
+              and by commissions: some links on SnapGain are affiliate links,
+              so a platform pays us if you sign up or buy through them. That
+              doesn&rsquo;t change the price you pay, and when you compare a
+              store the routes are ordered by estimated value to you, not by
+              commission. Questions? Email{' '}
+              <a href="mailto:support@snapgain.uk" className="text-primary hover:underline">
+                support@snapgain.uk
+              </a>
+              .
             </p>
 
             <div className="text-center pt-4">

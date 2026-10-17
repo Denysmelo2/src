@@ -160,7 +160,7 @@ function Step({ step, idx, onOpen, locked }) {
               <a
                 href={step.action_url}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="sponsored noopener noreferrer"
                 onClick={handleClick}
                 className="shrink-0"
               >

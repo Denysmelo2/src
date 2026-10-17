@@ -2,9 +2,10 @@
 // any future campaigns. Lifecycle:
 //
 //   1. Visitor lands on snapgain.uk/* with ?utm_source=tiktok&...
-//   2. We snapshot the UTMs into sessionStorage + localStorage
-//      (sessionStorage drops on tab close, localStorage persists for
-//      90 days so a slow funnel doesn't lose attribution).
+//   2. If (and only if) they have given "marketing attribution"
+//      consent in the cookie banner, we snapshot the UTMs into
+//      sessionStorage + localStorage (localStorage persists for 90
+//      days so a slow funnel doesn't lose attribution).
 //   3. When the user finally signs up, the SignUp form reads the
 //      latest UTMs and attaches them to:
 //        - Supabase auth user_metadata (auth.users.raw_user_meta_data)
@@ -12,14 +13,20 @@
 //   4. analytics dashboards aggregate signup_attributions to know
 //      which content piece drove how many trials.
 //
-// Why both localStorage and sessionStorage?
-//   - sessionStorage = "this visit", lets us know if the trial they
-//     started THIS session came from a known campaign
-//   - localStorage = "last touch within 90d", handles the common case
-//     of "saw TikTok Tuesday → signed up Saturday"
-//
-// We use localStorage for the FINAL attribution write, but read
-// session first if it has the same campaign (more recent intent).
+// 2026-10-17 (legal package C): consent gating. PECR reg 6 needs
+// consent before we store anything on the device that isn't strictly
+// necessary, and campaign attribution (especially gclid / fbclid click
+// IDs) is not. So, conservatively:
+//   - Before consent NOTHING is written to storage. The params of the
+//     landing URL are only held in memory for the current page view.
+//   - If the visitor then accepts marketing attribution in the banner,
+//     the in-memory snapshot is written (CONSENT_CHANGED_EVENT).
+//   - getStoredUtms() returns null without consent, so nothing reaches
+//     Supabase either.
+//   - Withdrawing consent clears the stored snapshot (observability.js).
+// The storage key is 'snapgain.utm' (the Cookie Policy names it).
+
+import { hasConsent, CONSENT_CHANGED_EVENT } from '@/lib/observability';
 
 const STORAGE_KEY = 'snapgain.utm';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
@@ -56,9 +63,25 @@ export function readUtmsFromUrl(url = window.location.href) {
   }
 }
 
+// In-memory snapshot of the landing URL's UTMs, kept until the visitor
+// makes a consent choice. Never written to storage without consent.
+let pendingSnapshot = null;
+let listening = false;
+
+function persist(payload) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Storage blocked (Safari private mode etc.): silent fail.
+  }
+}
+
 /**
- * Snapshot the current URL's UTMs into storage. Call on every page
- * load (cheap — only writes when params present). Idempotent.
+ * Snapshot the current URL's UTMs. Call on every page load (cheap:
+ * only acts when params are present). Writes to storage only when the
+ * visitor has consented to marketing attribution; otherwise the
+ * snapshot waits in memory in case they accept on this visit.
  */
 export function captureUtms() {
   const fromUrl = readUtmsFromUrl();
@@ -70,12 +93,19 @@ export function captureUtms() {
     landing_search: window.location.search,
     referrer: document.referrer || null,
   };
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    // Storage blocked (Safari private mode etc.) — silent fail. Worth
-    // tracking later via PostHog/etc but not blocking the user.
+  if (hasConsent('marketing')) {
+    persist(payload);
+    return;
+  }
+  pendingSnapshot = payload;
+  if (!listening) {
+    listening = true;
+    window.addEventListener(CONSENT_CHANGED_EVENT, (e) => {
+      if (e?.detail?.marketing && pendingSnapshot) {
+        persist(pendingSnapshot);
+      }
+      pendingSnapshot = null;
+    });
   }
 }
 
@@ -85,6 +115,7 @@ export function captureUtms() {
  * attribution to the new user record.
  */
 export function getStoredUtms() {
+  if (!hasConsent('marketing')) return null;
   try {
     const raw =
       sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);

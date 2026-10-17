@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { openCookieSettings } from '@/lib/observability';
 
 export function Footer() {
   const { user } = useAuth();
@@ -74,15 +75,42 @@ export function Footer() {
           <div>
             <p className="font-semibold mb-2 md:mb-3 text-xs md:text-base">Legal</p>
             <nav className="flex flex-col space-y-1.5 md:space-y-2">
-              <Link to="/privacy-policy" className="text-[11px] md:text-sm text-muted-foreground hover:text-primary">Privacy</Link>
               <Link to="/terms-of-service" className="text-[11px] md:text-sm text-muted-foreground hover:text-primary">Terms</Link>
+              <Link to="/privacy-policy" className="text-[11px] md:text-sm text-muted-foreground hover:text-primary">Privacy</Link>
               <Link to="/cookie-policy" className="text-[11px] md:text-sm text-muted-foreground hover:text-primary">Cookies</Link>
               <Link to="/refund-policy" className="text-[11px] md:text-sm text-muted-foreground hover:text-primary">Refunds</Link>
+              {/* Reopens the consent banner so visitors can change or
+                  withdraw their choice at any time (PECR / UK GDPR). */}
+              <button
+                type="button"
+                onClick={openCookieSettings}
+                className="text-left text-[11px] md:text-sm text-muted-foreground hover:text-primary"
+              >
+                Cookie settings
+              </button>
+              <Link to="/contact" className="text-[11px] md:text-sm text-muted-foreground hover:text-primary">Contact</Link>
             </nav>
           </div>
         </div>
 
-        <div className="text-center text-muted-foreground text-[10px] md:text-sm mt-6 md:mt-10 border-t pt-4 md:pt-6">
+        {/* Trader identity (Consumer Contracts Regulations 2013 /
+            Electronic Commerce Regulations 2002: name, geographic
+            address and email must be easy to find). Sole trader, not a
+            company: do NOT add a company name or number here. */}
+        <div className="text-center text-muted-foreground text-[10px] md:text-xs mt-6 md:mt-10 border-t pt-4 md:pt-6 space-y-1.5 leading-relaxed">
+          <p>
+            SnapGain is a trading name of Denys Ferreira Goncalves de Melo
+            (sole trader), 3 Union Way, Ambrose House, London NW10 6FH,
+            United Kingdom ·{' '}
+            <a href="mailto:support@snapgain.uk" className="hover:text-primary underline">
+              support@snapgain.uk
+            </a>
+          </p>
+          <p>
+            Some links on SnapGain are affiliate links. If you sign up or
+            buy through one, we earn a commission. It doesn't change the
+            price you pay.
+          </p>
           <p>© {new Date().getFullYear()} SnapGain. All rights reserved.</p>
         </div>
       </div>

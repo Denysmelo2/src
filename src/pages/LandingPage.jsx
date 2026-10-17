@@ -6,14 +6,14 @@
 //
 // Structure (top to bottom):
 //   1. Hero            promise: spend smart, fly your family home
-//   2. SocialProofBar  generic stats + 100+ families count
+//   2. SocialProofBar  what we compare (no unverifiable counts)
 //   3. OriginStory     Tesco April 2017 founder moment (trust builder)
 //   4. PainSection     5-apps-fatigue + missed-money anxiety
 //   5. HowItWorks      3 concrete steps
-//   6. TravelAngle     3 real BA flights, including São Paulo
-//   7. HouseholdAccount  BA family pool (6 people, same address)
+//   6. TravelAngle     3 example reward flights (not rendered)
+//   7. HouseholdAccount  household miles pooling (generic)
 //   8. ComparisonTable Without vs With SnapGain (visual table)
-//   9. RealNumbers     real beta-user numbers
+//   9. RealNumbers     the founder's own results, labelled not typical
 //  10. Calculator      interactive spend to flights estimator
 //  11. FAQ             objection killers
 //  12. PricingCTA      single plan
@@ -22,8 +22,19 @@
 //   - All CTAs go to /pricing (single click to purchase).
 //   - No em-dashes in any UI string.
 //   - No scroll-triggered animations (static for speed).
-//   - Never name partner cashback platforms publicly.
-//   - "100+ families" is the verified real count, not 847+.
+//   - Never name partner cashback platforms publicly, and don't name
+//     airline programmes in marketing copy (say "airline miles
+//     programme", "household miles account", "airline rewards").
+//   - Claims must be substantiated (CAP Code 3.7 / CPUTR). 2026-10-17
+//     (legal package C) removed: "Trusted by 100+ UK families",
+//     "ranks every cashback platform", "2 to 4 free flights a year",
+//     "typical 15%/25%" rates, fixed store/platform counts, and
+//     unlabelled personal results. Personal results stay only as
+//     "the founder's own results, not typical".
+//   - "Rankings aren't affected by commission" is true for /compare and
+//     store strategies: lib/strategies.js and ComparePage sort routes by
+//     estimated GBP value (gbpReturn) and commission is not an input.
+//     Featured stores and hot deals are editorial; don't overclaim.
 
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
@@ -60,7 +71,7 @@ function Hero({ onPrimary, onSecondary }) {
         {/* Eyebrow */}
         <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-6">
           <Sparkles className="w-4 h-4" />
-          Trusted by 100+ UK families
+          Built in the UK, for UK shoppers
         </div>
 
         {/* Headline — Option B: outcome promise (grounded range).
@@ -68,20 +79,18 @@ function Hero({ onPrimary, onSecondary }) {
             with leading-[1.05] clips descenders (g, y) — the padding gives
             them room without loosening the overall headline. */}
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-6">
-          2 to 4 free flights a year.
+          Get more back on every shop.
           <span className="block gradient-text pb-2">From spending you'd do anyway.</span>
         </h1>
 
-        {/* Subheadline — concrete proof using real beta data.
-            Time frames are precise on purpose: £900 is cumulative
-            (Aug 2025 → May 2026 = 9 months, multiple platforms).
-            5,500+ Avios/month comes from one verified BA Executive
-            Club statement (Apr → May 2026). Both still climbing. */}
+        {/* Subheadline: what the product does, scoped to the platforms
+            we actually cover. Personal results live in RealNumbers,
+            labelled as the founder's own and not typical. */}
         <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10">
-          SnapGain ranks every cashback platform, gift-card discount,
-          and miles programme into one stack. You shop normally. We
-          compute the route. Real beta data: <strong>£900 cashback in
-          9 months</strong> and <strong>5,500+ Avios per month</strong>.
+          SnapGain compares cashback, gift-card discounts and airline
+          rewards across the UK platforms listed on our site, and works
+          out the best way to combine them for each store. You shop
+          normally. We do the maths.
         </p>
 
         {/* Single CTA — focused funnel, no secondary distractor */}
@@ -97,7 +106,7 @@ function Hero({ onPrimary, onSecondary }) {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Free 7-day trial · No card needed · 9,742 UK stores tracked · Cancel anytime
+          Free 7-day trial · No card needed · Thousands of UK stores · The trial ends on its own
         </p>
       </div>
     </section>
@@ -105,21 +114,21 @@ function Hero({ onPrimary, onSecondary }) {
 }
 
 // ────────────────────────────────────────────────────────────────────
-// Section 2 — Social proof bar (with 100+ families as #1 stat)
+// Section 2 — What we compare (no user counts or fixed store counts:
+// they were unverifiable or out of date)
 // ────────────────────────────────────────────────────────────────────
 function SocialProofBar() {
   const stats = [
-    { value: '100+', label: 'UK families using SnapGain' },
-    { value: '9,742', label: 'UK stores tracked' },
-    { value: '12+', label: 'cashback platforms' },
-    { value: '1,300+', label: 'premium-rate retailers' },
-    { value: 'Daily', label: 'rate updates' },
+    { value: 'Thousands', label: 'of UK stores tracked' },
+    { value: '3 in 1', label: 'cashback, gift cards and miles' },
+    { value: 'Dated', label: 'each rate shows when it was checked' },
+    { value: 'By value', label: 'routes ranked by what you get' },
   ];
   return (
     <section className="border-y border-border bg-muted/40 py-8">
       <div className="container mx-auto px-4">
         <p className="text-center text-sm uppercase tracking-wider text-muted-foreground mb-4">
-          The only stack ranker for UK cashback and miles
+          One place to compare UK cashback, gift cards and miles
         </p>
         <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 text-center">
           {stats.map((s) => (
@@ -146,7 +155,7 @@ function OriginStory({ onPrimary }) {
             <Coffee className="w-7 h-7" />
           </div>
           <p className="text-sm uppercase tracking-wider text-muted-foreground mb-2">
-            The 4-minute story
+            The founder&rsquo;s story
           </p>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
             It started in a Tesco queue.
@@ -166,10 +175,9 @@ function OriginStory({ onPrimary }) {
           </p>
           <p>
             The math, that night, was brutal. <strong>Six years living in
-            the UK. £200,000 spent. £0 returned.</strong> At a typical 15
-            percent stack rate that meant <strong className="text-primary">
-            £30,000 missed</strong>. Enough for 6 to 8 return flights home,
-            every one of which had been priced out by the maths.
+            the UK. £200,000 spent. £0 returned.</strong> Even at a modest
+            5 percent back, that would have been <strong className="text-primary">
+            about £10,000</strong>. That is a lot of flights home.
           </p>
           <p>
             SnapGain is what we built so that nobody else has to live the
@@ -214,12 +222,13 @@ function PainSection() {
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto text-center mb-14">
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-            The strategies the cashback apps will not tell you
+            The combinations a single app won&rsquo;t show you
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground">
-            They all want you to use only their app. We show you the real
-            combinations that pay 2x to 5x more, plus the apps you have
-            never heard of that quietly outperform the big names.
+            Each app shows you its own rates. We put the platforms we cover
+            side by side and show combinations that can pay more than any
+            one app alone, including smaller apps that sometimes beat the
+            big names.
           </p>
         </div>
 
@@ -247,12 +256,12 @@ function HowItWorks({ onPrimary }) {
     {
       icon: <Search className="w-8 h-8" />,
       title: 'Type the store',
-      body: 'Tesco, Boots, ASOS, Booking.com. Any of 9,742 UK stores.',
+      body: 'Tesco, Boots, ASOS, Booking.com. Thousands of UK stores.',
     },
     {
       icon: <Layers className="w-8 h-8" />,
       title: 'See the best stack',
-      body: 'Cashback x gift card x points x premium bonuses. We calculate every combo and rank the winner.',
+      body: 'Cashback, gift cards and points. We calculate the combinations we find for that store and rank them by estimated value to you.',
     },
     {
       icon: <Plane className="w-8 h-8" />,
@@ -300,29 +309,31 @@ function HowItWorks({ onPrimary }) {
 // Section 6 — Travel angle
 //
 // Verified data:
-//   - MAN→DUB return: 16,000 Avios + £133 (off-peak Sep 2026)
-//   - LHR→LIS return: 42,000 Avios + £50 (off-peak Sep 2026)
-//   - LHR→GRU one-way: APPROXIMATE 60,000 Avios + £250 (typical
+//   - MAN→DUB return: 16,000 miles + £133 (off-peak Sep 2026)
+//   - LHR→LIS return: 42,000 miles + £50 (off-peak Sep 2026)
+//   - LHR→GRU one-way: APPROXIMATE 60,000 miles + £250 (typical
 //     off-peak Economy; replace with verified screenshot when ready)
+// Not rendered. If re-enabled, keep it generic (no airline names) and
+// label the spend estimates as illustrative.
 // ────────────────────────────────────────────────────────────────────
 function TravelAngle() {
   const examples = [
     {
       route: 'Manchester → Dublin',
       type: 'return',
-      price: '16,000 Avios + £133',
+      price: '16,000 miles + £133',
       spend: '~2 to 3 months of £500/mo routed',
     },
     {
       route: 'London → Lisbon',
       type: 'return',
-      price: '42,000 Avios + £50',
+      price: '42,000 miles + £50',
       spend: '~3 to 4 months of £500/mo routed',
     },
     {
       route: 'London → São Paulo',
       type: 'one-way (off-peak)',
-      price: '55,000 Avios + £330',
+      price: '55,000 miles + £330',
       spend: '~7 months of £500/mo routed',
     },
   ];
@@ -360,7 +371,7 @@ function TravelAngle() {
                   {e.price}
                 </div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
-                  BA Reward Flight Saver
+                  Airline reward seat (example)
                 </div>
                 <div className="text-sm font-medium border-t border-primary/10 pt-3">
                   {e.spend}
@@ -371,12 +382,11 @@ function TravelAngle() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6 max-w-2xl mx-auto">
-          Spend estimates assume the SnapGain stacking strategy returning
-          25 percent cashback on routed purchases, converted to Avios at
-          the Avios Booster rate (1,000 Avios = £9.20). Cash co-pay covered
-          by cashback earned. Actual months vary by retailer mix, dates and
-          current Avios pricing. SnapGain does not issue miles or track
-          balances. You earn directly with the partner programmes.
+          Illustrative only, not a typical result. Spend estimates assume a
+          high-return stacking strategy converted to miles at an example
+          rate. Actual months vary by retailer mix, dates and the airline
+          programme&rsquo;s pricing. SnapGain does not issue miles or track
+          balances. You earn directly with the programmes.
         </p>
       </div>
     </section>
@@ -384,7 +394,7 @@ function TravelAngle() {
 }
 
 // ────────────────────────────────────────────────────────────────────
-// Section 7 — Household Account (BA family pool)
+// Section 7 — Household miles account (generic, no airline named)
 // ────────────────────────────────────────────────────────────────────
 function HouseholdAccount() {
   return (
@@ -398,10 +408,11 @@ function HouseholdAccount() {
             Your family points, combined.
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground">
-            British Airways lets up to <strong>6 people at the same
-            address</strong> pool their Avios into one Household Account.
-            Mum's grocery shop, Dad's commute, the kids' online orders,
-            all stacking toward one shared flight.
+            Some airline miles programmes let people who live at the
+            same address <strong>pool their miles into one household
+            miles account</strong>. Mum&rsquo;s grocery shop, Dad&rsquo;s
+            commute, the kids&rsquo; online orders, all counting toward
+            one shared reward.
           </p>
         </div>
 
@@ -411,10 +422,11 @@ function HouseholdAccount() {
               <div className="text-primary mb-4">
                 <Users className="w-7 h-7" />
               </div>
-              <h3 className="text-lg font-bold mb-2">Up to 6 members</h3>
+              <h3 className="text-lg font-bold mb-2">The whole household</h3>
               <p className="text-sm text-muted-foreground">
-                Adults and children at the same registered UK address can
-                all link their British Airways Executive Club accounts.
+                Where the programme allows it, adults and children at the
+                same address can link their accounts. Each programme sets
+                its own limits and rules.
               </p>
             </CardContent>
           </Card>
@@ -425,8 +437,9 @@ function HouseholdAccount() {
               </div>
               <h3 className="text-lg font-bold mb-2">One shared balance</h3>
               <p className="text-sm text-muted-foreground">
-                Every Avios any household member earns gets pooled
-                automatically into one combined balance, ready to redeem.
+                Miles any linked member earns can count toward one
+                combined balance, ready to redeem under the
+                programme&rsquo;s rules.
               </p>
             </CardContent>
           </Card>
@@ -437,19 +450,18 @@ function HouseholdAccount() {
               </div>
               <h3 className="text-lg font-bold mb-2">Fly together, faster</h3>
               <p className="text-sm text-muted-foreground">
-                Four people routing groceries, bills and shopping fill
-                the shared balance 4x faster than one person alone.
-                SnapGain shows the strategies that work for every type
-                of UK spending.
+                Several people earning together fill a shared balance
+                faster than one person alone. SnapGain shows strategies
+                for everyday UK spending.
               </p>
             </CardContent>
           </Card>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6 max-w-2xl mx-auto">
-          Household Account is a free British Airways Executive Club
-          feature. SnapGain helps you set it up correctly and track each
-          member's earning toward the next family flight.
+          Household accounts are run by the airline programmes, not by
+          SnapGain, and their rules apply. Our guide explains how to set
+          one up.
         </p>
       </div>
     </section>
@@ -460,34 +472,36 @@ function HouseholdAccount() {
 // Section 8 — Comparison Table (without vs with SnapGain)
 // ────────────────────────────────────────────────────────────────────
 function ComparisonTable({ onPrimary }) {
+  // Qualitative on purpose (2026-10-17): the old £ / miles / flights
+  // figures were unsubstantiated averages and personal results.
   const rows = [
     {
-      metric: 'Annual cashback earned',
-      without: '£120',
-      with: '£900+',
-      withoutNote: 'UK average per user',
-      withNote: 'real SnapGain beta data',
+      metric: 'Comparing platforms for one shop',
+      without: 'App by app',
+      with: 'One ranked list',
+      withoutNote: 'open each app and check',
+      withNote: 'for the platforms we cover',
     },
     {
-      metric: 'Annual Avios earned',
-      without: '~5,000',
-      with: '66,000+',
-      withoutNote: 'random card spending',
-      withNote: 'verified BA statement',
+      metric: 'Stacking gift cards, cashback and points',
+      without: 'DIY maths',
+      with: 'Calculated',
+      withoutNote: 'spreadsheets and guesswork',
+      withNote: 'combined return shown per route',
     },
     {
-      metric: 'Free flights per year',
-      without: '0',
-      with: '2 to 4',
-      withoutNote: 'paid in full or not flying',
-      withNote: 'short and mid-haul, family travel',
+      metric: 'Knowing if a rate is current',
+      without: 'Hard to tell',
+      with: 'Dated',
+      withoutNote: 'old screenshots and forums',
+      withNote: 'each rate shows when it was checked',
     },
     {
-      metric: 'Apps to check daily',
-      without: '0 to 1',
-      with: '1',
-      withoutNote: 'guess at one app',
-      withNote: 'SnapGain ranks them all',
+      metric: 'Miles value of each option',
+      without: 'Unknown',
+      with: 'Estimated',
+      withoutNote: 'no common unit',
+      withNote: 'converted at the value we show',
     },
     {
       metric: 'Strategy guides included',
@@ -495,13 +509,6 @@ function ComparisonTable({ onPrimary }) {
       with: '9',
       withoutNote: 'figure it out alone',
       withNote: 'beginner to advanced stacks',
-    },
-    {
-      metric: 'Time spent per month',
-      without: '4 to 6 hrs',
-      with: 'under 30 min',
-      withoutNote: 'checking multiple apps',
-      withNote: 'one ranked view, done',
     },
   ];
 
@@ -513,7 +520,7 @@ function ComparisonTable({ onPrimary }) {
             Doing it alone vs doing it with SnapGain
           </h2>
           <p className="text-lg md:text-xl opacity-80">
-            Same year, same spending, two very different outcomes.
+            Same shopping, less guesswork.
           </p>
         </div>
 
@@ -572,7 +579,8 @@ function ComparisonTable({ onPrimary }) {
 }
 
 // ────────────────────────────────────────────────────────────────────
-// Section 9 — Real numbers (proof)
+// Section 9 — The founder's own results. Must stay labelled as personal
+// and not typical (CAP Code 3.7 / 3.45 on testimonials and results).
 // ────────────────────────────────────────────────────────────────────
 function RealNumbers() {
   const stats = [
@@ -580,30 +588,31 @@ function RealNumbers() {
       icon: <Wallet className="w-6 h-6" />,
       value: '£900+',
       label: 'cashback earned in 9 months',
-      detail: 'Real beta data (Aug 2025 to May 2026), across multiple platforms.',
+      detail: "The founder's own accounts, Aug 2025 to May 2026, across several platforms.",
     },
     {
       icon: <Plane className="w-6 h-6" />,
       value: '5,500+',
-      label: 'Avios earned in 1 month, direct',
-      detail: 'Verified BA Executive Club statement. Stack adds more on top.',
+      label: 'airline miles earned in 1 month',
+      detail: "The founder's own airline miles statement, April to May 2026.",
     },
     {
       icon: <Layers className="w-6 h-6" />,
-      value: '9,742',
-      label: 'UK stores tracked daily',
-      detail: 'Including 1,300+ premium-rate retailers.',
+      value: '9',
+      label: 'strategy guides',
+      detail: 'The same stacks the founder uses, from beginner to advanced.',
     },
   ];
   return (
     <section className="container mx-auto px-4 py-20 md:py-28">
       <div className="text-center mb-14 max-w-2xl mx-auto">
         <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-          Real numbers, not promises
+          The founder&rsquo;s own results
         </h2>
         <p className="text-lg md:text-xl text-muted-foreground">
-          We built SnapGain on top of our own cashback accounts. These are
-          the kind of returns the platform is designed around.
+          SnapGain started as the founder&rsquo;s own system. These are his
+          personal results. <strong>They are not typical</strong> and are not
+          a promise of what you will earn.
         </p>
       </div>
 
@@ -621,6 +630,12 @@ function RealNumbers() {
           </div>
         ))}
       </div>
+      <p className="text-center text-xs text-muted-foreground mt-8 max-w-2xl mx-auto">
+        The founder&rsquo;s own results, not typical. They depend on how much
+        and where he spends, which cards he holds and which offers were
+        available at the time. Your results will be different and may be
+        much lower.
+      </p>
     </section>
   );
 }
@@ -695,8 +710,9 @@ function Calculator({ onPrimary }) {
             Run your numbers
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground">
-            Tell us what your household spends. We will show you the
-            cashback and Avios you are leaving on the table.
+            Tell us what your household spends. We will show an
+            illustration of the cashback and airline miles you could
+            earn at each strategy level.
           </p>
         </div>
 
@@ -770,7 +786,7 @@ function Calculator({ onPrimary }) {
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground mb-1">
-                        Avios accumulated
+                        Airline miles
                       </div>
                       <div className="text-2xl md:text-3xl font-extrabold text-primary">
                         {monthlyAvios.toLocaleString()}
@@ -794,7 +810,7 @@ function Calculator({ onPrimary }) {
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground mb-1">
-                        Annual Avios
+                        Annual miles
                       </div>
                       <div className="text-3xl md:text-4xl font-extrabold gradient-text">
                         {annualAvios.toLocaleString()}
@@ -813,9 +829,11 @@ function Calculator({ onPrimary }) {
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                Calibrated against real SnapGain beta data. Actual
-                returns vary by retailer mix, payment cards, and
-                participation in promos / welcome bonuses (not included).
+                Illustration only, not a typical result or a promise. The
+                levels use example rates (Beginner 2%, Smart 5%, Advanced
+                10% back, plus example miles per pound). Actual returns
+                depend on where you shop, your payment cards, the offers
+                available and each platform&rsquo;s terms.
               </p>
             </CardContent>
           </Card>
@@ -853,31 +871,31 @@ function FAQ() {
   const faqs = [
     {
       q: 'Do I need to stop using my current cashback app?',
-      a: "No. SnapGain works alongside any app you already use. We just tell you which one pays MORE for each specific store, and show you stacks that combine multiple apps for higher returns.",
+      a: "No. SnapGain works alongside the apps you already use. We show which of the platforms we cover pays more for each store, and combinations of apps that can pay more together.",
     },
     {
       q: 'Is SnapGain itself a cashback app?',
-      a: "No. SnapGain doesn't pay cashback. It ranks the apps that do. Once inside SnapGain you'll see the exact platform you should be using for each store, with a direct link.",
+      a: "No. SnapGain doesn't pay cashback. It compares the apps that do. Inside SnapGain you'll see which of the platforms we cover gives the best estimated return for each store, with a link to it (some links are affiliate links).",
     },
     {
       q: 'How is the data kept up to date?',
-      a: 'Cashback rates sync daily at 04:00 UTC from public retailer feeds. Network memberships refresh shortly after. The 9,742-store catalogue is rebuilt every night so you see live rates.',
+      a: 'We refresh rates from partner platforms and public sources on a regular schedule, and each rate shows the date it was last checked. Platforms can change offers at any time, so always check the offer on the platform before you buy.',
     },
     {
       q: 'Can I really stack offers?',
-      a: 'Often, yes. A common stack: buy a discounted gift card, spend it at the store through a cashback portal, pay with a miles-earning card. SnapGain calculates the total return automatically and only shows stacks that actually work together.',
+      a: 'Often, yes. A common stack: buy a discounted gift card, spend it at the store through a cashback portal, pay with a miles-earning card. SnapGain calculates the combined return for you. Some platforms exclude purchases made with gift cards, so check each platform\'s terms before you rely on a stack.',
     },
     {
-      q: 'Why do some retailers always pay at least 10%?',
-      a: 'One of the platforms we track guarantees a minimum 10 percent return on any retailer in their network (1,300+ stores qualify today). SnapGain surfaces these automatically so you never miss the floor.',
+      q: 'What are minimum-rate offers?',
+      a: "Some platforms promise a minimum return for retailers in their network, subject to their own conditions. When one applies to a store, SnapGain shows it alongside the other options.",
     },
     {
-      q: 'Can my family share my SnapGain account?',
-      a: "Up to 6 people at the same UK address can pool their Avios into one British Airways Household Account. SnapGain helps you set it up correctly and tracks each member's earning toward shared flights. One SnapGain subscription covers the household.",
+      q: 'Can my family use SnapGain?',
+      a: "A SnapGain account is for one person, but you can use what you learn for the whole household's shopping. Some airline miles programmes also let people at the same address pool miles in a household miles account; our guide explains how to set one up.",
     },
     {
       q: 'How do you make money?',
-      a: "Affiliate commissions from the cashback platforms themselves, plus your Premium subscription. You'll never see ads or have us sell your data.",
+      a: "From your subscription, and from commissions: some links on SnapGain are affiliate links, so the platform pays us if you sign up or buy through them. It doesn't change the price you pay. When you compare a store, routes are ordered by estimated value to you, and commission isn't part of that calculation. We don't show ads and we don't sell your data.",
     },
     {
       q: 'I already use a cashback app. What does SnapGain add?',
@@ -907,22 +925,24 @@ function FAQ() {
 function PricingCTA({ onSubscribe }) {
   const perks = [
     'Unlimited store comparisons',
-    'Daily rate updates across 9,742 UK retailers',
+    'Rates for thousands of UK retailers, each dated',
     '9 stacking strategies, beginner to advanced',
-    'BA Household Account setup wizard',
-    'Spend to flights calculator',
-    'Premium-rate retailers surfaced automatically',
+    'Household miles account setup guide',
+    'Spend to miles calculator',
+    'Minimum-rate offers flagged when available',
     'Travel-miles value estimated for each option',
-    'Cancel anytime',
+    'Cancel online anytime',
   ];
   return (
     <section id="pricing" className="bg-gradient-to-br from-primary/10 via-background to-primary/5 py-20 md:py-28 scroll-mt-20">
       <div className="container mx-auto px-4 max-w-3xl text-center">
         <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-3">
-          Stop guessing. Start flying.
+          Stop guessing. Start stacking.
         </h2>
         <p className="text-lg md:text-xl text-muted-foreground mb-8">
-          Free 7 days. Then £14.99/month or £120/year (save £60). Cancel anytime.
+          Free for 7 days with no card, and the trial ends on its own. To
+          keep going, subscribe for £14.99/month or £120/year; it renews
+          until you cancel, and you can cancel online anytime.
         </p>
 
         <ul className="text-left max-w-md mx-auto space-y-3 mb-10">
@@ -943,8 +963,8 @@ function PricingCTA({ onSubscribe }) {
           <ArrowRight className="ml-2 w-5 h-5" />
         </Button>
         <p className="text-sm text-muted-foreground mt-4">
-          Single plan. Cancel anytime. The strategies pay for themselves on
-          your first big purchase.
+          One plan, paid monthly or yearly. See our Terms and Refund Policy
+          for renewal, cancellation and your 14-day right to cancel.
         </p>
       </div>
     </section>
@@ -957,6 +977,16 @@ function PricingCTA({ onSubscribe }) {
 function LandingPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Handle anchor scroll if the URL carries a hash on mount. Declared
+  // before the early return below so the hook order never changes.
+  React.useEffect(() => {
+    const hash = window.location.hash?.replace('#', '');
+    if (!hash) return;
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+    });
+  }, []);
 
   // 2026-07-05 (Bárbara): signed-in users clicking the footer/header
   // logo were briefly seeing the visitor landing before the effect
@@ -971,15 +1001,6 @@ function LandingPage() {
   // All "Start your 7-day trial" CTAs go straight to /pricing.
   const goPricing = () => navigate('/pricing');
 
-  // Handle anchor scroll if the URL carries a hash on mount.
-  React.useEffect(() => {
-    const hash = window.location.hash?.replace('#', '');
-    if (!hash) return;
-    requestAnimationFrame(() => {
-      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
-    });
-  }, []);
-
   const goHowItWorks = () => {
     document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -990,7 +1011,7 @@ function LandingPage() {
         <title>SnapGain, spend smart in the UK and fly your family home</title>
         <meta
           name="description"
-          content="Every pound you spend in the UK can come back as cashback or Avios. SnapGain shows you the exact stack that turns your normal life into 2 to 4 flights a year. Used by 100+ UK families."
+          content="SnapGain compares cashback, gift-card discounts and airline miles across the UK platforms listed on our site, and shows the best way to combine them for each store. Free 7-day trial, no card needed."
         />
       </Helmet>
 

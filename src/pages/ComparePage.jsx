@@ -63,6 +63,7 @@ import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
 import { oldestVerifiedAt } from '@/lib/dataFreshness';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
+import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 
 // ─────────────────────────────────────────────────────────────────────
 // Helpers
@@ -773,7 +774,7 @@ function AutoRouteDetail({ strategy, storeSlug, amount, now }) {
         {openUrl && (
           <a
             href={external ? openUrl : undefined}
-            {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            {...(external ? { target: '_blank', rel: 'sponsored noopener noreferrer' } : {})}
             className="flex-1 min-w-[140px]"
           >
             <Button size="sm" className="w-full">
@@ -1172,6 +1173,8 @@ function ComparePage() {
               the best route to earn back.
             </p>
           </div>
+
+          <AffiliateDisclosure compact />
 
           {/* Form card — elevated with shadow + border-2 + visible pink
               tint to anchor it as the page's primary action surface.

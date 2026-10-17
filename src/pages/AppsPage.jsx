@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { AffiliateDisclosure, AFFILIATE_REL } from '@/components/AffiliateDisclosure';
 
 const TYPE_META = {
   cashback: { Icon: PiggyBank, label: 'Cashback', accent: 'from-green-400 to-emerald-600' },
@@ -82,11 +83,14 @@ function AppsPage() {
             Partner Apps
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-sm">
-            Many of the rewards SnapGain compares come from these apps. Sign
-            up via the buttons below — it&rsquo;s free, and signing up via
-            SnapGain often unlocks a welcome bonus.
+            Many of the rewards SnapGain compares come from these apps.
+            Joining them is free. Some offer a welcome bonus to new members;
+            check each app&rsquo;s own terms before you sign up.
           </p>
         </motion.div>
+
+        {/* Disclosure before the links (CAP Code / ASA). */}
+        <AffiliateDisclosure />
 
         {loading ? (
           <Card>
@@ -137,10 +141,16 @@ function AppsPage() {
               How these partnerships work
             </p>
             <p>
-              When you sign up to a platform through SnapGain, we may earn a
-              small referral bonus. This keeps SnapGain free for you. We never
-              recommend a platform based on its commission — we only list ones
-              we use and trust.
+              The &ldquo;Sign up&rdquo; buttons on this page are referral or
+              affiliate links. When you join a platform through one of them,
+              the platform pays SnapGain a referral fee or commission. This
+              doesn&rsquo;t change what you pay or what you earn from the
+              platform. SnapGain is funded by subscriptions and by these
+              commissions.
+            </p>
+            <p>
+              This page lists the platforms we have referral links for, so it
+              is not a list of every app available.
             </p>
             <p>
               SnapGain is not an official partner of these brands. Each
@@ -178,7 +188,7 @@ function PartnerCard({ platform }) {
           <a
             href={platform.affiliate_url}
             target="_blank"
-            rel="noopener noreferrer"
+            rel={AFFILIATE_REL}
           >
             Sign up
             <ExternalLink className="w-3.5 h-3.5 ml-1.5" />

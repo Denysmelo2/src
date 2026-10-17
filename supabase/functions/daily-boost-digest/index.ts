@@ -27,6 +27,15 @@
 // 16/10/2026: the button gets a solid colour first (Gmail drops
 // gradients) and platforms are written by name (JamDoughnut, not
 // jamdoughnut).
+// 17/10/2026 (legal package C): the digest is opt-in. Only users whose
+// user_notification_prefs row has boost_email_enabled = true get it; no
+// row means "never opted in" and is skipped (PECR reg 22). The footer
+// names the sender and address and links to switch the email off; the
+// List-Unsubscribe header also offers a mailto: that works without
+// signing in. The one-click POST header was dropped because
+// /settings?notifications=off is a client-side page that cannot accept
+// a POST; add it back with a server endpoint that verifies a signed
+// token. NEEDS REDEPLOY of this function to take effect.
 // 16/10/2026: recipients come from rpc('list_digest_recipients')
 // (migration 0015); the old fallback asked for a user_profiles.name
 // column that does not exist. Events from platforms retired on
@@ -129,7 +138,7 @@ function renderEmail(opts: {
 
   const text = `Hi${userName ? ' ' + userName : ''},\n\n${n} of your favourite store${n === 1 ? '' : 's'} got a cashback boost in the last 24 hours.\n\n${events
     .map((e) => `- ${e.store_name || e.store_id} (${platformLabel(e.platform)}): ${e.event}${e.new_rate ? ` → ${e.new_rate}%` : ''}`)
-    .join('\n')}\n\nSee the full list: ${appUrl}/home\n\nManage preferences: ${unsubscribeUrl}`;
+    .join('\n')}\n\nSee the full list: ${appUrl}/home\n\nYou're getting this because you switched on boost emails. Turn them off: ${unsubscribeUrl} (or email support@snapgain.uk)\n\nSnapGain is a trading name of Denys Ferreira Goncalves de Melo, 3 Union Way, Ambrose House, London NW10 6FH, United Kingdom.`;
 
   const html = `<!doctype html>
 <html><body style="margin:0;padding:0;background:#f7f7f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
@@ -148,7 +157,10 @@ function renderEmail(opts: {
     </td></tr>
     <tr><td style="padding:0 24px 24px;">
       <p style="margin:0;color:#999;font-size:12px;line-height:18px;text-align:center;">
-        You’re getting this because boost emails are on. <a href="${unsubscribeUrl}" style="color:#999;text-decoration:underline;">Turn them off</a>.
+        You’re getting this because you switched on boost emails in SnapGain Settings. <a href="${unsubscribeUrl}" style="color:#999;text-decoration:underline;">Turn them off</a> or email support@snapgain.uk.
+      </p>
+      <p style="margin:8px 0 0;color:#999;font-size:11px;line-height:16px;text-align:center;">
+        SnapGain is a trading name of Denys Ferreira Goncalves de Melo, 3 Union Way, Ambrose House, London NW10 6FH, United Kingdom.
       </p>
     </td></tr>
   </table>
@@ -181,10 +193,11 @@ async function sendViaResend(payload: {
       html: payload.html,
       text: payload.text,
       headers: {
-        // RFC-compliant unsubscribe header so Gmail shows the
-        // one-click unsubscribe affordance.
-        'List-Unsubscribe': `<${APP_URL}/settings?notifications=off>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        // RFC 2369 unsubscribe header: the settings link (needs sign-in)
+        // plus a mailto that works without it. No List-Unsubscribe-Post:
+        // one-click (RFC 8058) needs a server endpoint that accepts a
+        // POST, which the SPA route cannot do.
+        'List-Unsubscribe': `<${APP_URL}/settings?notifications=off>, <mailto:support@snapgain.uk?subject=unsubscribe%20boost%20emails>`,
       },
     }),
   });
@@ -242,14 +255,15 @@ Deno.serve(async (req) => {
   };
 
   for (const r of recipients) {
-    // Read prefs for this user (default-true if no row).
+    // Read prefs for this user. Opt-in: no row, or anything other than
+    // an explicit true, means the user never switched the email on.
     const { data: pref } = await supabase
       .from('user_notification_prefs')
       .select('boost_email_enabled, boost_email_last_sent_at')
       .eq('user_id', r.user_id)
       .maybeSingle();
 
-    if (pref && pref.boost_email_enabled === false) {
+    if (!pref || pref.boost_email_enabled !== true) {
       summary.skipped_disabled += 1;
       continue;
     }

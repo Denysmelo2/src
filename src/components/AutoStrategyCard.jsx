@@ -119,7 +119,7 @@ export function AutoStrategyCard({
           {url && (
             <a
               href={external ? url : undefined}
-              {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              {...(external ? { target: '_blank', rel: 'sponsored noopener noreferrer' } : {})}
               className="flex-1 min-w-[120px]"
             >
               <Button size="sm" className="w-full" variant={highlight ? 'default' : 'outline'}>

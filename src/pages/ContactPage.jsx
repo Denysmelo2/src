@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Mail, Copy, Check, Sparkles, MessageCircle, Clock } from 'lucide-react';
+import { Mail, Copy, Check, Sparkles, MessageCircle, Clock, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -124,6 +125,78 @@ function ContactPage() {
                 </li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+
+        {/* Complaints route (2026-10-17, legal package C). English-only
+            on purpose, like the legal pages. Response times here must
+            match the Terms (section 14) and Privacy Policy (section 8). */}
+        <Card className="mt-5" id="complaints">
+          <CardContent className="p-6 space-y-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-primary" />
+              Complaints
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              We want to put things right. Tell us what went wrong, when, and
+              what you would like us to do, and include the email address on
+              your account.
+            </p>
+
+            <div className="rounded-lg border p-4 space-y-2">
+              <p className="text-sm font-semibold">General complaints (service, billing, refunds)</p>
+              <p className="text-sm text-muted-foreground">
+                Email{' '}
+                <a href={`mailto:${SUPPORT_EMAIL}?subject=Complaint`} className="text-primary hover:underline">
+                  {SUPPORT_EMAIL}
+                </a>{' '}
+                with the subject &ldquo;Complaint&rdquo;. We aim to acknowledge it
+                within 2 working days and to give you a full answer within 14
+                days. If we can&rsquo;t resolve it, we will tell you in writing.
+                Free consumer advice is available from the Citizens Advice
+                consumer helpline on 0808 223 1133.
+              </p>
+            </div>
+
+            <div className="rounded-lg border p-4 space-y-2">
+              <p className="text-sm font-semibold flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+                Data protection requests and complaints
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Email{' '}
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}?subject=Data%20protection%20complaint`}
+                  className="text-primary hover:underline"
+                >
+                  {SUPPORT_EMAIL}
+                </a>{' '}
+                with the subject &ldquo;Data protection complaint&rdquo; (or
+                &ldquo;Data request&rdquo; to access, correct or delete your
+                data). We acknowledge data protection complaints within 30 days
+                and answer data requests within one month. You can also
+                complain to the Information Commissioner&rsquo;s Office at{' '}
+                <a
+                  href="https://ico.org.uk/make-a-complaint"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  ico.org.uk/make-a-complaint
+                </a>{' '}
+                or 0303 123 1113. See our{' '}
+                <Link to="/privacy-policy" className="text-primary hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            </div>
+
+            <p className="text-xs text-muted-foreground border-t pt-3">
+              SnapGain is a trading name of Denys Ferreira Goncalves de Melo
+              (sole trader), 3 Union Way, Ambrose House, London NW10 6FH,
+              United Kingdom.
+            </p>
           </CardContent>
         </Card>
       </div>

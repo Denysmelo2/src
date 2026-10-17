@@ -134,14 +134,14 @@ function PricingPage() {
       price: '£14.99',
       period: '/ month',
       plan: 'monthly',
-      description: 'Per month, billed monthly. Cancel anytime.',
+      description: '£14.99 every month until you cancel. Cancel online anytime.',
       features: [
         'Unlimited comparisons',
-        'Real-time rate updates',
+        'Regular rate updates, each dated',
         'Personalised wallet routing',
         'Stack strategies (gift card + cashback + points)',
         '9 strategy guides (beginner to advanced)',
-        'Smart alerts',
+        'Alerts for stores you follow',
       ],
       bestValue: false,
     },
@@ -150,13 +150,13 @@ function PricingPage() {
       price: '£120',
       period: '/ year',
       plan: 'yearly',
-      description: 'Per year, billed annually. Save £60 vs monthly.',
+      description: '£120 every year until you cancel. £59.88 less than 12 monthly payments.',
       features: [
         'Everything in Monthly',
-        'Save £60 per year vs monthly',
+        'Pay once a year: £120 instead of £179.88',
         'Priority support',
         'Early access to new features',
-        'BA Household Account setup wizard',
+        'Household miles account setup guide',
       ],
       bestValue: true,
     },
@@ -179,9 +179,9 @@ function PricingPage() {
                   Pick a plan to unlock SnapGain
                 </p>
                 <p className="text-sm text-amber-800 mt-1">
-                  SnapGain is a premium-only product. Choose Monthly or
-                  Annual below to get the comparison engine, the 9
-                  strategy guides, and the BA Household Account wizard.
+                  This part of SnapGain needs a subscription. Choose Monthly
+                  or Annual below to get the comparison engine, the 9
+                  strategy guides and the household miles account guide.
                 </p>
               </div>
             </CardContent>
@@ -193,7 +193,8 @@ function PricingPage() {
             Choose your <span className="gradient-text">perfect plan</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            One plan unlocks everything. Cancel anytime.
+            One plan unlocks everything. Renews automatically until you
+            cancel; cancel online anytime.
           </p>
         </div>
 
@@ -214,7 +215,7 @@ function PricingPage() {
                       ? `Renews ${new Date(periodEndsAt).toLocaleDateString()}${
                           periodDaysLeft ? ` · ${periodDaysLeft} days left` : ''
                         }`
-                      : 'Free trial — no card needed yet.'}
+                      : 'Free trial: no card needed, and it ends on its own.'}
                   </p>
                 </div>
               </div>
@@ -286,10 +287,62 @@ function PricingPage() {
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground text-center mt-8 max-w-2xl mx-auto">
-          Payments are securely processed by Stripe. SnapGain never stores your
-          card details. You can cancel anytime from the Settings page.
-        </p>
+        {/* Renewal / cancellation / trial notice (CCR 2013 reg 13 and
+            Sch 2 pre-contract information; CPUTR / DMCC Act 2024 on
+            clear pricing). Copy only; must stay consistent with the
+            consent checkbox above (proportional refund within 14 days). */}
+        <div className="mt-10 max-w-3xl mx-auto rounded-xl border bg-muted/30 p-5 md:p-6 text-sm text-muted-foreground space-y-3">
+          <h2 className="text-base font-semibold text-foreground">
+            Before you subscribe
+          </h2>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>
+              <strong className="text-foreground">Price:</strong> £14.99 per
+              month (Monthly) or £120 per year (Annual), paid in advance. These
+              are the final prices: SnapGain is not VAT-registered, so no VAT
+              or other charges are added.
+            </li>
+            <li>
+              <strong className="text-foreground">Automatic renewal:</strong>{' '}
+              your plan renews automatically every month or every year at the
+              price above, and the payment is taken from your card, until you
+              cancel. We will email you at least 30 days before any price
+              change.
+            </li>
+            <li>
+              <strong className="text-foreground">How to cancel:</strong>{' '}
+              online at any time in Settings &rarr; Manage subscription (or
+              email support@snapgain.uk). You keep access until the end of the
+              period you have paid for.
+            </li>
+            <li>
+              <strong className="text-foreground">14-day right to cancel:</strong>{' '}
+              your subscription starts straight away at your request. If you
+              cancel within 14 days you get a refund minus the part of the
+              service you have already used (worked out by days). To ask for
+              it, email support@snapgain.uk within the 14 days. After that,
+              part-used periods aren&rsquo;t refunded except where the law
+              requires.
+            </li>
+            <li>
+              <strong className="text-foreground">Free trial:</strong> the
+              7-day trial needs no card and doesn&rsquo;t turn into a paid plan
+              automatically. You are only charged if you choose a plan here.
+            </li>
+          </ul>
+          <p>
+            Full details:{' '}
+            <Link to="/terms-of-service" className="text-primary underline">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/refund-policy" className="text-primary underline">
+              Refund Policy
+            </Link>
+            . Payments are processed securely by Stripe; SnapGain never sees
+            or stores your full card details.
+          </p>
+        </div>
       </div>
     </>
   );

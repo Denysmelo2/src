@@ -23,10 +23,13 @@ const DEFAULTS = {
   // Inline catalogs (no DB table required)
   bankIds: [],
   // ─── Notifications ───────────────────────────────────────────────
+  // Optional-email style toggles default OFF (opt-in, PECR reg 22).
+  // These are local display prefs today and drive no email, but keep
+  // the defaults safe in case they are wired to a sender later.
   notifEmail: true,
   notifPush: false,
-  notifWeekly: true,
-  notifDeals: true,
+  notifWeekly: false,
+  notifDeals: false,
   marketingEmails: false,
   // ─── Security ────────────────────────────────────────────────────
   twoFactorEnabled: false,
