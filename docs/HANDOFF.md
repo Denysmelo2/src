@@ -65,10 +65,16 @@ arquivada em 16/10.
   cancela quando quiser e usa até o fim do período pago.
 - **Teste grátis de 7 dias:** do próprio SnapGain (sem cartão, não vira plano
   pago sozinho). Não usar trial do Stripe.
-- **Administradores:** ficam só o dono e a Bárbara.
-- **App de doces da Bárbara** (mesmo banco): fechar as permissões (público só
-  lê, só admin grava). Ver o aviso no pacote B: isso quebra o app de doces
-  hoje.
+- **Administradores:** ficam três contas: a do dono, a da Bárbara
+  (`babiferreir@…`) e a segunda conta do dono (`denysferreir@…`). As outras
+  são rebaixadas (migration 0023 do pacote B; os UUIDs estão lá).
+- **App de doces da Bárbara** (mesmo banco): o dono quer fechar as permissões
+  (público só lê, só admin grava), mas **esperar**: primeiro consertar o app de
+  doces (login de admin de verdade e upload assinado), depois aplicar a 0021.
+- **Apagar conta:** permitido mesmo com assinatura ativa. A função
+  `delete-account` cancela a assinatura e apaga o cliente no Stripe, depois
+  apaga o usuário. Reembolso proporcional nos 14 dias continua manual.
+- **Uma conta por pessoa** (sem plano família).
 - **BA/Avios** no marketing: trocar por termos genéricos.
 - **Registro no ICO e no HMRC:** o dono só vai fazer quando o site estiver 100%
   pronto para vender. Não cobrar antes disso, só lembrar no fim.
@@ -105,14 +111,11 @@ arquivada em 16/10.
   de funções antigas, cabeçalhos de segurança (CSP etc.) no `vercel.json`,
   remoção dos scripts "Horizons" do `vite.config.js`.
 - **Antes de aplicar:**
-  - 0023 tem um marcador para o UUID da conta da Bárbara e não roda sem ele.
-    Perguntar ao dono qual conta é a dela (a lista com e-mails foi mostrada só
-    no chat, não está no repo; refazer com SELECT em `auth.users`).
+  - 0023 já tem os três UUIDs de admin decididos em 17/10.
   - **Segurar a 0021 (doces):** o app de doces grava sem login e aceita upload
-    de foto de cliente sem login. Aplicar a 0021 quebra os dois. Precisa de
-    decisão do dono (login de admin de verdade no app de doces e outra forma
-    de upload).
-- **Depois do merge:** aplicar 0019, 0020, 0022, 0023, 0024 (nessa ordem);
+    de foto de cliente sem login. Aplicar a 0021 quebra os dois. O dono decidiu
+    esperar e consertar o app de doces primeiro.
+- **Depois do merge:** aplicar 0019, 0020, 0022, 0023, 0024 (nessa ordem, sem a 0021);
   publicar `delete-account` (verify_jwt true); apagar no Supabase as funções
   antigas: user-registration, subscription-handler, auth-callback,
   platform-comparison, topcashback-uk, jamdoughnut-uk, amazon-uk, simulate.
@@ -141,7 +144,7 @@ arquivada em 16/10.
 ## O que ainda falta para "100% pronto para vender"
 
 1. Portal do Stripe, cancelar a assinatura manual e o teste real (pacote A).
-2. Aprovar e publicar B (com a conta da Bárbara e a decisão dos doces) e C.
+2. Aprovar e publicar B e C. Consertar o app de doces e só então aplicar a 0021.
 3. hCaptcha no cadastro, login e "esqueci a senha"; depois ligar Captcha no
    Supabase.
 4. Revisão do texto legal por um solicitor.
