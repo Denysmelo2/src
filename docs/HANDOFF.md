@@ -133,6 +133,21 @@ arquivada em 16/10.
 O PR do robô (Denysmelo2/snapgain-scraper#38) também foi mesclado: o único
 disparo automático é o das 08:00 de Londres.
 
+### Lojas duplicadas (tarefa 1 do handover do Cowork, 17/10)
+- Causa: a busca do robô pelo endereço curto da loja não lia `merged_into`.
+  As lojas juntadas em 05/07 (`bootscom`, `asos-uk`, `nike-uk`…) continuavam
+  recebendo ofertas que o site não mostra. Correção no robô:
+  Denysmelo2/snapgain-scraper#39.
+- Migration 0025 (aplicada): 326 ofertas válidas foram para a loja principal.
+  Cópia em `ops.store_merge_fix_20261017` e `…_stores`. Boots, ASOS e Nike
+  mostram Avios de novo.
+- KiwiCo e KiwiCo UK estavam juntadas por engano com Kiwi.com. O dono decidiu
+  (17/10) que KiwiCo **não faz parte do SnapGain**: ficaram inativas, com a
+  coluna nova `stores.excluded_at`, e o robô não as reativa.
+- Falta: 74 grupos de lojas com o mesmo nome que nunca foram juntados. A lista
+  para o dono revisar com o Cowork está em
+  `docs/LOJAS_DUPLICADAS_REVISAR_2026-10-17.md`.
+
 ## O que ainda falta para "100% pronto para vender"
 
 1. Stripe (dono, no painel): terminar o portal do cliente (trocar de plano com
