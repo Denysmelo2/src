@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/useSubscription';
 import { ManageBillingButton } from '@/components/ManageBillingButton';
+import { AccountDataSection } from '@/components/settings/AccountDataSection';
 import { loadUserPrefs, saveUserPrefs } from '@/lib/userPrefs';
 import { notifyPrefsChanged } from '@/hooks/useUserPrefs';
 import { applyDisplaySettings } from '@/lib/displaySettings';
@@ -684,6 +685,9 @@ function SettingsPage() {
             {saving ? t('settings.saving') : t('settings.saveSettings')}
           </Button>
         </div>
+
+        {/* ─── Your data (export / delete account) ───────────── */}
+        <AccountDataSection />
 
         {/* ─── Need help? ────────────────────────────────────── */}
         <p className="text-center text-xs text-muted-foreground pt-2">
