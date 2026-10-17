@@ -19,8 +19,11 @@ Deno.serve(async (req: Request) => {
 
   try {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const siteUrl = Deno.env.get("SITE_URL") ?? "http://localhost:5173";
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not set");
+    // Production by default: an unset, empty or non-https SITE_URL (e.g. a
+    // leftover http://localhost:5173) must never send customers there.
+    const envSite = Deno.env.get("SITE_URL") ?? "";
+    const siteUrl = (/^https:\/\//.test(envSite) ? envSite : "https://snapgain.uk").replace(/\/+$/, "");
+    if (!stripeKey) throw new Error("Stripe secret key is not configured");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-06-20" });
 
@@ -48,15 +51,20 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-    const { data: profile } = await admin
+    const { data: profile, error: profileErr } = await admin
       .from("user_profiles")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
+    if (profileErr) throw profileErr;
 
     if (!profile?.stripe_customer_id) {
       return new Response(
-        JSON.stringify({ error: "No Stripe customer on file. Subscribe first." }),
+        JSON.stringify({
+          error:
+            "We couldn't find a billing account for you yet. Choose a plan on the Pricing page to subscribe.",
+          code: "no_customer",
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -75,7 +83,10 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error("create-portal-session error", err);
     return new Response(
-      JSON.stringify({ error: (err as Error).message ?? "Unknown error" }),
+      JSON.stringify({
+        error:
+          "We couldn't open the billing portal right now. Please try again later or contact support.",
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
