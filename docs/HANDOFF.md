@@ -1,4 +1,4 @@
-# Handoff — estado do SnapGain em 17/10/2026
+# Handoff — estado do SnapGain em 17/10/2026 (noite)
 
 Escrito para que outra sessão do Claude (por exemplo, o Claude Cowork) continue
 o trabalho sem a conversa anterior. **Este repositório é público:** aqui não há
@@ -68,9 +68,10 @@ arquivada em 16/10.
 - **Administradores:** ficam três contas: a do dono, a da Bárbara
   (`babiferreir@…`) e a segunda conta do dono (`denysferreir@…`). As outras
   são rebaixadas (migration 0023 do pacote B; os UUIDs estão lá).
-- **App de doces da Bárbara** (mesmo banco): o dono quer fechar as permissões
-  (público só lê, só admin grava), mas **esperar**: primeiro consertar o app de
-  doces (login de admin de verdade e upload assinado), depois aplicar a 0021.
+- **App de doces da Bárbara** (hoje no mesmo banco): o dono decidiu (17/10)
+  que **não faz parte do SnapGain** e deve ser separado, sem apagar nada. Não
+  aplicar `supabase/held-migrations/0021` nem mexer nas tabelas `doces_*` sem
+  falar com o dono. Ainda falta descobrir onde o app de doces está publicado.
 - **Apagar conta:** permitido mesmo com assinatura ativa. A função
   `delete-account` cancela a assinatura e apaga o cliente no Stripe, depois
   apaga o usuário. Reembolso proporcional nos 14 dias continua manual.
@@ -104,47 +105,42 @@ arquivada em 16/10.
    portal e confere que o banco mostra `canceled` no fim do período. Roteiro em
    `SETUP_STRIPE.md` §6.
 
-### Pacote B — Segurança: PR Denysmelo2/src#122 (rascunho, aguardando o dono)
-- Migrations 0019–0024 (permissões do `anon`, política de `user_preferences`,
-  doces, FK `reviewed_by`, rebaixar admins, digest desligado por padrão no
-  banco), função nova `delete-account` (apagar conta e baixar dados), remoção
-  de funções antigas, cabeçalhos de segurança (CSP etc.) no `vercel.json`,
-  remoção dos scripts "Horizons" do `vite.config.js`.
-- **Antes de aplicar:**
-  - 0023 já tem os três UUIDs de admin decididos em 17/10.
-  - **Segurar a 0021 (doces):** o app de doces grava sem login e aceita upload
-    de foto de cliente sem login. Aplicar a 0021 quebra os dois. O dono decidiu
-    esperar e consertar o app de doces primeiro.
-- **Depois do merge:** aplicar 0019, 0020, 0022, 0023, 0024 (nessa ordem, sem a 0021);
-  publicar `delete-account` (verify_jwt true); apagar no Supabase as funções
-  antigas: user-registration, subscription-handler, auth-callback,
-  platform-comparison, topcashback-uk, jamdoughnut-uk, amazon-uk, simulate.
+### Pacote B — Segurança: FEITO (PR Denysmelo2/src#122, mesclado 17/10)
+- Aplicadas no banco: 0019 (visitante só lê o catálogo), 0022 (FK do revisor
+  com SET NULL), 0023 (admins: só as três contas), 0024 (e-mail diário só para
+  quem ligou). **0020 (política de INSERT de `user_preferences`) ainda não
+  entrou:** o `apply_migration` deu tempo esgotado três vezes sem erro e sem
+  aplicar. Nada no site grava essa tabela hoje. Tentar de novo.
+- 0021 (doces) fica em `supabase/held-migrations/` e não deve ser aplicada.
+- `delete-account` publicada (verify_jwt true). O caminho do Stripe
+  (`customers.del`) ainda não foi testado de verdade.
+- Funções antigas ainda no Supabase (não estão no repo; a ferramenta MCP não
+  apaga função, então o dono apaga no painel se quiser): user-registration,
+  subscription-handler, auth-callback, platform-comparison, topcashback-uk,
+  jamdoughnut-uk, amazon-uk, simulate. Todas com verify_jwt true.
 - **Passos do dono no painel do Supabase:** ligar "leaked password
   protection" e MFA para admins. Ligar Captcha só depois que o widget do
-  hCaptcha estiver no formulário (ainda não está; passos no corpo do PR #122).
+  hCaptcha estiver no formulário (ainda não está).
 
-### Pacote C — Textos legais e telas: PR Denysmelo2/src#123 (rascunho)
-- Reescreve Privacidade, Termos, Reembolso e Cookies (lei do Reino Unido em
-  10/2026: UK GDPR + DUAA 2025, PECR, CCR 2013, CRA 2015, CAP Code), banner de
-  cookies com opção de recusar e "Cookie settings" no rodapé, aceite dos termos
-  no cadastro, telefone opcional, "Forgot password?", aviso de comissão de
-  afiliado, frases de marketing corrigidas, BA/Avios genéricos, identidade do
-  vendedor no rodapé, canal de reclamação, digest opt-in.
-- Estava em conflito com o A em `PricingPage.jsx`; foi pedido ao ajudante
-  para mesclar `main` e resolver. Conferir antes de publicar.
-- Depois do merge: publicar de novo a Edge Function `daily-boost-digest`.
+### Pacote C — Textos legais e telas: FEITO (PR Denysmelo2/src#123, mesclado 17/10)
+- Textos legais, banner de cookies, aceite dos termos, aviso de afiliado,
+  identidade do vendedor e canal de reclamação no ar. Prazos de reclamação
+  confirmados pelo dono: 2 dias úteis para confirmar, 14 dias para responder,
+  registros por 3 anos.
+- `daily-boost-digest` publicada de novo (versão opt-in).
 - O texto legal final precisa da revisão de um solicitor do Reino Unido.
 
-## Outros PRs abertos
-
-- Denysmelo2/snapgain-scraper#38: tira o `schedule` do GitHub (só fica o
-  disparo das 08:00) e o `tc-giftcards` da lista. Pronto para publicar.
-- Denysmelo2/src#120: migration 0018 (já aplicada) + este documento.
+O PR do robô (Denysmelo2/snapgain-scraper#38) também foi mesclado: o único
+disparo automático é o das 08:00 de Londres.
 
 ## O que ainda falta para "100% pronto para vender"
 
-1. Portal do Stripe, cancelar a assinatura manual e o teste real (pacote A).
-2. Aprovar e publicar B e C. Consertar o app de doces e só então aplicar a 0021.
+1. Stripe (dono, no painel): terminar o portal do cliente (trocar de plano com
+   os dois preços, faturas, cartão, links de privacidade e termos, Save) e
+   cancelar a assinatura anual criada à mão. Depois: corrigir no banco o
+   perfil marcado "active" à mão (`subscription_status = null`, confirmar com
+   o dono) e o teste real de assinar e cancelar (`SETUP_STRIPE.md` §6).
+2. Aplicar a 0020. Separar o app de doces do SnapGain.
 3. hCaptcha no cadastro, login e "esqueci a senha"; depois ligar Captcha no
    Supabase.
 4. Revisão do texto legal por um solicitor.
@@ -155,7 +151,10 @@ arquivada em 16/10.
    2027): aviso antes de cada renovação, segundo período de 14 dias depois de
    renovação anual, cancelamento online fácil.
 7. Pequenos: texto "real-time" no meta de `App.jsx`; confirmar regiões e
-   retenção do Sentry, Resend e GA.
+   retenção do Sentry, Resend e GA; o registro de UTM no cadastro
+   (`signup_attributions`) falha quando o e-mail ainda não foi confirmado,
+   porque o visitante não grava mais nessa tabela (as UTMs ficam no
+   `user_metadata`).
 
 ## Como conferir as coisas
 
