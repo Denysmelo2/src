@@ -37,6 +37,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/useSubscription';
+import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 
 // Which strategy ID is unlocked during the free trial.
 // Chosen for: instant savings, point-of-sale usable, works at any
@@ -420,6 +421,8 @@ function StrategyLibraryPage() {
             </div>
           )}
         </div>
+
+        <AffiliateDisclosure className="mb-8" />
 
         {/* Quick legend */}
         <div className="flex flex-wrap justify-center gap-2 mb-10">

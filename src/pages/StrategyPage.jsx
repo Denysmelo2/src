@@ -42,6 +42,7 @@ import { gbpToAviosBooster } from '@/lib/aviosMath';
 // at all. DataAge + oldestVerifiedAt fix both halves of that.
 import { DataAge } from '@/components/DataAge';
 import { oldestVerifiedAt } from '@/lib/dataFreshness';
+import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 
 function StrategyPage() {
   const [searchParams] = useSearchParams();
@@ -243,6 +244,8 @@ function StrategyPage() {
           Back to {store.name}
         </Link>
 
+        <AffiliateDisclosure />
+
         {topCurated && (
           <motion.section
             initial={{ opacity: 0, y: 12 }}
@@ -355,7 +358,7 @@ function StrategyPage() {
                   <a
                     href={highlighted.affiliateLink}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="sponsored noopener noreferrer"
                   >
                     <Button variant="outline">
                       Open {highlighted.providerName}{' '}
@@ -411,7 +414,7 @@ function StrategyPage() {
                               <a
                                 href={step.actionUrl}
                                 target="_blank"
-                                rel="noopener noreferrer"
+                                rel="sponsored noopener noreferrer"
                               >
                                 <Button size="sm">
                                   <ExternalLink className="w-3.5 h-3.5 mr-1.5" />

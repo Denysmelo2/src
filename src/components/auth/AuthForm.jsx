@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -49,12 +49,16 @@ function AuthForm({ mode }) {
           navigate(redirectTo, { replace: true });
         }
       } else {
-        // Basic UK phone validation: allow +44 or 0 prefix, 10-11 digits
+        // Phone is OPTIONAL (2026-10-17, legal package C: the Privacy
+        // Policy says optional and nothing depends on it; the signup
+        // trigger handle_new_user() stores NULL when it is blank).
+        // When given, keep the basic UK format check: +44 or 0 prefix,
+        // 10-11 digits.
         const phoneClean = phone.replace(/\s|-/g, '');
-        if (!/^(\+44|0)\d{9,10}$/.test(phoneClean)) {
+        if (phoneClean && !/^(\+44|0)\d{9,10}$/.test(phoneClean)) {
           toast({
             title: 'Invalid phone',
-            description: 'Use a valid UK number (e.g. 07123456789 or +447123456789).',
+            description: 'Use a valid UK number (e.g. 07123456789 or +447123456789), or leave it blank.',
             variant: 'destructive',
           });
           setSubmitting(false);
@@ -80,7 +84,7 @@ function AuthForm({ mode }) {
           return;
         }
         const { error } = await signUp(email, password, {
-          data: { name, phone: phoneClean },
+          data: phoneClean ? { name, phone: phoneClean } : { name },
         });
         if (!error) {
           toast({
@@ -107,7 +111,7 @@ function AuthForm({ mode }) {
         <p className="text-muted-foreground text-center mb-6">
           {isLogin
             ? "Sign in to access your dashboard."
-            : "Free 7 days. No card required. Cancel anytime."}
+            : "Free for 7 days. No card required. Nothing to cancel: the trial simply ends."}
         </p>
       </motion.div>
       
@@ -124,22 +128,23 @@ function AuthForm({ mode }) {
         </motion.div>
         {!isLogin && (
           <motion.div variants={itemVariants} className="space-y-2">
-            <Label htmlFor="phone">UK phone number</Label>
+            <Label htmlFor="phone">
+              UK phone number <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
             <Input
               id="phone"
               type="tel"
               placeholder="07123 456 789"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              required
               autoComplete="tel"
             />
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 rounded-md p-2.5">
               <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <span>
-                We use your number only to verify your account and prevent
-                abuse. <strong>We will never share it, sell it, or use it
-                for marketing.</strong>
+                If you add it, we use your number only to help identify your
+                account and prevent duplicate or abusive sign-ups. We
+                won&rsquo;t sell it or use it for marketing.
               </span>
             </div>
           </motion.div>
@@ -153,6 +158,16 @@ function AuthForm({ mode }) {
             showValidation={!isLogin}
             autoComplete={isLogin ? 'current-password' : 'new-password'}
           />
+          {isLogin && (
+            <div className="mt-2 text-right">
+              <Link
+                to="/auth/request-reset"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          )}
         </motion.div>
         {!isLogin && (
           <motion.div variants={itemVariants}>
@@ -165,6 +180,22 @@ function AuthForm({ mode }) {
               autoComplete="new-password"
             />
           </motion.div>
+        )}
+        {!isLogin && (
+          <motion.p variants={itemVariants} className="text-xs text-muted-foreground leading-relaxed">
+            By creating an account you agree to our{' '}
+            <Link to="/terms-of-service" target="_blank" className="font-medium text-primary underline">
+              Terms of Service
+            </Link>{' '}
+            and confirm you&rsquo;ve read our{' '}
+            <Link to="/privacy-policy" target="_blank" className="font-medium text-primary underline">
+              Privacy Policy
+            </Link>
+            . The 7-day free trial needs no card and ends automatically; it
+            never turns into a paid plan unless you choose to subscribe.
+            We&rsquo;ll only email you about your account unless you switch
+            on optional emails in Settings.
+          </motion.p>
         )}
         <motion.div variants={itemVariants}>
           <Button
@@ -187,6 +218,20 @@ function AuthForm({ mode }) {
 
       <motion.div variants={itemVariants}>
         <OAuthButtons disabled={submitting} />
+        {isLogin && (
+          <p className="text-xs text-muted-foreground text-center mt-3 leading-relaxed">
+            New to SnapGain? Continuing with Google creates an account, which
+            means you agree to our{' '}
+            <Link to="/terms-of-service" target="_blank" className="text-primary underline">
+              Terms
+            </Link>{' '}
+            and confirm you&rsquo;ve read our{' '}
+            <Link to="/privacy-policy" target="_blank" className="text-primary underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        )}
       </motion.div>
       
       <motion.p variants={itemVariants} className="text-sm text-center text-muted-foreground mt-6">

@@ -39,6 +39,7 @@ import { StoreLogo } from '@/components/StoreLogo';
 // single place that decides how an age reads, and it colours a stale
 // one. See lib/dataFreshness.js.
 import { DataAge } from '@/components/DataAge';
+import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 
 // 2026-05-18: collapsed from 5 tabs to 2 per Bárbara's UX feedback —
 // "as pessoas não gostam de pensar, querem a resposta pronta". The
@@ -96,7 +97,7 @@ function CashbackOfferCard({ offer }) {
             <a
               href={href}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="sponsored noopener noreferrer"
               className="text-sm font-medium text-primary inline-flex items-center hover:underline"
             >
               Open {offer.platform} <ExternalLink className="w-3.5 h-3.5 ml-1" />
@@ -440,6 +441,8 @@ function StoreDetailPage() {
             Compare rewards
           </Button>
         </motion.section>
+
+        <AffiliateDisclosure />
 
         <div className="border-b">
           <nav

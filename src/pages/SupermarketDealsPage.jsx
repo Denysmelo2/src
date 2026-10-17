@@ -26,6 +26,7 @@ import { StoreLogo } from '@/components/StoreLogo';
 import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { RateBreakdown } from '@/components/RateBreakdown';
 import { cn } from '@/lib/utils';
+import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 
 const isExternal = (url) => /^https?:\/\//i.test(url || '');
 
@@ -132,6 +133,8 @@ function SupermarketDealsPage() {
           </div>
         </motion.section>
 
+        <AffiliateDisclosure />
+
         {loading ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
@@ -228,7 +231,7 @@ function DealRow({ row, idx }) {
   if (!href) return <div>{inner}</div>;
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={href} target="_blank" rel="sponsored noopener noreferrer" className="block">
         {inner}
       </a>
     );

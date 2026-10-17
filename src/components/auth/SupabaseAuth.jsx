@@ -40,7 +40,7 @@ export default function SupabaseAuth({ view = 'sign_up' }) {
             sign_up: {
               email_label: 'Email',
               password_label: 'Password',
-              button_label: 'Start 3-Day Free Trial',
+              button_label: 'Start 7-Day Free Trial',
               loading_button_label: 'Creating account...',
               social_provider_text: 'Continue with {{provider}}',
               link_text: 'Already have an account? Sign in',

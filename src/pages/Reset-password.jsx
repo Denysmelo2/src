@@ -8,7 +8,7 @@
 // (since magic-link sign-ins create a session without a password).
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { CheckCircle2, KeyRound } from 'lucide-react';
@@ -74,11 +74,12 @@ export default function ResetPassword() {
         <title>Set a new password — SnapGain</title>
       </Helmet>
 
-      <div className="container mx-auto px-4 py-16 max-w-md">
+      <div className="flex items-center justify-center min-h-[calc(100vh-150px)] bg-gray-50 p-4">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
+          className="w-full max-w-md"
         >
           <Card>
             <CardHeader className="text-center pb-2">
@@ -123,6 +124,13 @@ export default function ResetPassword() {
                   >
                     {busy ? 'Saving…' : 'Save new password'}
                   </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Link expired?{' '}
+                    <Link to="/auth/request-reset" className="text-primary hover:underline">
+                      Request a new one
+                    </Link>
+                    .
+                  </p>
                 </form>
               )}
             </CardContent>

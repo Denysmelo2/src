@@ -25,6 +25,7 @@ import { hiddenBeforeIso } from '@/lib/dataFreshness';
 import { StoreLogo } from '@/components/StoreLogo';
 import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { cn } from '@/lib/utils';
+import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 
 const isExternal = (url) => /^https?:\/\//i.test(url || '');
 
@@ -117,6 +118,8 @@ function GiftCardDealsPage() {
           </div>
         </motion.section>
 
+        <AffiliateDisclosure />
+
         {loading ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
@@ -203,7 +206,7 @@ function DealRow({ offer, idx }) {
   if (!href) return <div>{inner}</div>;
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={href} target="_blank" rel="sponsored noopener noreferrer" className="block">
         {inner}
       </a>
     );
