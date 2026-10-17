@@ -16,6 +16,10 @@
 //     period, no partial refunds except where the law requires.
 //   - Monthly and annual plans follow the same rules.
 //   - Model cancellation form from CCR Schedule 3 (Part B) is included.
+//   - 14-day refunds are processed manually on request to
+//     support@snapgain.uk. The only confirmation email is Stripe's
+//     receipt (no SnapGain confirmation email is sent by the code as of
+//     2026-10-17); do not promise one here unless the code sends it.
 // A UK solicitor should review the final wording before it is relied on.
 
 import React from 'react';
@@ -68,8 +72,9 @@ function RefundPolicyPage() {
           <UL>
             <li>The 7-day free trial costs nothing and ends by itself. There is nothing to cancel or refund.</li>
             <li>
-              Cancel within 14 days of subscribing: you get your money back,
-              minus a proportionate amount for the days you had the service.
+              Cancel within 14 days of subscribing and email us: you get your
+              money back, minus the part of the service you have already used
+              (worked out by days).
             </li>
             <li>
               Cancel after that: no more payments are taken and you keep access
@@ -157,9 +162,10 @@ function RefundPolicyPage() {
             <Mail subject="Cancellation within 14 days" /> with the subject
             &ldquo;Cancellation within 14 days&rdquo;, or by sending the model
             form below (you don&rsquo;t have to use it). It is enough to send
-            your message before the 14 days are up. If you cancel in Settings
-            &rarr; Manage subscription within the 14 days, we will also treat
-            that as using this right and refund you as above.
+            your message before the 14 days are up. Refunds are processed by
+            us on request, so please email us even if you have already
+            cancelled in Settings &rarr; Manage subscription: cancelling there
+            stops the renewal but does not by itself trigger a refund.
           </P>
           <P>
             <strong>When and how you get your money.</strong> We refund you
@@ -206,11 +212,14 @@ function RefundPolicyPage() {
         <section>
           <H2 id="confirmation">8. Confirmation of your subscription</H2>
           <P>
-            After you subscribe we email you a confirmation (a durable record
-            you can keep) of your plan and price, including that you asked for
-            the service to start immediately and how this policy works. Keep it
-            for your records. If you can&rsquo;t find it, email us and we will
-            send it again.
+            When you pay, Stripe (our payment provider) emails you a receipt
+            for your plan and price. Before you pay, the pricing page and the
+            Stripe checkout page both state that your subscription starts
+            immediately at your request, renews until you cancel, and that a
+            cancellation within 14 days gets a refund minus the part of the
+            service already used; these terms stay available on this page and
+            in our Terms of Service. If you would like a copy of your
+            subscription details by email, ask us at support@snapgain.uk.
           </P>
         </section>
 
