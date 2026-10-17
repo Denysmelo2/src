@@ -1,16 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Check, Sparkles, ExternalLink, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { SubscribeButton } from '@/components/SubscribeButton';
+import { ManageBillingButton } from '@/components/ManageBillingButton';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
 import { toast } from '@/components/ui/use-toast';
 
-const PlanCard = ({ title, price, period, description, features, bestValue, plan, currentPlan, isActive }) => {
+// A Stripe subscription that still exists and bills. Mirrors the server's
+// check in create-checkout-session (which answers 409 already_subscribed).
+const LIVE_STATUSES = ['active', 'trialing', 'past_due', 'unpaid'];
+
+const PlanCard = ({ title, price, period, description, features, bestValue, plan, currentPlan, isActive, hasSubscription, accepted, onConsentMissing }) => {
   const isCurrent = isActive && currentPlan === plan;
   return (
     <div
@@ -46,16 +51,30 @@ const PlanCard = ({ title, price, period, description, features, bestValue, plan
           <Check className="w-5 h-5 mr-2" />
           Current plan
         </Button>
-      ) : (
-        <SubscribeButton
-          plan={plan}
+      ) : hasSubscription ? (
+        // Already subscribed: plan changes happen in the Stripe portal so
+        // the existing subscription is updated, not duplicated.
+        <ManageBillingButton
           className={`w-full text-lg h-12 ${
             bestValue
               ? 'bg-primary text-primary-foreground'
               : 'bg-secondary text-secondary-foreground'
           }`}
         >
-          {isActive ? 'Switch to this plan' : 'Start subscription'}
+          Switch to this plan
+        </ManageBillingButton>
+      ) : (
+        <SubscribeButton
+          plan={plan}
+          accepted={accepted}
+          onConsentMissing={onConsentMissing}
+          className={`w-full text-lg h-12 ${
+            bestValue
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary text-secondary-foreground'
+          }`}
+        >
+          Start subscription
         </SubscribeButton>
       )}
     </div>
@@ -64,18 +83,29 @@ const PlanCard = ({ title, price, period, description, features, bestValue, plan
 
 function PricingPage() {
   const { user } = useAuth();
-  const { isPremium, inTrial, isActive, plan, trialDaysLeft, periodDaysLeft, periodEndsAt } = useSubscription();
+  const { profile, status, isPremium, inTrial, isActive, plan, trialDaysLeft, periodDaysLeft, periodEndsAt } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const autoFiredRef = useRef(false);
+  const hasSubscription = !!profile?.stripe_subscription_id && LIVE_STATUSES.includes(status);
+
+  // Express request to start now + proportional-refund acknowledgement
+  // (Consumer Contracts Regulations 2013). Required before checkout.
+  const [accepted, setAccepted] = useState(false);
+  const [highlightConsent, setHighlightConsent] = useState(false);
+  const consentRef = useRef(null);
+  const showConsent = useCallback(() => {
+    setHighlightConsent(true);
+    consentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
 
   // Banner state: "subscribe=required" comes from ProtectedRoute when a
   // non-premium user tries to access a gated route.
   const subscribeRequired = searchParams.get('subscribe') === 'required';
 
-  // Auto-fire checkout: when AuthCallbackPage redirects here with
-  // ?action=checkout&plan=xxx after the OAuth round-trip, we want to
-  // immediately push the user into Stripe Checkout without making them
-  // click again.
+  // Return from signup: AuthCallbackPage redirects here with
+  // ?action=checkout&plan=xxx after the OAuth round-trip. We no longer
+  // open Stripe Checkout automatically: the consent box has to be ticked
+  // on this page first, so point the user at it instead.
   useEffect(() => {
     if (autoFiredRef.current) return;
     if (!user) return;
@@ -83,7 +113,7 @@ function PricingPage() {
     if (action !== 'checkout') return;
     autoFiredRef.current = true;
 
-    const targetPlan = searchParams.get('plan') === 'yearly' ? 'yearly' : 'monthly';
+    const targetPlan = searchParams.get('plan') === 'yearly' ? 'Annual' : 'Monthly';
 
     // Clear the query string so a page reload doesn't re-fire.
     const next = new URLSearchParams(searchParams);
@@ -91,24 +121,12 @@ function PricingPage() {
     next.delete('plan');
     setSearchParams(next, { replace: true });
 
-    (async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke(
-          'create-checkout-session',
-          { body: { plan: targetPlan } }
-        );
-        if (error) throw error;
-        if (!data?.url) throw new Error('No checkout URL returned');
-        window.location.href = data.url;
-      } catch (err) {
-        toast({
-          title: 'Could not start checkout',
-          description: err?.message || 'Try clicking the plan button again.',
-          variant: 'destructive',
-        });
-      }
-    })();
-  }, [user, searchParams, setSearchParams]);
+    toast({
+      title: "You're signed in",
+      description: `To subscribe, tick the confirmation box below, then press Start subscription on the ${targetPlan} plan.`,
+    });
+    showConsent();
+  }, [user, searchParams, setSearchParams, showConsent]);
 
   const plans = {
     monthly: {
@@ -216,9 +234,57 @@ function PricingPage() {
             {...plans.monthly}
             currentPlan={plan}
             isActive={isActive}
+            hasSubscription={hasSubscription}
+            accepted={accepted}
+            onConsentMissing={showConsent}
           />
-          <PlanCard {...plans.yearly} currentPlan={plan} isActive={isActive} />
+          <PlanCard
+            {...plans.yearly}
+            currentPlan={plan}
+            isActive={isActive}
+            hasSubscription={hasSubscription}
+            accepted={accepted}
+            onConsentMissing={showConsent}
+          />
         </div>
+
+        {!hasSubscription && (
+          <div
+            ref={consentRef}
+            className={`max-w-4xl mx-auto mt-6 rounded-lg border p-4 flex items-start gap-3 transition-colors ${
+              highlightConsent && !accepted
+                ? 'border-primary ring-2 ring-primary/40 bg-primary/5'
+                : 'border-border'
+            }`}
+          >
+            <Checkbox
+              id="subscription-consent"
+              checked={accepted}
+              onCheckedChange={(v) => {
+                setAccepted(v === true);
+                if (v === true) setHighlightConsent(false);
+              }}
+              className="mt-0.5"
+            />
+            <label htmlFor="subscription-consent" className="text-sm leading-relaxed cursor-pointer">
+              I want my subscription to start now. I understand that if I
+              cancel within 14 days I'll get a refund minus the part of the
+              service I've already used (see the{' '}
+              <Link to="/refund-policy" className="underline hover:text-primary">
+                Refund Policy
+              </Link>
+              ). I agree to the{' '}
+              <Link to="/terms-of-service" className="underline hover:text-primary">
+                Terms of Service
+              </Link>{' '}
+              and have read the{' '}
+              <Link to="/privacy-policy" className="underline hover:text-primary">
+                Privacy Policy
+              </Link>
+              .
+            </label>
+          </div>
+        )}
 
         <p className="text-xs text-muted-foreground text-center mt-8 max-w-2xl mx-auto">
           Payments are securely processed by Stripe. SnapGain never stores your
