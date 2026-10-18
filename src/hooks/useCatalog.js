@@ -189,6 +189,7 @@ export function useStoreOffers(storeId) {
   const [cashbackOffers, setCashbackOffers] = useState([]);
   const [pointOffers, setPointOffers] = useState([]);
   const [giftCardOffers, setGiftCardOffers] = useState([]);
+  const [bonusOffers, setBonusOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -197,6 +198,7 @@ export function useStoreOffers(storeId) {
       setCashbackOffers([]);
       setPointOffers([]);
       setGiftCardOffers([]);
+      setBonusOffers([]);
       setLoading(false);
       return;
     }
@@ -229,10 +231,19 @@ export function useStoreOffers(storeId) {
           .eq('is_active', true)
           .gte('last_verified_at', cutoff)
           .order('discount_pct', { ascending: false }),
+        // Fixed "N Avios per order" bonuses (0035), e.g. Sainsbury's
+        // Grocery: 700 / 800 / 100 Avios by customer type and channel.
+        supabase
+          .from('point_bonus_offers')
+          .select('id, store_id, airline, bonus_points, customer_type, channel, min_spend, affiliate_link, conditions, last_verified_at')
+          .eq('store_id', storeId)
+          .eq('is_active', true)
+          .gte('last_verified_at', cutoff)
+          .order('bonus_points', { ascending: false }),
       ]);
     };
 
-    const apply = ([cbRes, ptRes, gcRes]) => {
+    const apply = ([cbRes, ptRes, gcRes, bnRes]) => {
       if (!alive) return;
       if (cbRes.error) setError(cbRes.error);
       else setCashbackOffers(cbRes.data || []);
@@ -240,6 +251,8 @@ export function useStoreOffers(storeId) {
       else setPointOffers(ptRes.data || []);
       if (gcRes.error) setError(gcRes.error);
       else setGiftCardOffers(gcRes.data || []);
+      // A missing bonus table must not hide the other offers.
+      setBonusOffers(bnRes.error ? [] : bnRes.data || []);
       setLoading(false);
     };
 
@@ -260,7 +273,7 @@ export function useStoreOffers(storeId) {
     };
   }, [storeId]);
 
-  return { cashbackOffers, pointOffers, giftCardOffers, loading, error };
+  return { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, loading, error };
 }
 
 /**

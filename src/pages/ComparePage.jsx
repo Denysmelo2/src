@@ -1031,6 +1031,7 @@ function ComparePage() {
     cashbackOffers,
     pointOffers,
     giftCardOffers,
+    bonusOffers,
     loading: offersLoading,
   } = useStoreOffers(storeId);
   const { programs: milesPrograms } = useMilesPrograms();
@@ -1079,6 +1080,7 @@ function ComparePage() {
       cashbackOffers,
       pointOffers,
       giftCardOffers,
+      bonusOffers,
       milesPrograms,
       userWallet: userWalletForStrategy,
       includeStacks: canSeeStacks,
@@ -1091,6 +1093,7 @@ function ComparePage() {
     cashbackOffers,
     pointOffers,
     giftCardOffers,
+    bonusOffers,
     milesPrograms,
     userWalletForStrategy,
     canSeeStacks,

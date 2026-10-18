@@ -51,7 +51,7 @@ function StrategyPage() {
   const amount = Number(searchParams.get('amount')) || 100;
 
   const { store, loading: storeLoading } = useStoreBySlug(storeSlug);
-  const { cashbackOffers, pointOffers, giftCardOffers, loading: offersLoading } = useStoreOffers(store?.id);
+  const { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, loading: offersLoading } = useStoreOffers(store?.id);
   const { programs: milesPrograms } = useMilesPrograms();
   const { strategies: curatedStrategies } = useCuratedStrategies(
     store?.id,
@@ -78,11 +78,12 @@ function StrategyPage() {
         cashbackOffers,
         pointOffers,
         giftCardOffers,
+        bonusOffers,
         milesPrograms,
         userWallet: userWalletForStrategy,
         includeStacks: isPremium || isAdmin,
       }),
-    [store, amount, cashbackOffers, pointOffers, giftCardOffers, milesPrograms, userWalletForStrategy, isPremium, isAdmin]
+    [store, amount, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, milesPrograms, userWalletForStrategy, isPremium, isAdmin]
   );
 
   // Pick the highlighted strategy: routeId from URL > best by GBP return
