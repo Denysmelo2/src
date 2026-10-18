@@ -144,9 +144,16 @@ disparo automático é o das 08:00 de Londres.
 - KiwiCo e KiwiCo UK estavam juntadas por engano com Kiwi.com. O dono decidiu
   (17/10) que KiwiCo **não faz parte do SnapGain**: ficaram inativas, com a
   coluna nova `stores.excluded_at`, e o robô não as reativa.
-- Falta: 74 grupos de lojas com o mesmo nome que nunca foram juntados. A lista
-  para o dono revisar com o Cowork está em
-  `docs/LOJAS_DUPLICADAS_REVISAR_2026-10-17.md`.
+- 74 grupos de lojas com o mesmo nome revisados pelo dono com o Cowork
+  (`docs/DECISAO_LOJAS_REPETIDAS_2026-10-17.md`, branch
+  `docs/handover-cowork-2026-10-17`). Migration 0026 (aplicada em 18/10):
+  69 pares juntados, com as ofertas movidas e cópia em
+  `ops.store_merge_fix_20261018` e `…_stores`. Os 5 pares mantidos separados
+  (braun, manomano, mission, national-trust, perfume) não foram tocados.
+  `manomano` foi renomeada para "ManoMano". Gap, Sonos e Travelodge mostram
+  cashback e Avios juntos.
+- O robô não recria as lojas repetidas: toda busca dele segue `merged_into`
+  desde a correção snapgain-scraper#39.
 
 ## O que ainda falta para "100% pronto para vender"
 
