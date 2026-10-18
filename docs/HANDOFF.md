@@ -197,6 +197,51 @@ disparo automático é o das 08:00 de Londres.
     tem alguma (PR Denysmelo2/snapgain-scraper#40, só a marca `gift-card`
     continua sendo somada).
 
+### Categorias, nomes e lojas repetidas (18/10, aplicado)
+- `docs/DECISAO_CATEGORIAS_2026-10-18.md`, migration 0031:
+  - as 95 lojas ganharam de 1 a 3 categorias aprovadas (a marca `gift-card`
+    ficou onde já estava);
+  - 14 nomes sem sufixo ("adidas Shop" → "adidas", "Very.co.uk" → "Very"…);
+  - 4 pares juntados como na 0026 (`alpinetrekcouk`, `ligocouk`,
+    `tyndrumwhiskycom` e `yoursurprisecouk` apontam para a loja que fica).
+  - Cópia de antes: `ops.store_cleanup_20261018_stores` (103 lojas) e
+    `ops.store_cleanup_20261018_offers` (2 ofertas).
+- Achado do Cowork **não mudado**: os domínios de `hotelscom`
+  (hotels-ie.co.uk), `lululemon` (lululemon-ie.co.uk) e `sweaty-betty`
+  (sweaty-betty-ie.co.uk) parecem errados. Conferir no site de cada loja
+  antes de trocar.
+- Ainda há 13 lojas com 10 a 14 categorias (eBay, Etsy, QVC, Fruugo…). Não
+  entraram na decisão.
+
+### Estratégias do NX (18/10) — regras para a tarefa 3
+`docs/DECISAO_NX_ESTRATEGIAS_2026-10-18.md`. Feito agora:
+- 0032 tirou "Prefer cash? The 21% triple stack uses NX instead." de
+  `deliveroo-advanced-avios`. Volta quando a 21% voltar.
+- Biblioteca do e-book (`StrategyLibraryPage.jsx`): `NX_ROUTES_LIVE = false`
+  esconde a rota NX + Airtime, a rota A (NX) do Sainsbury's e o passo NX do
+  Deliveroo. O número de estratégias na página sai da lista.
+- Playbook e Home não citam mais "21% Deliveroo" nem "11% Sainsbury's".
+- As 4 da 0029 continuam desligadas.
+
+Na tarefa 3 e depois dela:
+- NX só como cashback de no mínimo 10% em loja parceira. Nenhum passo de
+  comprar gift card / One4all no NX.
+- Uma estratégia só volta se a oferta NX da loja tiver `last_verified_at`
+  dos últimos 30 dias.
+- `sainsburys-max-stack`: volta como está.
+- `deliveroo-triple-stack`: só depois que o Cowork confirmar, com o dono
+  logado no NX, que o NX paga no Deliveroo quando o pedido é pago com gift
+  card. Usar as taxas reais do dia (JamDoughnut e NX).
+- `nx-one4all-airtime-triple`: reescrever antes, como "11% online na Boots:
+  NX + cartão de pontos". Sem Argos e sem somar o Airtime (o Airtime pode
+  ficar como dica à parte, "na loja física").
+- `deliveroo-easy-combo`: fica desligada.
+- Biblioteca: ao ligar `NX_ROUTES_LIVE`, reescrever as rotas NX com as
+  mesmas regras.
+- Robô mensal: lê a lista pública de lojas do NX, grava "Minimum 10%" com a
+  data e não rebaixa taxa real já conferida. As taxas reais o Cowork lê na
+  área de membro e grava com `conditions` = "Checked in member area".
+
 ## O que ainda falta para "100% pronto para vender"
 
 1. Stripe (dono, no painel): terminar o portal do cliente (trocar de plano com
