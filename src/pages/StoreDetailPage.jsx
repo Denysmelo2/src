@@ -32,6 +32,7 @@ import { useUserFavourites, useUserWallet } from '@/hooks/useUserState';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { computeStrategies, withSyntheticNxOffer } from '@/lib/strategies';
 import { buildWalletFilter } from '@/lib/walletFilter';
+import { useSubscription } from '@/hooks/useSubscription';
 import { StoreLogo } from '@/components/StoreLogo';
 // The age of a rate used to render here as a flat grey "Verified 144d
 // ago" — the same weight as "Verified 2h ago" — via a local copy of a
@@ -40,6 +41,7 @@ import { StoreLogo } from '@/components/StoreLogo';
 // one. See lib/dataFreshness.js.
 import { DataAge } from '@/components/DataAge';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
+import { platformLabel } from '@/lib/platformNames';
 
 // 2026-05-18: collapsed from 5 tabs to 2 per Bárbara's UX feedback —
 // "as pessoas não gostam de pensar, querem a resposta pronta". The
@@ -53,13 +55,19 @@ const TABS = [
 
 const DEFAULT_AMOUNT = 100;
 
-// "Up to" appears when the platform exposes a multi-tier rate (the
-// rate column holds the MAX). We show it explicitly so the headline
-// doesn't lie: "Up to 56%" sets the expectation that the breakdown
-// below may include lower tiers (e.g. SHEIN: 16.8% new customer vs
-// 2.4% existing customer — wildly different from the headline).
+// The rate column holds the MAX of a multi-tier rate (SHEIN: 16.8% new
+// customer vs 2.4% existing customer). When the tiers are known the
+// headline is the range, lowest first ("2.4–16.8%"), the same as the
+// routes (lib/strategies.js). "Up to" is left for an offer with no
+// breakdown, where the lower tiers are unknown.
 function CashbackOfferCard({ offer }) {
-  const isUpTo = offer.conditions === 'Up to';
+  const tierRates = (Array.isArray(offer.rate_breakdown) ? offer.rate_breakdown : [])
+    .map((t) => Number(t?.rate))
+    .filter((r) => Number.isFinite(r) && r > 0);
+  const low = tierRates.length > 1 ? Math.min(...tierRates) : null;
+  const rateText =
+    low != null && low < Number(offer.rate) ? `${low}–${offer.rate}%` : `${offer.rate}%`;
+  const isUpTo = offer.conditions === 'Up to' && rateText === `${offer.rate}%`;
   return (
     <Card className="card-hover">
       <CardHeader className="pb-2">
@@ -69,15 +77,15 @@ function CashbackOfferCard({ offer }) {
             cashback
           </span>
         </div>
-        <CardTitle className="text-lg pt-2">{offer.platform}</CardTitle>
+        <CardTitle className="text-lg pt-2">{platformLabel(offer.platform)}</CardTitle>
         <CardDescription>
-          {isUpTo ? `Up to ${offer.rate}% cashback` : `${offer.rate}% cashback`}
+          {isUpTo ? `Up to ${rateText} cashback` : `${rateText} cashback`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="text-2xl font-bold gradient-text">
           {isUpTo && <span className="text-base font-medium opacity-70">Up to </span>}
-          {offer.rate}%
+          {rateText}
         </div>
 
         <RateBreakdown breakdown={offer.rate_breakdown} />
@@ -100,7 +108,7 @@ function CashbackOfferCard({ offer }) {
               rel="sponsored noopener noreferrer"
               className="text-sm font-medium text-primary inline-flex items-center hover:underline"
             >
-              Open {offer.platform} <ExternalLink className="w-3.5 h-3.5 ml-1" />
+              Open {platformLabel(offer.platform)} <ExternalLink className="w-3.5 h-3.5 ml-1" />
             </a>
           );
         })()}
@@ -173,6 +181,11 @@ function StoreDetailPage() {
     () => buildWalletFilter({ walletOnly, wallet }),
     [walletOnly, wallet]
   );
+  // Stacked routes (two platforms on one purchase) are a subscriber
+  // feature, same rule as /compare and the strategy page (owner,
+  // 18/10/2026). Admins see everything.
+  const { isPremium, isAdmin } = useSubscription();
+  const canSeeStacks = isPremium || isAdmin;
 
   const strategies = useMemo(
     () =>
@@ -184,8 +197,9 @@ function StoreDetailPage() {
         giftCardOffers,
         milesPrograms,
         userWallet: userWalletForStrategy,
+        includeStacks: canSeeStacks,
       }),
-    [store, cashbackOffers, pointOffers, giftCardOffers, milesPrograms, userWalletForStrategy]
+    [store, cashbackOffers, pointOffers, giftCardOffers, milesPrograms, userWalletForStrategy, canSeeStacks]
   );
 
   // (bestStrategy was previously used by the standalone "Best strategy"
@@ -277,7 +291,7 @@ function StoreDetailPage() {
             {strategies.length > 0 && (
               <div className="space-y-2">
                 <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Single-platform alternatives (on £{DEFAULT_AMOUNT})
+                  {canSeeStacks ? 'More routes' : 'Single-platform routes'} (on £{DEFAULT_AMOUNT})
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {strategies.slice(0, 6).map((s, i) => (
@@ -291,6 +305,15 @@ function StoreDetailPage() {
                     />
                   ))}
                 </div>
+                {!canSeeStacks && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Routes that combine two platforms on one purchase are for
+                    subscribers.{' '}
+                    <Link to="/pricing" className="text-primary font-semibold hover:underline">
+                      See plans
+                    </Link>
+                  </p>
+                )}
                 {strategies.length > 6 && (
                   <p className="text-xs text-muted-foreground text-center pt-1">
                     {strategies.length - 6} more routes available —{' '}

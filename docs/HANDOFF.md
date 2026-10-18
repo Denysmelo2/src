@@ -163,6 +163,39 @@ disparo automático é o das 08:00 de Londres.
   Avios de Boots, ASOS, Nike, Gap, Sonos e Travelodge, e pesquisar com o dono o
   valor certo dos outros programas de pontos. A Lufthansa está a £1,10 por
   milha, a TAP e a Tesco a £1,00 por ponto.
+- Decisão do dono (`docs/DECISAO_VALOR_PONTOS_2026-10-18.md`), aplicada:
+  - 0028: valor de 1 ponto por programa (Tesco 1p, Morrisons 0,1p, Nectar
+    0,5p, companhias aéreas e Amex 0,92p) e M&S Sparks, My Waitrose, Co-op e
+    Lidl Plus desligados (nada apagado).
+  - Item 1 da seção 3: as rotas que juntam duas plataformas aparecem só para
+    assinante (e admin) em todas as telas; os outros veem um aviso com link
+    para os planos.
+  - Item 2 da seção 3: 0029 desligou as 4 estratégias prontas que dependem do
+    NX: `nx-one4all-airtime-triple`, `deliveroo-triple-stack`,
+    `deliveroo-easy-combo`, `sainsburys-max-stack`. **Religar depois da
+    tarefa 3** (robô mensal do NX), com `is_active = true`. Os cartões de
+    estratégia pronta agora mostram "Strategy reviewed: 17 Sep 2026" (data
+    de Londres da última edição, `updated_at`).
+  - Item 3 da seção 3: oferta com faixa de % (ex.: Boots na Quidco, 10% só
+    GHD, 6% cliente novo, 3% os outros) agora entra no ranking e nos totais
+    pelo **menor** valor, e o cartão mostra a faixa ("3–10% cashback",
+    "£3.00–£10.00"). Vale para rotas e para o cartão de oferta da página da
+    loja. "Up to X%" sem lista de faixas (Picodi) continua como está. Hot
+    Deals e Supermarket Deals ainda ordenam pelo maior.
+  - Item 4 da seção 3: nomes de plataforma aparecem certos nos cartões
+    (Quidco, Cheddar, EverUp, JamDoughnut, Picodi, Airtime) por
+    `src/lib/platformNames.js`. O banco continua com as chaves em minúsculas,
+    porque os robôs, os links de afiliado e a carteira usam elas.
+  - Item 5 da seção 3 (parte 1): 0030 trocou os nomes "Travelodge - UK",
+    "Argos.co.uk" e "Currys Partmaster" por Travelodge, Argos e Currys, e
+    juntou à Currys uma loja vazia da Cheddar que também se chamava
+    "Currys". Categorias estranhas: 95 lojas grandes estão em 17 a 22
+    categorias, porque o robô da Quidco só soma categorias e nunca tira.
+    Decisão do dono: o Cowork escolhe de 1 a 3 por loja
+    (`docs/PARA_COWORK_CATEGORIAS_2026-10-18.md`), o dono aprova e o Claude
+    Code aplica com uma migration. O robô já não soma categorias em loja que
+    tem alguma (PR Denysmelo2/snapgain-scraper#40, só a marca `gift-card`
+    continua sendo somada).
 
 ## O que ainda falta para "100% pronto para vender"
 

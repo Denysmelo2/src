@@ -12,6 +12,7 @@
  */
 
 import { getAffiliateLink, resolveOpenUrl } from '@/lib/affiliateLinks';
+import { platformLabel as label } from '@/lib/platformNames';
 
 const POINT_LABELS_BY_PROGRAM = [
   { match: /avios/i, unit: 'Avios' },
@@ -31,6 +32,20 @@ function pointUnitLabel(programName) {
 function safeNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/** "3–10%" for a cashback layer with a range, "5%" otherwise. */
+export function cashbackPctText(layer) {
+  return layer?.ratePctMax != null
+    ? `${layer.ratePct}–${layer.ratePctMax}%`
+    : `${layer?.ratePct ?? 0}%`;
+}
+
+/** "£3.00–£10.00" when the top of a range differs, "£3.00" otherwise. */
+function gbpText(low, high) {
+  return high != null && high > low
+    ? `£${low.toFixed(2)}–£${high.toFixed(2)}`
+    : `£${low.toFixed(2)}`;
 }
 
 /**
@@ -141,7 +156,6 @@ export function computeStrategies({
   const cashbackLayer = (o) => {
     const raw = safeNumber(o.rate, 0);
     const floor = cashbackFloor(o.platform);
-    const ratePct = Math.max(raw, floor);
     // Pass through the multi-tier breakdown so the UI can disclose
     // it on the route card. TopCashback stores e.g. {Online: 30%,
     // Brand Hub: 1%} — the "30%" headline is misleading without the
@@ -150,13 +164,27 @@ export function computeStrategies({
     const isUpTo =
       o.conditions === 'Up to' ||
       (rateBreakdown && rateBreakdown.length > 1);
+    // The rate column holds the TOP of the breakdown (Boots on Quidco:
+    // 10% for GHD only, 6% new customers, 3% everyone else). Owner's
+    // call (18/10/2026): rank and total by the lowest tier, the one
+    // anyone gets, and show the range. A plain "Up to X%" with no
+    // breakdown has no known lower tier, so it keeps its one rate.
+    const tierRates = (rateBreakdown || [])
+      .map((t) => Number(t?.rate))
+      .filter((r) => Number.isFinite(r) && r > 0);
+    const low = tierRates.length > 1 ? Math.min(...tierRates) : raw;
+    const ratePct = Math.max(Math.min(low, raw), floor);
+    const top = Math.max(raw, floor);
+    const ratePctMax = top > ratePct ? top : null;
     return {
       kind: 'cashback',
       platform: o.platform || 'Cashback',
       ratePct,
+      ratePctMax,
       // Expose the floor so the UI can label "min 10% (NX Rewards)" if useful
       flooredAt: floor && raw < floor ? floor : null,
       gbpReturn: numAmount * (ratePct / 100),
+      gbpReturnMax: ratePctMax != null ? numAmount * (ratePctMax / 100) : null,
       affiliateLink: o.affiliate_link || getAffiliateLink(o.platform),
       lastVerifiedAt: o.last_verified_at,
       offerId: o.id,
@@ -213,18 +241,18 @@ export function computeStrategies({
   // ─── Flat: cashback only ─────────────────────────────────────────────
   cashbackToUse.forEach((o) => {
     const layer = cashbackLayer(o);
-    // "Up to X% cashback" makes the headline honest — the rate column
-    // holds the MAX of the breakdown, so prefixing with "Up to" tells
-    // the user the real number depends on what they buy.
-    const ratePrefix = layer.isUpTo ? 'Up to ' : '';
+    // A breakdown shows as a range ("3–10% cashback"). "Up to X%" stays
+    // only for an offer with no breakdown, where the lower tiers are
+    // unknown.
+    const ratePrefix = layer.isUpTo && layer.ratePctMax == null ? 'Up to ' : '';
     out.push({
       id: `cashback-${o.id}`,
       type: 'cashback',
-      title: layer.platform,
-      subtitle: `${ratePrefix}${layer.ratePct}% cashback`,
+      title: label(layer.platform),
+      subtitle: `${ratePrefix}${cashbackPctText(layer)} cashback`,
       gbpReturn: layer.gbpReturn,
-      gbpReturnDisplay: `£${layer.gbpReturn.toFixed(2)}`,
-      providerName: layer.platform,
+      gbpReturnDisplay: gbpText(layer.gbpReturn, layer.gbpReturnMax),
+      providerName: label(layer.platform),
       affiliateLink: layer.affiliateLink,
       lastVerifiedAt: layer.lastVerifiedAt,
       // Surface breakdown at the top level too so route-card components
@@ -242,7 +270,7 @@ export function computeStrategies({
     const layer = pointsLayer(o);
     // Title-case the airline for display ('avios' → 'Avios'). DB stores
     // lowercase for the join key but the UI looks nicer capitalised.
-    const display = layer.platform.charAt(0).toUpperCase() + layer.platform.slice(1);
+    const display = label(layer.platform);
     out.push({
       id: `points-${o.id}`,
       type: 'points',
@@ -272,11 +300,11 @@ export function computeStrategies({
     out.push({
       id: `giftcard-${g.id}`,
       type: 'gift_card',
-      title: layer.platform,
+      title: label(layer.platform),
       subtitle: `${layer.discountPct}% off gift card`,
       gbpReturn: layer.gbpReturn,
       gbpReturnDisplay: `£${layer.gbpReturn.toFixed(2)}`,
-      providerName: layer.platform,
+      providerName: label(layer.platform),
       affiliateLink: layer.affiliateLink,
       lastVerifiedAt: layer.lastVerifiedAt,
       layers: [layer],
@@ -296,14 +324,15 @@ export function computeStrategies({
     cashbackToUse.forEach((c) => {
       const cb = cashbackLayer(c);
       const total = gc.gbpReturn + cb.gbpReturn;
+      const totalMax = cb.gbpReturnMax != null ? gc.gbpReturn + cb.gbpReturnMax : null;
       out.push({
         id: `stack-gc${g.id}-cb${c.id}`,
         type: 'stack',
-        title: `${gc.platform} + ${cb.platform}`,
-        subtitle: `${gc.discountPct}% off + ${cb.ratePct}% cashback`,
+        title: `${label(gc.platform)} + ${label(cb.platform)}`,
+        subtitle: `${gc.discountPct}% off + ${cashbackPctText(cb)} cashback`,
         gbpReturn: total,
-        gbpReturnDisplay: `£${total.toFixed(2)}`,
-        providerName: `${gc.platform} + ${cb.platform}`,
+        gbpReturnDisplay: gbpText(total, totalMax),
+        providerName: `${label(gc.platform)} + ${label(cb.platform)}`,
         layers: [gc, cb],
         raw: { giftCard: g, cashback: c },
       });
@@ -319,13 +348,13 @@ export function computeStrategies({
       out.push({
         id: `stack-gc${g.id}-pt${p.id}`,
         type: 'stack',
-        title: `${gc.platform} + ${pt.platform}`,
+        title: `${label(gc.platform)} + ${label(pt.platform)}`,
         subtitle: `${gc.discountPct}% off + ${pt.earnRate} pts/£`,
         // Show gift-card £ saving AND points separately — both are real
         // value the user collects on the same purchase.
         gbpReturn: total,
         gbpReturnDisplay: `£${gc.gbpReturn.toFixed(2)} + ${Math.round(pt.points).toLocaleString()} ${pt.pointUnit}`,
-        providerName: `${gc.platform} + ${pt.platform}`,
+        providerName: `${label(gc.platform)} + ${label(pt.platform)}`,
         layers: [gc, pt],
         raw: { giftCard: g, points: p },
       });
@@ -419,10 +448,10 @@ export function buildStrategySteps(strategy, store) {
     const url = urlFor(layer);
     return [
       {
-        title: `Open ${layer?.platform || 'the gift card app'}`,
+        title: `Open ${label(layer?.platform) || 'the gift card app'}`,
         detail: `Buy a ${storeName} gift card at ${layer?.discountPct || 0}% off the face value.`,
         actionUrl: url,
-        actionLabel: `Open ${layer?.platform || 'gift card app'}`,
+        actionLabel: `Open ${label(layer?.platform) || 'gift card app'}`,
       },
       {
         title: `Pay with the gift card at ${storeName}`,
@@ -440,25 +469,25 @@ export function buildStrategySteps(strategy, store) {
 
     if (gc) {
       steps.push({
-        title: `Buy a ${storeName} gift card via ${gc.platform}`,
+        title: `Buy a ${storeName} gift card via ${label(gc.platform)}`,
         detail: `${gc.discountPct}% off — saves £${gc.gbpReturn.toFixed(2)} on this purchase.`,
         actionUrl: urlFor(gc),
-        actionLabel: `Open ${gc.platform}`,
+        actionLabel: `Open ${label(gc.platform)}`,
       });
     }
     if (cb) {
       steps.push({
-        title: `Open ${cb.platform} and click through to ${storeName}`,
+        title: `Open ${label(cb.platform)} and click through to ${storeName}`,
         detail: 'Sign in first so cashback tracks to your account.',
         actionUrl: urlFor(cb),
-        actionLabel: `Open ${cb.platform}`,
+        actionLabel: `Open ${label(cb.platform)}`,
       });
     } else if (pt) {
       steps.push({
-        title: `Open the ${pt.platform} partner portal and click through to ${storeName}`,
+        title: `Open the ${label(pt.platform)} partner portal and click through to ${storeName}`,
         detail: 'Sign in to your program account so the points credit correctly.',
         actionUrl: urlFor(pt),
-        actionLabel: `Open ${pt.platform}`,
+        actionLabel: `Open ${label(pt.platform)}`,
       });
     }
     steps.push({
@@ -468,7 +497,7 @@ export function buildStrategySteps(strategy, store) {
     if (cb) {
       steps.push({
         title: 'Wait for cashback to track',
-        detail: `${cb.ratePct}% cashback (£${cb.gbpReturn.toFixed(2)}) usually shows as "pending" within 7 days.`,
+        detail: `${cashbackPctText(cb)} cashback (${gbpText(cb.gbpReturn, cb.gbpReturnMax)}) usually shows as "pending" within 7 days.`,
         warning: 'Some retailers exclude gift-card-funded purchases — check the conditions on the cashback page.',
       });
     }

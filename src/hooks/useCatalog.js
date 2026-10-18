@@ -317,7 +317,7 @@ export function useCuratedStrategies(storeId, storeCategories = null) {
     supabase
       .from('curated_strategies')
       .select(
-        'id, slug, title, description, hero_return_pct, hero_return_label, bonus_points, bonus_points_program, difficulty, category, tags, target_store_id, applicable_store_ids, applicable_categories, steps, is_premium, playbook_only, display_order'
+        'id, slug, title, description, hero_return_pct, hero_return_label, bonus_points, bonus_points_program, difficulty, category, tags, target_store_id, applicable_store_ids, applicable_categories, steps, is_premium, playbook_only, display_order, updated_at'
       )
       .eq('is_active', true)
       .eq('playbook_only', false)
@@ -356,7 +356,7 @@ export function useCuratedPlaybook() {
     supabase
       .from('curated_strategies')
       .select(
-        'id, slug, title, description, hero_return_pct, hero_return_label, bonus_points, bonus_points_program, difficulty, category, tags, target_store_id, applicable_store_ids, steps, is_premium, playbook_only, display_order'
+        'id, slug, title, description, hero_return_pct, hero_return_label, bonus_points, bonus_points_program, difficulty, category, tags, target_store_id, applicable_store_ids, steps, is_premium, playbook_only, display_order, updated_at'
       )
       .eq('is_active', true)
       .order('display_order', { ascending: true })

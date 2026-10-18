@@ -60,10 +60,11 @@ import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { RateBreakdown } from '@/components/RateBreakdown';
 import { labelForStrategy } from '@/components/AutoStrategyCard';
 import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
-import { oldestVerifiedAt } from '@/lib/dataFreshness';
+import { oldestVerifiedAt, reviewedLabel } from '@/lib/dataFreshness';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
+import { platformLabel } from '@/lib/platformNames';
 
 // ─────────────────────────────────────────────────────────────────────
 // Helpers
@@ -566,13 +567,18 @@ function RouteBox({
                 {item.subtitle}
               </p>
             )}
-            {/* How old the numbers above are. Auto routes only: those
-                come from the ingestion pipeline and carry
-                last_verified_at. Curated strategies are hand-written
-                editorial content with no such column, and inventing a
-                date for them would be exactly the dishonesty this is
-                here to remove. */}
-            {!isCurated && (
+            {/* How old the numbers above are. Auto routes come from the
+                ingestion pipeline and carry last_verified_at. Curated
+                strategies are hand-written and have no such column, so
+                they show when the strategy itself was last edited
+                (updated_at), not a verification age. */}
+            {isCurated ? (
+              reviewedLabel(item.curated?.updated_at) && (
+                <p className="text-[11px] leading-none text-muted-foreground">
+                  {reviewedLabel(item.curated.updated_at)}
+                </p>
+              )
+            ) : (
               <DataAge verifiedAt={item.verifiedAt} now={now} />
             )}
           </div>
@@ -730,8 +736,8 @@ function AutoRouteDetail({ strategy, storeSlug, amount, now }) {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium">
-                  {layer.kind === 'cashback' && `${layer.platform} cashback`}
-                  {layer.kind === 'gift_card' && `${layer.platform} gift card`}
+                  {layer.kind === 'cashback' && `${platformLabel(layer.platform)} cashback`}
+                  {layer.kind === 'gift_card' && `${platformLabel(layer.platform)} gift card`}
                   {layer.kind === 'points' &&
                     `${layer.platform || layer.airline || 'Points'}`}
                   {!['cashback', 'gift_card', 'points'].includes(layer.kind) &&
@@ -1034,7 +1040,10 @@ function ComparePage() {
   );
   const wallet = useUserWallet();
   const { walletOnly } = useWalletOnlyPref();
-  const { isPremium } = useSubscription();
+  const { isPremium, isAdmin } = useSubscription();
+  // Stacked routes are a subscriber feature, same rule as the store and
+  // strategy pages (owner, 18/10/2026). Admins see everything.
+  const canSeeStacks = isPremium || isAdmin;
 
   const userWalletForStrategy = useMemo(
     () => buildWalletFilter({ walletOnly, wallet }),
@@ -1072,7 +1081,7 @@ function ComparePage() {
       giftCardOffers,
       milesPrograms,
       userWallet: userWalletForStrategy,
-      includeStacks: isPremium,
+      includeStacks: canSeeStacks,
     });
   }, [
     submitted,
@@ -1084,7 +1093,7 @@ function ComparePage() {
     giftCardOffers,
     milesPrograms,
     userWalletForStrategy,
-    isPremium,
+    canSeeStacks,
   ]);
 
   // Direct Avios eStore baseline for THIS store: max earn_rate among
@@ -1282,6 +1291,15 @@ function ComparePage() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Ranked by best £ return — tap any box to see the steps.
                     </p>
+                    {!canSeeStacks && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Routes that combine two platforms on one purchase are
+                        for subscribers.{' '}
+                        <Link to="/pricing" className="text-primary font-semibold hover:underline">
+                          See plans
+                        </Link>
+                      </p>
+                    )}
                   </div>
                   <Button
                     type="button"

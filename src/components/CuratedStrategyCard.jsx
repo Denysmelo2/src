@@ -51,6 +51,8 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { reviewedLabel } from '@/lib/dataFreshness';
+import { platformLabel } from '@/lib/platformNames';
 
 const ICONS = {
   'gift-card': Gift,
@@ -142,7 +144,7 @@ function Step({ step, idx, onOpen, locked }) {
                 )}
                 {step.platform && (
                   <span className="text-xs text-muted-foreground">
-                    via {step.platform}
+                    via {platformLabel(step.platform)}
                   </span>
                 )}
               </div>
@@ -230,6 +232,11 @@ export function CuratedStrategyCard({
             >
               {strategy.title}
             </CardTitle>
+            {reviewedLabel(strategy.updated_at) && (
+              <p className="mt-1 text-[11px] leading-none text-muted-foreground">
+                {reviewedLabel(strategy.updated_at)}
+              </p>
+            )}
             {strategy.description && !compact && (
               <CardDescription className="mt-1.5 leading-relaxed">
                 {strategy.description}

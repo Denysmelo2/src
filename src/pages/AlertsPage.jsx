@@ -19,6 +19,7 @@ import {
 import { useAlerts } from '@/hooks/useAlerts';
 import { StoreLogo } from '@/components/StoreLogo';
 import { resolveOpenUrl } from '@/lib/affiliateLinks';
+import { platformLabel } from '@/lib/platformNames';
 
 function fmtTimeAgo(iso) {
   if (!iso) return null;
@@ -152,7 +153,7 @@ function AlertsPage() {
                             {deal.title}
                           </CardTitle>
                           {deal.platform && (
-                            <CardDescription>via {deal.platform}</CardDescription>
+                            <CardDescription>via {platformLabel(deal.platform)}</CardDescription>
                           )}
                         </div>
                       </div>
