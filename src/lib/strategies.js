@@ -60,6 +60,12 @@ function gbpText(low, high) {
  */
 export const NX_PLATFORM_NAME = 'NX Rewards';
 export const NX_FLOOR_PCT = 10;
+
+/** True for NX Rewards, however the platform name is spelt. */
+export function isNxPlatform(platform) {
+  const key = String(platform || '').trim().toLowerCase();
+  return key === 'nx rewards' || key === 'nxrewards' || key === 'nx';
+}
 const NX_SYNTHETIC_ENABLED = false;
 
 export function withSyntheticNxOffer(cashbackOffers, store) {
@@ -319,9 +325,15 @@ export function computeStrategies({
   }
 
   // ─── Stack: gift_card × cashback ─────────────────────────────────────
+  // Never with NX Rewards. Its Special Terms (Deliveroo and Boots, checked
+  // by Cowork in the member area on 18/10/2026): "Cashback is not due on
+  // purchases of gift cards or paying for a purchase using gift cards or
+  // e-gift cards/codes." So "Cheddar + NX Rewards" pays only the gift
+  // card; NX stays a separate route to compare against.
+  const cashbackForGiftCardStacks = cashbackToUse.filter((c) => !isNxPlatform(c.platform));
   giftCardOffers.forEach((g) => {
     const gc = giftCardLayer(g);
-    cashbackToUse.forEach((c) => {
+    cashbackForGiftCardStacks.forEach((c) => {
       const cb = cashbackLayer(c);
       const total = gc.gbpReturn + cb.gbpReturn;
       const totalMax = cb.gbpReturnMax != null ? gc.gbpReturn + cb.gbpReturnMax : null;
