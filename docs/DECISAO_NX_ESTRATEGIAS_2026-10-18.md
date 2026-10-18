@@ -43,15 +43,16 @@ dono corrigiu o rumo em 18/10, à tarde. Onde a versão antiga dizia
     (Cheddar 4,5%, EverUp 4,15%, JamDoughnut 3%).
   - Mostrar a conta. Exemplo para £100: NX £10, Quidco £5, gift card £4,50.
     Melhor: NX.
-- Gift card + NX na mesma compra: só depois que o Cowork confirmar, com o
-  dono logado no NX, que o NX paga quando o pedido é pago com gift card. Até
-  lá, gift card aparece como alternativa, não somado.
-- `deliveroo-triple-stack` (21%) e `deliveroo-easy-combo` (16%): reescrever
-  as duas como **uma só** estratégia, a de cima. Os números 21% e 16% não
-  aparecem mais.
-- **`deliveroo-advanced-avios` ("6% + 700 Avios on Deliveroo") está ativa
-  e errada:** promete Avios que não existem. Desligar já, ou reescrever como
-  "gift card + NX" quando o pagamento com gift card for confirmado.
+- **Gift card + NX na mesma compra NÃO vale.** O Cowork conferiu na área de
+  membro do NX em 18/10, nas "Special Terms" da Deliveroo e da Boots: "Cashback
+  is not due on purchases of gift cards or paying for a purchase using gift
+  cards or e-gift cards/codes". O gift card aparece só como alternativa.
+- `deliveroo-triple-stack` (21%) e `deliveroo-easy-combo` (16%): as duas
+  somavam gift card com NX, o que o NX não paga. Reescrever como **uma só**
+  estratégia, a de cima. Os números 21% e 16% não aparecem mais.
+- **`deliveroo-advanced-avios` ("6% + 700 Avios on Deliveroo"):** prometia
+  Avios que não existem. O Cowork desligou em 18/10 (`is_active = false`, nada
+  apagado). Não religar.
 
 ### Sainsbury's (`sainsburys-max-stack`)
 
@@ -136,3 +137,38 @@ resumo deste arquivo. Em especial, **retirar**:
   dono logado;
 - "a de 16% fica desligada" → as duas do Deliveroo viram **uma**, ajustada;
 - "esconder as rotas NX da biblioteca" → **voltar com elas ajustadas**.
+
+## 6. Feito pelo Cowork em 18/10, com o dono logado no NX
+
+- **Lista de parceiras lida na área de membro:** 1.548 nomes, 1.477 sem
+  contar os eGift. Os nomes estão em `ops.nx_partners`, com a data. Nenhum
+  dado da conta do dono foi guardado.
+- **Cruzamento com `stores`:** pela função `ops.nx_key(nome)`, mais apelidos
+  em `ops.nx_aliases` (Sainsbury's, ASDA e Tesco, que no NX se chamam
+  "… Groceries").
+- **Banco atualizado, com aprovação do dono:**
+  - 1.360 lojas com `in_nx_network = true`: 245 novas, e 204 que saíram da
+    lista ficaram como `false`.
+  - 1.360 ofertas `NX Rewards` ativas, uma por loja, com `rate = 10`,
+    `conditions = 'Minimum 10% (NX partner list checked 18/10/2026)'` e
+    `last_verified_at` de 18/10.
+  - As ofertas NX das lojas que saíram e as repetidas ficaram inativas.
+  - As 50 taxas acima de 10% que vinham de maio (ex.: Lebara 100%) voltaram
+    para 10% até nova conferência. Os valores antigos estão em
+    `ops.nx_backup_20261018_offers` e `ops.nx_backup_20261018_stores`.
+- **Conferido no site depois:** o `/compare` da Deliveroo já mostra "NX
+  Rewards £10.00" com a data de 18/10.
+- **Erro encontrado no site (para o Claude Code corrigir primeiro):** o
+  `/compare` monta combinações "Cheddar + NX Rewards £14.50", "EverUp + NX",
+  "JamDoughnut + NX". **O NX não paga quando se paga com gift card.** O código
+  das combinações (`src/lib/strategies.js`) nunca pode juntar gift card com
+  NX.
+- **Outras regras das Special Terms** (Boots, 18/10), que o card do NX deve
+  mostrar:
+  - compras pelo app da loja não pagam;
+  - alguns produtos não pagam (na Boots: Dyson, Apple, Chanel, Dior, leite
+    infantil e outros);
+  - o cashback é sobre o valor líquido, sem entrega.
+- **Achado:** a lista do NX de 18/10 ainda mostra itens "eGift", inclusive
+  "One4all eGift". A regra do dono continua: **nenhuma estratégia com
+  One4all**. Os eGift foram deixados de fora do cruzamento.
