@@ -213,34 +213,50 @@ disparo automático é o das 08:00 de Londres.
 - Ainda há 13 lojas com 10 a 14 categorias (eBay, Etsy, QVC, Fruugo…). Não
   entraram na decisão.
 
-### Estratégias do NX (18/10) — regras para a tarefa 3
-`docs/DECISAO_NX_ESTRATEGIAS_2026-10-18.md`. Feito agora:
-- 0032 tirou "Prefer cash? The 21% triple stack uses NX instead." de
-  `deliveroo-advanced-avios`. Volta quando a 21% voltar.
-- Biblioteca do e-book (`StrategyLibraryPage.jsx`): `NX_ROUTES_LIVE = false`
-  esconde a rota NX + Airtime, a rota A (NX) do Sainsbury's e o passo NX do
-  Deliveroo. O número de estratégias na página sai da lista.
-- Playbook e Home não citam mais "21% Deliveroo" nem "11% Sainsbury's".
-- As 4 da 0029 continuam desligadas.
+### Estratégias do NX (18/10, tarde) — vale `docs/DECISAO_NX_ESTRATEGIAS_2026-10-18.md`
+A versão da tarde substitui a das 11h. As estratégias do NX **são ajustadas,
+não retiradas**. A conferência é **diária**, não mensal.
 
-Na tarefa 3 e depois dela:
-- NX só como cashback de no mínimo 10% em loja parceira. Nenhum passo de
-  comprar gift card / One4all no NX.
-- Uma estratégia só volta se a oferta NX da loja tiver `last_verified_at`
-  dos últimos 30 dias.
-- `sainsburys-max-stack`: volta como está.
-- `deliveroo-triple-stack`: só depois que o Cowork confirmar, com o dono
-  logado no NX, que o NX paga no Deliveroo quando o pedido é pago com gift
-  card. Usar as taxas reais do dia (JamDoughnut e NX).
-- `nx-one4all-airtime-triple`: reescrever antes, como "11% online na Boots:
-  NX + cartão de pontos". Sem Argos e sem somar o Airtime (o Airtime pode
-  ficar como dica à parte, "na loja física").
-- `deliveroo-easy-combo`: fica desligada.
-- Biblioteca: ao ligar `NX_ROUTES_LIVE`, reescrever as rotas NX com as
-  mesmas regras.
-- Robô mensal: lê a lista pública de lojas do NX, grava "Minimum 10%" com a
-  data e não rebaixa taxa real já conferida. As taxas reais o Cowork lê na
-  área de membro e grava com `conditions` = "Checked in member area".
+Regras:
+- NX = no mínimo 10% comprando pela plataforma NX e **pagando com cartão**.
+- Nunca somar NX com gift card (Special Terms do NX). Nunca somar NX com o
+  Airtime. Nunca One4all.
+- Toda estratégia com NX é uma **comparação**: a conta de cada opção do dia
+  e "Best for you" em destaque. 1 Avios = £0,0092. Mostrar que o NX é por
+  assinatura (30 dias de teste).
+
+Feito em 18/10:
+- `src/lib/strategies.js` não monta mais gift card + NX (src#130).
+- `LiveCompare` dentro do cartão da estratégia (src#131; coluna
+  `live_compare`, 0033). Ligadas e reescritas:
+  - Deliveroo (0034): "10% back with NX".
+  - Boots (0034): NX, Avios, Quidco ou gift card; sem Argos; Airtime só
+    na loja física.
+  - Sainsbury's (0036): NX ou Avios. O bônus fixo por pedido fica na
+    tabela `point_bonus_offers` (0035): 700 para cliente novo pelo site,
+    800 pelo app, 100 para cliente antigo, mínimo de £50.
+- Continuam desligadas: `deliveroo-easy-combo` (juntou com a Deliveroo) e
+  `deliveroo-advanced-avios` (o Avios não tem Deliveroo).
+- O robô do Avios confere o bônus do Sainsbury's todo dia
+  (snapgain-scraper#41). Se o número mudar, ele só avisa e o Cowork
+  confere.
+- Os robôs não usam mais stealth (snapgain-scraper#41). Se um site
+  bloquear, o robô para e as ofertas vencem em 30 dias.
+- Biblioteca, Playbook e Home voltam a citar o NX (src#133).
+
+Falta:
+- **Robô diário do NX:**
+  - Entra com a conta extra da Bárbara, pelo Chrome do Mac dela (CDP).
+  - Para se aparecer captcha ou login.
+  - Na primeira semana só lê.
+  - Não rebaixa taxa real já conferida.
+  - Antes de escrever o robô, o Cowork registra a estrutura da página:
+    `docs/PARA_COWORK_NX_ROBO_2026-10-18.md`.
+- Até o robô existir, o Cowork atualiza a lista e as taxas do NX com o dono
+  logado.
+- Para o dono decidir: o modo `CDP_ENDPOINT` também serve para escapar da
+  detecção de robô do TopCashback (comentário em `lib/browser.js` do
+  scraper).
 
 ## O que ainda falta para "100% pronto para vender"
 
