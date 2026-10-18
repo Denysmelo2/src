@@ -54,13 +54,19 @@ const TABS = [
 
 const DEFAULT_AMOUNT = 100;
 
-// "Up to" appears when the platform exposes a multi-tier rate (the
-// rate column holds the MAX). We show it explicitly so the headline
-// doesn't lie: "Up to 56%" sets the expectation that the breakdown
-// below may include lower tiers (e.g. SHEIN: 16.8% new customer vs
-// 2.4% existing customer — wildly different from the headline).
+// The rate column holds the MAX of a multi-tier rate (SHEIN: 16.8% new
+// customer vs 2.4% existing customer). When the tiers are known the
+// headline is the range, lowest first ("2.4–16.8%"), the same as the
+// routes (lib/strategies.js). "Up to" is left for an offer with no
+// breakdown, where the lower tiers are unknown.
 function CashbackOfferCard({ offer }) {
-  const isUpTo = offer.conditions === 'Up to';
+  const tierRates = (Array.isArray(offer.rate_breakdown) ? offer.rate_breakdown : [])
+    .map((t) => Number(t?.rate))
+    .filter((r) => Number.isFinite(r) && r > 0);
+  const low = tierRates.length > 1 ? Math.min(...tierRates) : null;
+  const rateText =
+    low != null && low < Number(offer.rate) ? `${low}–${offer.rate}%` : `${offer.rate}%`;
+  const isUpTo = offer.conditions === 'Up to' && rateText === `${offer.rate}%`;
   return (
     <Card className="card-hover">
       <CardHeader className="pb-2">
@@ -72,13 +78,13 @@ function CashbackOfferCard({ offer }) {
         </div>
         <CardTitle className="text-lg pt-2">{offer.platform}</CardTitle>
         <CardDescription>
-          {isUpTo ? `Up to ${offer.rate}% cashback` : `${offer.rate}% cashback`}
+          {isUpTo ? `Up to ${rateText} cashback` : `${rateText} cashback`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="text-2xl font-bold gradient-text">
           {isUpTo && <span className="text-base font-medium opacity-70">Up to </span>}
-          {offer.rate}%
+          {rateText}
         </div>
 
         <RateBreakdown breakdown={offer.rate_breakdown} />

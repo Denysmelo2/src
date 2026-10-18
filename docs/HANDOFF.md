@@ -176,6 +176,12 @@ disparo automático é o das 08:00 de Londres.
     tarefa 3** (robô mensal do NX), com `is_active = true`. Os cartões de
     estratégia pronta agora mostram "Strategy reviewed: 17 Sep 2026" (data
     de Londres da última edição, `updated_at`).
+  - Item 3 da seção 3: oferta com faixa de % (ex.: Boots na Quidco, 10% só
+    GHD, 6% cliente novo, 3% os outros) agora entra no ranking e nos totais
+    pelo **menor** valor, e o cartão mostra a faixa ("3–10% cashback",
+    "£3.00–£10.00"). Vale para rotas e para o cartão de oferta da página da
+    loja. "Up to X%" sem lista de faixas (Picodi) continua como está. Hot
+    Deals e Supermarket Deals ainda ordenam pelo maior.
 
 ## O que ainda falta para "100% pronto para vender"
 
