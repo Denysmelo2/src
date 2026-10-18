@@ -1,7 +1,7 @@
-// StrategyLibraryPage — the 9 stacking strategies from the SnapGain
+// StrategyLibraryPage — the stacking strategies from the SnapGain
 // ebook, presented as an interactive library inside the app.
 //
-// Trial-first model (Alt A): trial users see all 9 cards but only
+// Trial-first model (Alt A): trial users see every card but only
 // "Discounted Gift Cards" is fully expandable (the unlocked teaser stack).
 //
 // Sept 2026: NX Rewards stopped selling One4all, and stopped paying
@@ -46,6 +46,17 @@ import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 // advanced playbooks.
 const TRIAL_UNLOCKED_ID = 'discount-gift-cards';
 
+// NX Rewards routes stay off until NX is checked again (task 3, the
+// monthly NX job). Owner's decision of 18/10/2026
+// (docs/DECISAO_NX_ESTRATEGIAS_2026-10-18.md): the library hides the
+// three NX routes meanwhile. A card with `nxOnly` is hidden; a card with
+// `withoutNx` shows those fields instead of its NX version. Before this
+// flips to true, the NX versions must follow that doc: NX only as a
+// 10%+ cashback click-through, Boots without Argos, Airtime never added
+// to an NX purchase, and the Deliveroo NX step only once Cowork has
+// confirmed NX pays on a gift-card-funded order.
+const NX_ROUTES_LIVE = false;
+
 // ────────────────────────────────────────────────────────────────────
 // Strategy catalogue — sourced from the SnapGain ebook
 // ────────────────────────────────────────────────────────────────────
@@ -70,6 +81,7 @@ const STRATEGIES = [
   },
   {
     id: 'nx-airtime',
+    nxOnly: true,
     icon: ShoppingBag,
     name: 'NX + Airtime Rewards',
     tier: 'Intermediate',
@@ -105,6 +117,19 @@ const STRATEGIES = [
       'Example, £100 shop: Route A = £10 NX + 100 Amex points + 100 Nectar. Route B = £4 gift card + 100 card points + 100 Avios + 100 Nectar.',
     ],
     bestFor: 'Your monthly grocery shop. Route A for cash back, Route B when you are collecting Avios.',
+    // Route B only, while NX is off.
+    withoutNx: {
+      return: 'about 5%',
+      returnDetail: 'plus Avios and Nectar',
+      teaser: 'Buy a discounted Sainsbury\'s gift card, then open Sainsbury\'s from the Avios eStore and pay with it. Cash off, Avios and Nectar on the same shop.',
+      steps: [
+        'Buy a Sainsbury\'s gift card at up to 3.9 percent off (EverUp; check Cheddar and JamDoughnut), and pay for it with a card that earns 1 point per £1 (Revolut Metal, Barclaycard Avios, Amex) or 1 percent cashback.',
+        'Open Sainsbury\'s from the Avios eStore (1 Avios per £1), pay with the gift card and scan Nectar. Gift-card payment does not affect the eStore Avios.',
+        '100 Nectar per £100 converts at 400 Nectar = 250 Avios, so £100 of groceries is 62 Avios on top.',
+        'Example, £100 shop: £4 gift card + 100 card points + 100 Avios + 100 Nectar.',
+      ],
+      bestFor: 'Your monthly grocery shop, when you are collecting Avios.',
+    },
   },
   {
     id: 'amazon-optimiser',
@@ -159,6 +184,18 @@ const STRATEGIES = [
       'Example £100 order: 5 percent gift card cashback + 10 percent NX = £15 back, plus 100 Amex points convertible to Avios.',
     ],
     bestFor: 'Anyone who orders takeaway weekly. £30+ saved monthly easily.',
+    // Without the NX step, while NX is off.
+    withoutNx: {
+      return: '5%',
+      returnDetail: 'plus Avios via Amex',
+      teaser: 'Order food on a discounted gift card and earn card points on top. Works for Just Eat too.',
+      steps: [
+        'Buy a Deliveroo gift card with your best rewards card (Amex BA for Avios).',
+        'Pay with the Deliveroo gift card.',
+        'Example £100 order: 5 percent gift card cashback = £5 back, plus 100 Amex points convertible to Avios.',
+      ],
+      bestFor: 'Anyone who orders takeaway weekly.',
+    },
   },
   {
     id: 'fuel-stack',
@@ -217,6 +254,13 @@ const STRATEGIES = [
     bestFor: '£1,000/month rent = £120/year. £1,500 = £180/year. £2,000 = £240/year. £2,500 = £300/year.',
   },
 ];
+
+// The cards shown today: NX routes hidden or swapped while NX is off.
+const LIBRARY = STRATEGIES.flatMap((strategy) => {
+  if (NX_ROUTES_LIVE) return [strategy];
+  if (strategy.nxOnly) return [];
+  return [strategy.withoutNx ? { ...strategy, ...strategy.withoutNx } : strategy];
+});
 
 // ────────────────────────────────────────────────────────────────────
 // Difficulty badge
@@ -371,7 +415,7 @@ function StrategyCard({ strategy, locked }) {
 function StrategyLibraryPage() {
   const tiers = ['Beginner', 'Intermediate', 'Advanced', 'Specialist (Transport)', 'Specialist (Food)', 'Specialist (Fuel)', 'Specialist', 'Specialist (Housing)'];
 
-  // Detect trial vs paid: only paying subscribers see all 9 playbooks.
+  // Detect trial vs paid: only paying subscribers see every playbook.
   // Trial users get exactly one unlocked card (TRIAL_UNLOCKED_ID).
   const { isActive } = useSubscription();
   const isPaying = !!isActive;
@@ -380,7 +424,7 @@ function StrategyLibraryPage() {
   // is the first thing the user sees. For paying users, default tier
   // sort applies (Beginner → Intermediate → Advanced → Specialist).
   const tierOrder = { Beginner: 1, Intermediate: 2, Advanced: 3 };
-  const sorted = [...STRATEGIES].sort((a, b) => {
+  const sorted = [...LIBRARY].sort((a, b) => {
     if (!isPaying) {
       if (a.id === TRIAL_UNLOCKED_ID) return -1;
       if (b.id === TRIAL_UNLOCKED_ID) return 1;
@@ -396,7 +440,7 @@ function StrategyLibraryPage() {
         <title>Strategy Library — SnapGain</title>
         <meta
           name="description"
-          content="9 stacking strategies, from beginner discounted gift cards to the 21 percent Deliveroo triple stack and Avios on rent."
+          content={`${LIBRARY.length} stacking strategies, from beginner discounted gift cards to Avios on rent.`}
         />
       </Helmet>
 
@@ -410,14 +454,14 @@ function StrategyLibraryPage() {
             The Strategy Library
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            9 tested stacks, from the beginner gift-card discount to the
-            21 percent Deliveroo triple stack and Avios on your rent. Click
-            any card to see the step-by-step.
+            {LIBRARY.length} tested stacks, from the beginner gift-card
+            discount to Avios on your rent. Click any card to see the
+            step-by-step.
           </p>
           {!isPaying && (
             <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm text-primary">
               <Sparkles className="w-4 h-4" />
-              Free trial: 1 strategy unlocked. Upgrade to unlock the other 8.
+              Free trial: 1 strategy unlocked. Upgrade to unlock the other {LIBRARY.length - 1}.
             </div>
           )}
         </div>
@@ -433,7 +477,7 @@ function StrategyLibraryPage() {
         </div>
 
         {/* Strategy grid — paying users see all unlocked; trial users
-            see TRIAL_UNLOCKED_ID unlocked and the other 8 locked. */}
+            see TRIAL_UNLOCKED_ID unlocked and the rest locked. */}
         <div className="grid md:grid-cols-2 gap-6 mb-12">
           {sorted.map((strategy) => (
             <StrategyCard
@@ -452,10 +496,9 @@ function StrategyLibraryPage() {
               Pick one. Just one.
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-              You don&rsquo;t need to run all 9 to see results. Start with the
-              Beginner stack today, master it in a week, then layer in the
-              next one. The Sainsbury&rsquo;s stack alone returns about £130
-              plus 700 Avios over a year of normal grocery spending.
+              You don&rsquo;t need to run all {LIBRARY.length} to see results.
+              Start with the Beginner stack today, master it in a week, then
+              layer in the next one.
             </p>
             <Button asChild size="lg" className="px-8">
               <Link to="/home">
