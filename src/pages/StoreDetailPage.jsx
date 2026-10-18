@@ -41,6 +41,7 @@ import { StoreLogo } from '@/components/StoreLogo';
 // one. See lib/dataFreshness.js.
 import { DataAge } from '@/components/DataAge';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
+import { platformLabel } from '@/lib/platformNames';
 
 // 2026-05-18: collapsed from 5 tabs to 2 per Bárbara's UX feedback —
 // "as pessoas não gostam de pensar, querem a resposta pronta". The
@@ -76,7 +77,7 @@ function CashbackOfferCard({ offer }) {
             cashback
           </span>
         </div>
-        <CardTitle className="text-lg pt-2">{offer.platform}</CardTitle>
+        <CardTitle className="text-lg pt-2">{platformLabel(offer.platform)}</CardTitle>
         <CardDescription>
           {isUpTo ? `Up to ${rateText} cashback` : `${rateText} cashback`}
         </CardDescription>
@@ -107,7 +108,7 @@ function CashbackOfferCard({ offer }) {
               rel="sponsored noopener noreferrer"
               className="text-sm font-medium text-primary inline-flex items-center hover:underline"
             >
-              Open {offer.platform} <ExternalLink className="w-3.5 h-3.5 ml-1" />
+              Open {platformLabel(offer.platform)} <ExternalLink className="w-3.5 h-3.5 ml-1" />
             </a>
           );
         })()}

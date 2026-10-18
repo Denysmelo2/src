@@ -29,6 +29,7 @@ import { FilterChip } from '@/components/FilterChip';
 import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
+import { platformLabel } from '@/lib/platformNames';
 
 const isExternal = (url) => /^https?:\/\//i.test(url || '');
 
@@ -533,7 +534,7 @@ function HotDealCard({ deal }) {
           {deal.title}
         </CardTitle>
         {deal.platform && (
-          <CardDescription>via {deal.platform}</CardDescription>
+          <CardDescription>via {platformLabel(deal.platform)}</CardDescription>
         )}
       </CardHeader>
       <CardContent className="space-y-2">
@@ -602,7 +603,7 @@ function RecentBoostCard({ event }) {
                 {store.name || 'Unknown store'}
               </div>
               <div className="text-xs text-muted-foreground">
-                via {event.platform}
+                via {platformLabel(event.platform)}
                 {event.offer_table === 'gift_card' ? ' · gift card' : ''}
               </div>
             </div>
@@ -692,7 +693,7 @@ function OrganicTopDealCard({ offer, rank }) {
                 {store.name || 'Unknown store'}
               </div>
               <div className="text-xs text-muted-foreground">
-                via {offer.platform}
+                via {platformLabel(offer.platform)}
                 {/* 2026-07-05: 'Up to' moved to the big rate number
                     itself so users can't miss it. Only render other
                     conditions here (e.g. minimum spend, category limits). */}

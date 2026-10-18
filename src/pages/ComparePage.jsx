@@ -64,6 +64,7 @@ import { oldestVerifiedAt, reviewedLabel } from '@/lib/dataFreshness';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
+import { platformLabel } from '@/lib/platformNames';
 
 // ─────────────────────────────────────────────────────────────────────
 // Helpers
@@ -735,8 +736,8 @@ function AutoRouteDetail({ strategy, storeSlug, amount, now }) {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium">
-                  {layer.kind === 'cashback' && `${layer.platform} cashback`}
-                  {layer.kind === 'gift_card' && `${layer.platform} gift card`}
+                  {layer.kind === 'cashback' && `${platformLabel(layer.platform)} cashback`}
+                  {layer.kind === 'gift_card' && `${platformLabel(layer.platform)} gift card`}
                   {layer.kind === 'points' &&
                     `${layer.platform || layer.airline || 'Points'}`}
                   {!['cashback', 'gift_card', 'points'].includes(layer.kind) &&

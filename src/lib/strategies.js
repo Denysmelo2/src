@@ -12,6 +12,7 @@
  */
 
 import { getAffiliateLink, resolveOpenUrl } from '@/lib/affiliateLinks';
+import { platformLabel as label } from '@/lib/platformNames';
 
 const POINT_LABELS_BY_PROGRAM = [
   { match: /avios/i, unit: 'Avios' },
@@ -247,11 +248,11 @@ export function computeStrategies({
     out.push({
       id: `cashback-${o.id}`,
       type: 'cashback',
-      title: layer.platform,
+      title: label(layer.platform),
       subtitle: `${ratePrefix}${cashbackPctText(layer)} cashback`,
       gbpReturn: layer.gbpReturn,
       gbpReturnDisplay: gbpText(layer.gbpReturn, layer.gbpReturnMax),
-      providerName: layer.platform,
+      providerName: label(layer.platform),
       affiliateLink: layer.affiliateLink,
       lastVerifiedAt: layer.lastVerifiedAt,
       // Surface breakdown at the top level too so route-card components
@@ -269,7 +270,7 @@ export function computeStrategies({
     const layer = pointsLayer(o);
     // Title-case the airline for display ('avios' → 'Avios'). DB stores
     // lowercase for the join key but the UI looks nicer capitalised.
-    const display = layer.platform.charAt(0).toUpperCase() + layer.platform.slice(1);
+    const display = label(layer.platform);
     out.push({
       id: `points-${o.id}`,
       type: 'points',
@@ -299,11 +300,11 @@ export function computeStrategies({
     out.push({
       id: `giftcard-${g.id}`,
       type: 'gift_card',
-      title: layer.platform,
+      title: label(layer.platform),
       subtitle: `${layer.discountPct}% off gift card`,
       gbpReturn: layer.gbpReturn,
       gbpReturnDisplay: `£${layer.gbpReturn.toFixed(2)}`,
-      providerName: layer.platform,
+      providerName: label(layer.platform),
       affiliateLink: layer.affiliateLink,
       lastVerifiedAt: layer.lastVerifiedAt,
       layers: [layer],
@@ -327,11 +328,11 @@ export function computeStrategies({
       out.push({
         id: `stack-gc${g.id}-cb${c.id}`,
         type: 'stack',
-        title: `${gc.platform} + ${cb.platform}`,
+        title: `${label(gc.platform)} + ${label(cb.platform)}`,
         subtitle: `${gc.discountPct}% off + ${cashbackPctText(cb)} cashback`,
         gbpReturn: total,
         gbpReturnDisplay: gbpText(total, totalMax),
-        providerName: `${gc.platform} + ${cb.platform}`,
+        providerName: `${label(gc.platform)} + ${label(cb.platform)}`,
         layers: [gc, cb],
         raw: { giftCard: g, cashback: c },
       });
@@ -347,13 +348,13 @@ export function computeStrategies({
       out.push({
         id: `stack-gc${g.id}-pt${p.id}`,
         type: 'stack',
-        title: `${gc.platform} + ${pt.platform}`,
+        title: `${label(gc.platform)} + ${label(pt.platform)}`,
         subtitle: `${gc.discountPct}% off + ${pt.earnRate} pts/£`,
         // Show gift-card £ saving AND points separately — both are real
         // value the user collects on the same purchase.
         gbpReturn: total,
         gbpReturnDisplay: `£${gc.gbpReturn.toFixed(2)} + ${Math.round(pt.points).toLocaleString()} ${pt.pointUnit}`,
-        providerName: `${gc.platform} + ${pt.platform}`,
+        providerName: `${label(gc.platform)} + ${label(pt.platform)}`,
         layers: [gc, pt],
         raw: { giftCard: g, points: p },
       });
@@ -447,10 +448,10 @@ export function buildStrategySteps(strategy, store) {
     const url = urlFor(layer);
     return [
       {
-        title: `Open ${layer?.platform || 'the gift card app'}`,
+        title: `Open ${label(layer?.platform) || 'the gift card app'}`,
         detail: `Buy a ${storeName} gift card at ${layer?.discountPct || 0}% off the face value.`,
         actionUrl: url,
-        actionLabel: `Open ${layer?.platform || 'gift card app'}`,
+        actionLabel: `Open ${label(layer?.platform) || 'gift card app'}`,
       },
       {
         title: `Pay with the gift card at ${storeName}`,
@@ -468,25 +469,25 @@ export function buildStrategySteps(strategy, store) {
 
     if (gc) {
       steps.push({
-        title: `Buy a ${storeName} gift card via ${gc.platform}`,
+        title: `Buy a ${storeName} gift card via ${label(gc.platform)}`,
         detail: `${gc.discountPct}% off — saves £${gc.gbpReturn.toFixed(2)} on this purchase.`,
         actionUrl: urlFor(gc),
-        actionLabel: `Open ${gc.platform}`,
+        actionLabel: `Open ${label(gc.platform)}`,
       });
     }
     if (cb) {
       steps.push({
-        title: `Open ${cb.platform} and click through to ${storeName}`,
+        title: `Open ${label(cb.platform)} and click through to ${storeName}`,
         detail: 'Sign in first so cashback tracks to your account.',
         actionUrl: urlFor(cb),
-        actionLabel: `Open ${cb.platform}`,
+        actionLabel: `Open ${label(cb.platform)}`,
       });
     } else if (pt) {
       steps.push({
-        title: `Open the ${pt.platform} partner portal and click through to ${storeName}`,
+        title: `Open the ${label(pt.platform)} partner portal and click through to ${storeName}`,
         detail: 'Sign in to your program account so the points credit correctly.',
         actionUrl: urlFor(pt),
-        actionLabel: `Open ${pt.platform}`,
+        actionLabel: `Open ${label(pt.platform)}`,
       });
     }
     steps.push({

@@ -52,6 +52,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { reviewedLabel } from '@/lib/dataFreshness';
+import { platformLabel } from '@/lib/platformNames';
 
 const ICONS = {
   'gift-card': Gift,
@@ -143,7 +144,7 @@ function Step({ step, idx, onOpen, locked }) {
                 )}
                 {step.platform && (
                   <span className="text-xs text-muted-foreground">
-                    via {step.platform}
+                    via {platformLabel(step.platform)}
                   </span>
                 )}
               </div>

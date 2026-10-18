@@ -27,6 +27,7 @@ import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { RateBreakdown } from '@/components/RateBreakdown';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
+import { platformLabel } from '@/lib/platformNames';
 
 const isExternal = (url) => /^https?:\/\//i.test(url || '');
 
@@ -201,7 +202,7 @@ function DealRow({ row, idx }) {
             )}
             <div className="font-semibold truncate text-base">{store.name}</div>
             <div className="text-xs text-muted-foreground">
-              via {offer.platform}
+              via {platformLabel(offer.platform)}
               {offer.conditions && offer.conditions !== 'Up to'
                 ? ` · ${offer.conditions}`
                 : ''}

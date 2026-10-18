@@ -182,6 +182,10 @@ disparo automático é o das 08:00 de Londres.
     "£3.00–£10.00"). Vale para rotas e para o cartão de oferta da página da
     loja. "Up to X%" sem lista de faixas (Picodi) continua como está. Hot
     Deals e Supermarket Deals ainda ordenam pelo maior.
+  - Item 4 da seção 3: nomes de plataforma aparecem certos nos cartões
+    (Quidco, Cheddar, EverUp, JamDoughnut, Picodi, Airtime) por
+    `src/lib/platformNames.js`. O banco continua com as chaves em minúsculas,
+    porque os robôs, os links de afiliado e a carteira usam elas.
 
 ## O que ainda falta para "100% pronto para vender"
 
