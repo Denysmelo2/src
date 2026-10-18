@@ -155,7 +155,7 @@ function StoreDetailPage() {
   const [activeTab, setActiveTab] = useState(null);
 
   const { store, loading: storeLoading } = useStoreBySlug(slug);
-  const { cashbackOffers: rawCashbackOffers, pointOffers, giftCardOffers, loading: offersLoading } = useStoreOffers(store?.id);
+  const { cashbackOffers: rawCashbackOffers, pointOffers, giftCardOffers, bonusOffers, loading: offersLoading } = useStoreOffers(store?.id);
   const { strategies: curatedStrategies, loading: curatedLoading } = useCuratedStrategies(
     store?.id,
     store?.category || null
@@ -195,11 +195,12 @@ function StoreDetailPage() {
         cashbackOffers,
         pointOffers,
         giftCardOffers,
+        bonusOffers,
         milesPrograms,
         userWallet: userWalletForStrategy,
         includeStacks: canSeeStacks,
       }),
-    [store, cashbackOffers, pointOffers, giftCardOffers, milesPrograms, userWalletForStrategy, canSeeStacks]
+    [store, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, milesPrograms, userWalletForStrategy, canSeeStacks]
   );
 
   // (bestStrategy was previously used by the standalone "Best strategy"

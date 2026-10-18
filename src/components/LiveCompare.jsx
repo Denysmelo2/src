@@ -38,8 +38,16 @@ function routeValue(route) {
 export function LiveCompare({ storeId, storeName }) {
   const [amountText, setAmountText] = useState(String(DEFAULT_AMOUNT));
   const amount = Math.max(0, Number(amountText) || 0);
-  const { cashbackOffers, pointOffers, giftCardOffers, loading } = useStoreOffers(storeId);
+  const { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, loading } = useStoreOffers(storeId);
   const { programs: milesPrograms } = useMilesPrograms();
+  // Fixed per-order bonuses can depend on who is buying and where
+  // (Sainsbury's: 700 Avios new on the website, 800 new in the app, 100
+  // existing). Ask only the questions this store's bonuses need. The
+  // defaults are the cautious answer: existing customer, website.
+  const [customerType, setCustomerType] = useState('existing');
+  const [channel, setChannel] = useState('web');
+  const asksCustomer = bonusOffers.some((b) => b.customer_type !== 'any');
+  const asksChannel = bonusOffers.some((b) => b.channel !== 'any');
 
   const routes = useMemo(
     () =>
@@ -48,10 +56,12 @@ export function LiveCompare({ storeId, storeName }) {
         cashbackOffers,
         pointOffers,
         giftCardOffers,
+        bonusOffers,
+        bonusContext: { customerType, channel },
         milesPrograms,
         includeStacks: false,
       }).filter((r) => r.gbpReturn > 0),
-    [amount, cashbackOffers, pointOffers, giftCardOffers, milesPrograms]
+    [amount, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, customerType, channel, milesPrograms]
   );
 
   const best = routes[0];
@@ -76,6 +86,39 @@ export function LiveCompare({ storeId, storeName }) {
           />
         </label>
       </div>
+
+      {(asksCustomer || asksChannel) && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2 text-sm">
+          {asksCustomer && (
+            <label className="flex items-center gap-1">
+              <span className="text-muted-foreground">
+                Bought{storeName ? ` at ${storeName}` : ''} through Avios before?
+              </span>
+              <select
+                value={customerType}
+                onChange={(e) => setCustomerType(e.target.value)}
+                className="rounded border border-border bg-background px-1 py-0.5 text-sm"
+              >
+                <option value="existing">Yes</option>
+                <option value="new">No, first time</option>
+              </select>
+            </label>
+          )}
+          {asksChannel && (
+            <label className="flex items-center gap-1">
+              <span className="text-muted-foreground">Ordering on</span>
+              <select
+                value={channel}
+                onChange={(e) => setChannel(e.target.value)}
+                className="rounded border border-border bg-background px-1 py-0.5 text-sm"
+              >
+                <option value="web">the website</option>
+                <option value="app">the app</option>
+              </select>
+            </label>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-xs text-muted-foreground">Loading today’s offers…</p>
