@@ -52,6 +52,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { reviewedLabel } from '@/lib/dataFreshness';
+import { LiveCompare } from '@/components/LiveCompare';
 import { platformLabel } from '@/lib/platformNames';
 
 const ICONS = {
@@ -305,6 +306,9 @@ export function CuratedStrategyCard({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
+              {strategy.live_compare && strategy.target_store_id && !locked && (
+                <LiveCompare storeId={strategy.target_store_id} />
+              )}
               <ol className="space-y-0 pl-0">
                 {steps.map((step, i) => (
                   <Step
