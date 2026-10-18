@@ -191,7 +191,11 @@ disparo automático é o das 08:00 de Londres.
     juntou à Currys uma loja vazia da Cheddar que também se chamava
     "Currys". Categorias estranhas: 95 lojas grandes estão em 17 a 22
     categorias, porque o robô da Quidco só soma categorias e nunca tira.
-    Esperando decisão do dono.
+    Decisão do dono: o Cowork escolhe de 1 a 3 por loja
+    (`docs/PARA_COWORK_CATEGORIAS_2026-10-18.md`), o dono aprova e o Claude
+    Code aplica com uma migration. O robô já não soma categorias em loja que
+    tem alguma (PR Denysmelo2/snapgain-scraper#40, só a marca `gift-card`
+    continua sendo somada).
 
 ## O que ainda falta para "100% pronto para vender"
 
