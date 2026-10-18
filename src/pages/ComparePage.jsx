@@ -1034,7 +1034,10 @@ function ComparePage() {
   );
   const wallet = useUserWallet();
   const { walletOnly } = useWalletOnlyPref();
-  const { isPremium } = useSubscription();
+  const { isPremium, isAdmin } = useSubscription();
+  // Stacked routes are a subscriber feature, same rule as the store and
+  // strategy pages (owner, 18/10/2026). Admins see everything.
+  const canSeeStacks = isPremium || isAdmin;
 
   const userWalletForStrategy = useMemo(
     () => buildWalletFilter({ walletOnly, wallet }),
@@ -1072,7 +1075,7 @@ function ComparePage() {
       giftCardOffers,
       milesPrograms,
       userWallet: userWalletForStrategy,
-      includeStacks: isPremium,
+      includeStacks: canSeeStacks,
     });
   }, [
     submitted,
@@ -1084,7 +1087,7 @@ function ComparePage() {
     giftCardOffers,
     milesPrograms,
     userWalletForStrategy,
-    isPremium,
+    canSeeStacks,
   ]);
 
   // Direct Avios eStore baseline for THIS store: max earn_rate among
@@ -1282,6 +1285,15 @@ function ComparePage() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Ranked by best £ return — tap any box to see the steps.
                     </p>
+                    {!canSeeStacks && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Routes that combine two platforms on one purchase are
+                        for subscribers.{' '}
+                        <Link to="/pricing" className="text-primary font-semibold hover:underline">
+                          See plans
+                        </Link>
+                      </p>
+                    )}
                   </div>
                   <Button
                     type="button"

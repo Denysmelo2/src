@@ -32,6 +32,7 @@ import { useUserFavourites, useUserWallet } from '@/hooks/useUserState';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { computeStrategies, withSyntheticNxOffer } from '@/lib/strategies';
 import { buildWalletFilter } from '@/lib/walletFilter';
+import { useSubscription } from '@/hooks/useSubscription';
 import { StoreLogo } from '@/components/StoreLogo';
 // The age of a rate used to render here as a flat grey "Verified 144d
 // ago" — the same weight as "Verified 2h ago" — via a local copy of a
@@ -173,6 +174,11 @@ function StoreDetailPage() {
     () => buildWalletFilter({ walletOnly, wallet }),
     [walletOnly, wallet]
   );
+  // Stacked routes (two platforms on one purchase) are a subscriber
+  // feature, same rule as /compare and the strategy page (owner,
+  // 18/10/2026). Admins see everything.
+  const { isPremium, isAdmin } = useSubscription();
+  const canSeeStacks = isPremium || isAdmin;
 
   const strategies = useMemo(
     () =>
@@ -184,8 +190,9 @@ function StoreDetailPage() {
         giftCardOffers,
         milesPrograms,
         userWallet: userWalletForStrategy,
+        includeStacks: canSeeStacks,
       }),
-    [store, cashbackOffers, pointOffers, giftCardOffers, milesPrograms, userWalletForStrategy]
+    [store, cashbackOffers, pointOffers, giftCardOffers, milesPrograms, userWalletForStrategy, canSeeStacks]
   );
 
   // (bestStrategy was previously used by the standalone "Best strategy"
@@ -277,7 +284,7 @@ function StoreDetailPage() {
             {strategies.length > 0 && (
               <div className="space-y-2">
                 <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Single-platform alternatives (on £{DEFAULT_AMOUNT})
+                  {canSeeStacks ? 'More routes' : 'Single-platform routes'} (on £{DEFAULT_AMOUNT})
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {strategies.slice(0, 6).map((s, i) => (
@@ -291,6 +298,15 @@ function StoreDetailPage() {
                     />
                   ))}
                 </div>
+                {!canSeeStacks && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Routes that combine two platforms on one purchase are for
+                    subscribers.{' '}
+                    <Link to="/pricing" className="text-primary font-semibold hover:underline">
+                      See plans
+                    </Link>
+                  </p>
+                )}
                 {strategies.length > 6 && (
                   <p className="text-xs text-muted-foreground text-center pt-1">
                     {strategies.length - 6} more routes available —{' '}

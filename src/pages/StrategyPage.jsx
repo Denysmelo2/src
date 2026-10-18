@@ -62,7 +62,7 @@ function StrategyPage() {
   // because curated routes routinely beat single-platform stacks.
   const topCurated = curatedStrategies[0] || null;
   const { strategies: savedStrategies, save, reachedFreeCap, FREE_SAVED_CAP } = useSavedStrategies();
-  const { isPremium } = useSubscription();
+  const { isPremium, isAdmin } = useSubscription();
   const wallet = useUserWallet();
   const { walletOnly } = useWalletOnlyPref();
   const userWalletForStrategy = useMemo(
@@ -80,9 +80,9 @@ function StrategyPage() {
         giftCardOffers,
         milesPrograms,
         userWallet: userWalletForStrategy,
-        includeStacks: isPremium,
+        includeStacks: isPremium || isAdmin,
       }),
-    [store, amount, cashbackOffers, pointOffers, giftCardOffers, milesPrograms, userWalletForStrategy, isPremium]
+    [store, amount, cashbackOffers, pointOffers, giftCardOffers, milesPrograms, userWalletForStrategy, isPremium, isAdmin]
   );
 
   // Pick the highlighted strategy: routeId from URL > best by GBP return
