@@ -163,6 +163,19 @@ disparo automático é o das 08:00 de Londres.
   Avios de Boots, ASOS, Nike, Gap, Sonos e Travelodge, e pesquisar com o dono o
   valor certo dos outros programas de pontos. A Lufthansa está a £1,10 por
   milha, a TAP e a Tesco a £1,00 por ponto.
+- Decisão do dono (`docs/DECISAO_VALOR_PONTOS_2026-10-18.md`), aplicada:
+  - 0028: valor de 1 ponto por programa (Tesco 1p, Morrisons 0,1p, Nectar
+    0,5p, companhias aéreas e Amex 0,92p) e M&S Sparks, My Waitrose, Co-op e
+    Lidl Plus desligados (nada apagado).
+  - Item 1 da seção 3: as rotas que juntam duas plataformas aparecem só para
+    assinante (e admin) em todas as telas; os outros veem um aviso com link
+    para os planos.
+  - Item 2 da seção 3: 0029 desligou as 4 estratégias prontas que dependem do
+    NX: `nx-one4all-airtime-triple`, `deliveroo-triple-stack`,
+    `deliveroo-easy-combo`, `sainsburys-max-stack`. **Religar depois da
+    tarefa 3** (robô mensal do NX), com `is_active = true`. Os cartões de
+    estratégia pronta agora mostram "Strategy reviewed: 17 Sep 2026" (data
+    de Londres da última edição, `updated_at`).
 
 ## O que ainda falta para "100% pronto para vender"
 

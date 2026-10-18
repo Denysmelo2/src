@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { reviewedLabel } from '@/lib/dataFreshness';
 
 const ICONS = {
   'gift-card': Gift,
@@ -230,6 +231,11 @@ export function CuratedStrategyCard({
             >
               {strategy.title}
             </CardTitle>
+            {reviewedLabel(strategy.updated_at) && (
+              <p className="mt-1 text-[11px] leading-none text-muted-foreground">
+                {reviewedLabel(strategy.updated_at)}
+              </p>
+            )}
             {strategy.description && !compact && (
               <CardDescription className="mt-1.5 leading-relaxed">
                 {strategy.description}

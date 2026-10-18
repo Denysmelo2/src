@@ -137,3 +137,35 @@ export const AGE_CLASS = {
   late: 'text-amber-700',
   stale: 'text-red-700 font-medium',
 };
+
+/**
+ * "Strategy reviewed: 16 Sep 2026" for a curated strategy.
+ *
+ * Curated strategies are hand-written, not scraped, so they have no
+ * last_verified_at and get no fresh/late/stale colour. What they do have
+ * is the row's updated_at: the last time someone edited the strategy.
+ * Owner's call (18/10/2026): show that date plainly, so a user can see
+ * how long ago the steps were written. Returns null with no date.
+ */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function reviewedLabel(iso) {
+  if (!iso) return null;
+  const then = new Date(iso);
+  if (!Number.isFinite(then.getTime())) return null;
+  // London day, so an edit at 23:55 UTC in summer reads as the next
+  // day, as it was in the UK. Month names are fixed because en-GB
+  // prints "Sept" in some browsers and "Sep" in others.
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/London',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    })
+      .formatToParts(then)
+      .map((p) => [p.type, p.value])
+  );
+  return `Strategy reviewed: ${parts.day} ${MONTHS[parts.month - 1]} ${parts.year}`;
+}

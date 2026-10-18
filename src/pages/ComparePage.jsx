@@ -60,7 +60,7 @@ import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { RateBreakdown } from '@/components/RateBreakdown';
 import { labelForStrategy } from '@/components/AutoStrategyCard';
 import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
-import { oldestVerifiedAt } from '@/lib/dataFreshness';
+import { oldestVerifiedAt, reviewedLabel } from '@/lib/dataFreshness';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
@@ -566,13 +566,18 @@ function RouteBox({
                 {item.subtitle}
               </p>
             )}
-            {/* How old the numbers above are. Auto routes only: those
-                come from the ingestion pipeline and carry
-                last_verified_at. Curated strategies are hand-written
-                editorial content with no such column, and inventing a
-                date for them would be exactly the dishonesty this is
-                here to remove. */}
-            {!isCurated && (
+            {/* How old the numbers above are. Auto routes come from the
+                ingestion pipeline and carry last_verified_at. Curated
+                strategies are hand-written and have no such column, so
+                they show when the strategy itself was last edited
+                (updated_at), not a verification age. */}
+            {isCurated ? (
+              reviewedLabel(item.curated?.updated_at) && (
+                <p className="text-[11px] leading-none text-muted-foreground">
+                  {reviewedLabel(item.curated.updated_at)}
+                </p>
+              )
+            ) : (
               <DataAge verifiedAt={item.verifiedAt} now={now} />
             )}
           </div>
