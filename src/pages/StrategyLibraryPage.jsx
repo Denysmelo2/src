@@ -7,11 +7,12 @@
 // Sept 2026: NX Rewards stopped selling One4all, and stopped paying
 // cashback on Sainsbury's orders settled with a gift card. Every stack
 // that opened with "buy One4all at 20% off on NX" now opens with the
-// store's own discounted gift card (EverUp / Cheddar / JamDoughnut),
-// and the Sainsbury's card keeps its two routes apart: gift card +
-// Avios eStore, or NX + points card. Mirrors the curated_strategies
-// rows rewritten in supabase/migrations/0004.
-// The other 8 show their title + return + tier badge with a "lock"
+// store's own discounted gift card (EverUp / Cheddar / JamDoughnut).
+// 18/10/2026: NX never adds to a gift card (its Special Terms), so the
+// Boots, Sainsbury's and Deliveroo cards compare NX with the other
+// routes instead of stacking them, like the curated strategies rewritten
+// in supabase/migrations/0034 and 0036.
+// The other cards show their title + return + tier badge with a "lock"
 // overlay that links to /pricing. Paying users see everything.
 
 import React, { useState } from 'react';
@@ -46,16 +47,10 @@ import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 // advanced playbooks.
 const TRIAL_UNLOCKED_ID = 'discount-gift-cards';
 
-// NX Rewards routes stay off until NX is checked again (task 3, the
-// monthly NX job). Owner's decision of 18/10/2026
-// (docs/DECISAO_NX_ESTRATEGIAS_2026-10-18.md): the library hides the
-// three NX routes meanwhile. A card with `nxOnly` is hidden; a card with
-// `withoutNx` shows those fields instead of its NX version. Before this
-// flips to true, the NX versions must follow that doc: NX only as a
-// 10%+ cashback click-through, Boots without Argos, Airtime never added
-// to an NX purchase, and the Deliveroo NX step only once Cowork has
-// confirmed NX pays on a gift-card-funded order.
-const NX_ROUTES_LIVE = false;
+// NX routes follow the owner's afternoon decision of 18/10/2026
+// (docs/DECISAO_NX_ESTRATEGIAS_2026-10-18.md): NX only as a 10%+ cashback
+// click-through paid by card, compared with the other routes and never
+// added to a gift card or to Airtime; no One4all; Boots without Argos.
 
 // ────────────────────────────────────────────────────────────────────
 // Strategy catalogue — sourced from the SnapGain ebook
@@ -81,55 +76,40 @@ const STRATEGIES = [
   },
   {
     id: 'nx-airtime',
-    nxOnly: true,
     icon: ShoppingBag,
-    name: 'NX + Airtime Rewards',
+    name: 'Boots: NX, Avios, Quidco or gift card',
     tier: 'Intermediate',
     tierColor: 'bg-blue-100 text-blue-800',
-    return: 'up to 15%',
-    returnDetail: 'NX 10% + card 1% + Airtime 4%',
-    teaser: 'Register every points card you own in Airtime, then route each shop through NX online or pay in-store. Airtime pays on the card, never on a gift card.',
+    return: 'up to 10%',
+    returnDetail: 'online, one route per order',
+    teaser: 'Four ways to earn on a Boots order online. Pick the one that pays most for your basket: they never add up, and the app works it out for you.',
     timeToSetup: '10 min',
     steps: [
-      'Register all your points and cashback cards (credit and debit) in the Airtime Rewards app: Revolut Metal, Barclaycard Avios, Amex, and any 1 percent cashback card.',
-      'Check the partner in the Airtime app first: some are in-store only. Boots and Argos work in-store.',
-      'Online at an NX-network partner (Boots): click through NX Rewards and pay with the registered card. 10 percent minimum plus the card\'s 1 point per £1 or 1 percent.',
-      'In-store (Boots, Argos): pay with the registered card. Card earns its point per £1 or 1 percent, Airtime credits up to 4 percent to your mobile bill.',
-      'Skip the gift card here: a gift-card payment is invisible to Airtime, so use the Beginner stack instead when the partner is not tracking.',
+      'NX Rewards: open Boots through NX and pay by card. A paid membership (30-day free trial) that pays a minimum of 10 percent. No cashback on gift-card payments, orders in the Boots app, or excluded products such as Dyson, Apple, Chanel, Dior and infant milk.',
+      'Or the Avios eStore: open Boots from the British Airways Avios eStore and earn Avios per £1 spent.',
+      'Or Quidco: cashback that depends on what you buy.',
+      'Or a discounted Boots gift card from Cheddar, EverUp or JamDoughnut. Never on an NX order: NX would not pay.',
+      'In a Boots shop instead: register your card in Airtime Rewards and pay with it at the till. Airtime is for in-store purchases and is never added to an NX order.',
     ],
-    bestFor: 'Boots, Argos and any other Airtime partner that also sits in the NX network.',
+    bestFor: 'Boots online, with Airtime for in-store visits.',
   },
   {
     id: 'sainsburys-stack',
     icon: Layers,
-    name: 'Sainsbury\'s Stack',
+    name: 'Sainsbury\'s: NX or Avios',
     tier: 'Advanced',
     tierColor: 'bg-purple-100 text-purple-800',
-    return: '5% to 11%',
-    returnDetail: 'plus Avios and Nectar, two routes',
-    teaser: 'Two routes that must never be mixed: gift card plus the Avios eStore, or NX plus a points card. NX no longer pays when a Sainsbury\'s order is settled with a gift card.',
+    return: '10% or an Avios bonus',
+    returnDetail: 'plus Nectar, two routes',
+    teaser: 'Two routes that must never be mixed: NX paid by card, or the Avios eStore, which pays a fixed bonus per order. Which wins depends on your basket and whether it is your first order.',
     timeToSetup: '15 min',
     steps: [
-      'Route A (max, online): click through NX Rewards to Sainsbury\'s (10 percent), pay with a card that earns 1 point per £1 (Revolut Metal, Barclaycard Avios, Amex) or 1 percent cashback, scan Nectar. Card only, no gift card.',
-      'Route B (easy, online or in-store): buy a Sainsbury\'s gift card at up to 3.9 percent off (EverUp; check Cheddar and JamDoughnut), pay for it with the same kind of points or cashback card.',
-      'Route B, continued: open Sainsbury\'s from the Avios eStore (1 Avios per £1), pay with the gift card and scan Nectar. Gift-card payment does not affect the eStore Avios.',
-      'Either route: 100 Nectar per £100 converts at 400 Nectar = 250 Avios, so £100 of groceries is 62 Avios on top.',
-      'Example, £100 shop: Route A = £10 NX + 100 Amex points + 100 Nectar. Route B = £4 gift card + 100 card points + 100 Avios + 100 Nectar.',
+      'Route A (NX, online): click through NX Rewards to Sainsbury\'s (minimum 10 percent) and pay by card, never with a gift card: NX does not pay on a gift-card-funded order or one placed in the Sainsbury\'s app.',
+      'Route B (Avios eStore, online): open Sainsbury\'s from the Avios eStore. It pays a fixed bonus per order, not per £1: 700 Avios for a new customer on the website, 800 in the app, 100 for an existing customer, on orders of £50 or more.',
+      'Either route: scan Nectar for your Nectar points on top.',
+      'Example, new customer: on £50, Avios in the app (800 Avios, about £7.36) beats NX (£5); on £100, NX (£10) beats it. Existing customers and orders under £50: NX.',
     ],
-    bestFor: 'Your monthly grocery shop. Route A for cash back, Route B when you are collecting Avios.',
-    // Route B only, while NX is off.
-    withoutNx: {
-      return: 'about 5%',
-      returnDetail: 'plus Avios and Nectar',
-      teaser: 'Buy a discounted Sainsbury\'s gift card, then open Sainsbury\'s from the Avios eStore and pay with it. Cash off, Avios and Nectar on the same shop.',
-      steps: [
-        'Buy a Sainsbury\'s gift card at up to 3.9 percent off (EverUp; check Cheddar and JamDoughnut), and pay for it with a card that earns 1 point per £1 (Revolut Metal, Barclaycard Avios, Amex) or 1 percent cashback.',
-        'Open Sainsbury\'s from the Avios eStore (1 Avios per £1), pay with the gift card and scan Nectar. Gift-card payment does not affect the eStore Avios.',
-        '100 Nectar per £100 converts at 400 Nectar = 250 Avios, so £100 of groceries is 62 Avios on top.',
-        'Example, £100 shop: £4 gift card + 100 card points + 100 Avios + 100 Nectar.',
-      ],
-      bestFor: 'Your monthly grocery shop, when you are collecting Avios.',
-    },
+    bestFor: 'Your online grocery shop. The Sainsbury\'s strategy in the app asks two questions and shows which route pays more.',
   },
   {
     id: 'amazon-optimiser',
@@ -170,32 +150,20 @@ const STRATEGIES = [
   {
     id: 'deliveroo-stack',
     icon: Pizza,
-    name: 'Deliveroo Multi-Stack',
+    name: 'Deliveroo: NX, Quidco or gift card',
     tier: 'Specialist (Food)',
     tierColor: 'bg-amber-100 text-amber-800',
-    return: '15%+',
-    returnDetail: 'plus Avios via Amex',
-    teaser: 'Order food, earn cashback and Avios. Works for Just Eat too.',
+    return: '10% with NX',
+    returnDetail: 'one route per order',
+    teaser: 'NX Rewards pays at least 10 percent on Deliveroo orders placed through NX and paid by card. Quidco and discounted gift cards are the alternatives; they never add to NX.',
     timeToSetup: '10 min',
     steps: [
-      'Buy a Deliveroo gift card with your best rewards card (Amex BA for Avios).',
-      'Log into Deliveroo via the NX Rewards link to earn 10 percent NX cashback.',
-      'Pay with the Deliveroo gift card.',
-      'Example £100 order: 5 percent gift card cashback + 10 percent NX = £15 back, plus 100 Amex points convertible to Avios.',
+      'NX Rewards: open Deliveroo through NX, order on the website and pay by card. A paid membership (30-day free trial). No cashback on gift-card payments or orders in the Deliveroo app.',
+      'Or Quidco cashback on the order.',
+      'Or a discounted Deliveroo gift card from Cheddar, EverUp or JamDoughnut, paid with your best rewards card. Not on an NX order: NX would not pay.',
+      'Example £100 order: NX £10, Quidco £5, gift card £4.50. One route per order; the app shows which pays most today.',
     ],
-    bestFor: 'Anyone who orders takeaway weekly. £30+ saved monthly easily.',
-    // Without the NX step, while NX is off.
-    withoutNx: {
-      return: '5%',
-      returnDetail: 'plus Avios via Amex',
-      teaser: 'Order food on a discounted gift card and earn card points on top. Works for Just Eat too.',
-      steps: [
-        'Buy a Deliveroo gift card with your best rewards card (Amex BA for Avios).',
-        'Pay with the Deliveroo gift card.',
-        'Example £100 order: 5 percent gift card cashback = £5 back, plus 100 Amex points convertible to Avios.',
-      ],
-      bestFor: 'Anyone who orders takeaway weekly.',
-    },
+    bestFor: 'Anyone who orders takeaway weekly.',
   },
   {
     id: 'fuel-stack',
@@ -255,12 +223,7 @@ const STRATEGIES = [
   },
 ];
 
-// The cards shown today: NX routes hidden or swapped while NX is off.
-const LIBRARY = STRATEGIES.flatMap((strategy) => {
-  if (NX_ROUTES_LIVE) return [strategy];
-  if (strategy.nxOnly) return [];
-  return [strategy.withoutNx ? { ...strategy, ...strategy.withoutNx } : strategy];
-});
+const LIBRARY = STRATEGIES;
 
 // ────────────────────────────────────────────────────────────────────
 // Difficulty badge

@@ -84,8 +84,8 @@ function PlaybookPage() {
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl">
             Every curated multi-step strategy we&rsquo;ve built into SnapGain
-            &mdash; from supermarket and takeaway stacks to lifestyle
-            plays like earning Avios on your rent. Each step opens the right
+            &mdash; from NX&rsquo;s 10% minimum at 1,000+ partner stores to
+            lifestyle plays like earning Avios on your rent. Each step opens the right
             platform with one tap.
           </p>
         </motion.section>
