@@ -186,6 +186,12 @@ disparo automático é o das 08:00 de Londres.
     (Quidco, Cheddar, EverUp, JamDoughnut, Picodi, Airtime) por
     `src/lib/platformNames.js`. O banco continua com as chaves em minúsculas,
     porque os robôs, os links de afiliado e a carteira usam elas.
+  - Item 5 da seção 3 (parte 1): 0030 trocou os nomes "Travelodge - UK",
+    "Argos.co.uk" e "Currys Partmaster" por Travelodge, Argos e Currys, e
+    juntou à Currys uma loja vazia da Cheddar que também se chamava
+    "Currys". Categorias estranhas: 95 lojas grandes estão em 17 a 22
+    categorias, porque o robô da Quidco só soma categorias e nunca tira.
+    Esperando decisão do dono.
 
 ## O que ainda falta para "100% pronto para vender"
 
