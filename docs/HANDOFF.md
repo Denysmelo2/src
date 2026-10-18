@@ -155,6 +155,15 @@ disparo automático é o das 08:00 de Londres.
 - O robô não recria as lojas repetidas: toda busca dele segue `merged_into`
   desde a correção snapgain-scraper#39.
 
+### Avios contra cashback (tarefa 2, 18/10)
+- Decisão do dono: 1 Avios = **0,92p** em todo o site; o Avios continua
+  mostrado **só em pontos**. Migration 0027 (aplicada) pôs 0,92p nos dois
+  programas Avios do banco. A tela não muda.
+- Com o Cowork (`docs/PARA_COWORK_TAREFA2_2026-10-18.md`): conferir no site o
+  Avios de Boots, ASOS, Nike, Gap, Sonos e Travelodge, e pesquisar com o dono o
+  valor certo dos outros programas de pontos. A Lufthansa está a £1,10 por
+  milha, a TAP e a Tesco a £1,00 por ponto.
+
 ## O que ainda falta para "100% pronto para vender"
 
 1. Stripe (dono, no painel): terminar o portal do cliente (trocar de plano com
