@@ -94,7 +94,7 @@ const QUICK_ACTIONS = [
 const COMPARE_LINKS = [
   {
     label: 'The Playbook',
-    sub: 'Every curated multi-step strategy — Deliveroo, Sainsbury\'s, Uber, rent and more',
+    sub: 'Every curated strategy — NX 10% at 1,000+ stores, Sainsbury\'s NX or Avios, and more',
     to: '/playbook',
     Icon: BookOpen,
     gradient: 'from-primary to-secondary',
