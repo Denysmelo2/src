@@ -111,3 +111,66 @@ O que fazer:
   público).
 - O merge é sempre do dono.
 - Falar com ele em português, passo a passo.
+
+## 7. Achados dos testes ao vivo com o dono (23/10, noite)
+
+O que já foi resolvido no painel, sem código:
+- **O cadastro por e-mail falhava** com "Sign up Failed {}".
+  - Causa: o Supabase enviava os e-mails de autenticação pelo SMTP do Office
+    365, e o envio passava de 10 segundos. Os registros mostram 3 vezes
+    `/signup` com 504 "context deadline exceeded". A conta não era criada.
+  - O dono trocou o SMTP do Supabase para o Resend: `smtp.resend.com:465`,
+    usuário `resend`, com uma chave nova só de envio. O remetente continua
+    `support@snapgain.uk`.
+  - Testado às 19:21: o `/signup` respondeu em 1 a 2 segundos, o e-mail
+    chegou e a confirmação funcionou.
+- O Supabase do dono agora tem verificação em duas etapas.
+- As 8 funções antigas foram apagadas pelo dono.
+- O dono decidiu **ficar no plano grátis** do Supabase. Por isso a proteção
+  contra senhas vazadas fica de fora; ela só existe no plano Pro. A regra de
+  senha atual (8 caracteres, com maiúscula, minúscula, número e símbolo)
+  continua.
+
+Para o código, em ordem de prioridade:
+1. **Preço errado no site.**
+   - O Stripe cobra £14,99 por mês e £120 por ano, e a página Pricing mostra
+     esses valores.
+   - Em **Settings** e em outros lugares aparece "£7.99/month or £60/year":
+     - `src/locales/en.json:144` e `pt-BR.json:144` (`subscriptionTagline`);
+     - `src/components/sections/SubscriptionCTA.jsx:43` e `:50`;
+     - `src/data/ukData.js:747`.
+   - Corrigir para £14.99 e £120, de preferência tirando o preço de uma
+     única constante. É um risco de reclamação de consumidor.
+2. **`/compare`: mudar o valor não atualiza o resultado.**
+   - No celular, o dono digitou £100 no Sainsbury's. O campo mostrava £100,
+     mas a lista continuava calculada com £50: "NX Rewards £5.00", "NX or
+     Avios £5.00" e "800 Avios" como BEST ROUTE.
+   - Pela URL `?amount=100` o resultado sai certo: NX £10 em 1º.
+   - O resultado deve acompanhar o valor digitado, ou deixar claro com qual
+     valor foi calculado.
+3. **`/compare`: as linhas do bônus fixo de Avios** ("800 Avios per order",
+   "700 Avios per order") mostram só "AVIOS ONLY 800 Avios", sem o valor em
+   libras.
+   - Mostrar "≈ £7.36" (1 Avios = £0,0092), como nas outras linhas, para o
+     cliente conseguir comparar.
+   - Conferir se a ordenação usa esse valor em libras.
+4. **No celular, o cartão "Sainsbury's: NX or Avios"** (bloco PRO STRATEGY
+   dentro do cartão) aperta o título numa coluna estreita, com uma palavra
+   por linha. Ajustar o layout para telas estreitas.
+5. **Atraso e "quebra" ao trocar de página.** A cada clique no menu
+   (Dashboard, Compare, Profile, Settings), a página some e aparece a tela
+   cheia do `SplashScreen.jsx` ("Save time. Save money. Every time." com
+   três pontinhos) por um instante, antes da página nova.
+   - Mostrar o splash só na primeira carga.
+   - Na troca de rota, manter a página atual até a nova carregar, ou usar
+     um carregamento discreto. Pré-carregar as rotas do menu.
+6. **Confirmação de e-mail com link antigo:** quando a pessoa pede o
+   cadastro mais de uma vez e clica num e-mail antigo, o Supabase responde
+   "Email link is invalid or has expired".
+   - Conferir se o site mostra uma mensagem clara, com o botão "reenviar
+     e-mail", em vez de uma tela de erro.
+7. **Para conferir:** a rota "5% + Avios + Nectar at Sainsbury's (gift card
+   route)" junta gift card com o Avios eStore.
+   - Conferir nas condições do Avios eStore se ele paga quando a compra é
+     paga com gift card.
+   - Se não pagar, aplicar a mesma regra do NX.
