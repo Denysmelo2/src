@@ -10,6 +10,7 @@ import { ManageBillingButton } from '@/components/ManageBillingButton';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
+import { MONTHLY, YEARLY, YEARLY_SAVING, TWELVE_MONTHLY } from '@/config/pricing';
 
 // A Stripe subscription that still exists and bills. Mirrors the server's
 // check in create-checkout-session (which answers 409 already_subscribed).
@@ -131,10 +132,10 @@ function PricingPage() {
   const plans = {
     monthly: {
       title: 'Monthly',
-      price: '£14.99',
+      price: MONTHLY,
       period: '/ month',
       plan: 'monthly',
-      description: '£14.99 every month until you cancel. Cancel online anytime.',
+      description: `${MONTHLY} every month until you cancel. Cancel online anytime.`,
       features: [
         'Unlimited comparisons',
         'Regular rate updates, each dated',
@@ -147,13 +148,13 @@ function PricingPage() {
     },
     yearly: {
       title: 'Annual',
-      price: '£120',
+      price: YEARLY,
       period: '/ year',
       plan: 'yearly',
-      description: '£120 every year until you cancel. £59.88 less than 12 monthly payments.',
+      description: `${YEARLY} every year until you cancel. ${YEARLY_SAVING} less than 12 monthly payments.`,
       features: [
         'Everything in Monthly',
-        'Pay once a year: £120 instead of £179.88',
+        `Pay once a year: ${YEARLY} instead of ${TWELVE_MONTHLY}`,
         'Priority support',
         'Early access to new features',
         'Household miles account setup guide',
@@ -297,8 +298,8 @@ function PricingPage() {
           </h2>
           <ul className="list-disc pl-5 space-y-2">
             <li>
-              <strong className="text-foreground">Price:</strong> £14.99 per
-              month (Monthly) or £120 per year (Annual), paid in advance. These
+              <strong className="text-foreground">Price:</strong> {MONTHLY} per
+              month (Monthly) or {YEARLY} per year (Annual), paid in advance. These
               are the final prices: SnapGain is not VAT-registered, so no VAT
               or other charges are added.
             </li>

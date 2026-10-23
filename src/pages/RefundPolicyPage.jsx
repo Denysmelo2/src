@@ -25,8 +25,9 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
+import { MONTHLY, YEARLY, PRICE_MONTHLY, PRICE_YEARLY, proportionalRefund } from '@/config/pricing';
 
-const LAST_UPDATED = '17 October 2026';
+const LAST_UPDATED = '23 October 2026';
 
 const H2 = ({ id, children }) => (
   <h2 id={id} className="text-2xl font-bold mt-10 mb-3 scroll-mt-24">
@@ -146,14 +147,15 @@ function RefundPolicyPage() {
             </p>
             <p>
               <strong className="text-foreground">Monthly example:</strong> you
-              pay £14.99 for a 30-day month and cancel after 5 days. You pay for
-              5 days and we refund £14.99 &times; 25/30 = <strong>£12.49</strong>.
+              pay {MONTHLY} for a 30-day month and cancel after 5 days. You pay for
+              5 days and we refund {MONTHLY} &times; 25/30 ={' '}
+              <strong>{proportionalRefund(PRICE_MONTHLY, 25, 30)}</strong>.
             </p>
             <p>
               <strong className="text-foreground">Annual example:</strong> you
-              pay £120 for a 365-day year and cancel after 10 days. You pay for
-              10 days and we refund £120 &times; 355/365 ={' '}
-              <strong>£116.71</strong>.
+              pay {YEARLY} for a 365-day year and cancel after 10 days. You pay for
+              10 days and we refund {YEARLY} &times; 355/365 ={' '}
+              <strong>{proportionalRefund(PRICE_YEARLY, 355, 365)}</strong>.
             </p>
           </div>
           <P>

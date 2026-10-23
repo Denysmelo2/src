@@ -27,7 +27,7 @@ Bárbara — direta, ágil, PT/EN alternado. Quando aprova conceito, executar. N
 
 ## 3. Modelo de negócio
 
-- £14.99/mo ou £120/yr — premium only
+- £7.99/mo ou £60/yr — premium only (desde 23/10/2026; `src/config/pricing.js`)
 - Trial 7 dias sem cartão. Uma estratégia desbloqueada (One4all + NX). Outras 8 só pagantes.
 - Sempre pago: Strategy Library completa, Household, Saved, Alerts
 

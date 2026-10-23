@@ -3,6 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
+import { MONTHLY, YEARLY, YEARLY_SAVING } from '@/config/pricing';
 
 const PlanCard = ({ title, price, description, features, bestValue, onSelect }) => (
     <motion.div 
@@ -40,16 +41,16 @@ export function SubscriptionCTA({ onSubscribe }) {
   const plans = {
       monthly: {
           title: 'Monthly',
-          price: '£7.99',
+          price: MONTHLY,
           description: 'Per month, billed monthly.',
           features: ['Unlimited comparisons', 'Real-time data', 'Personalized alerts'],
           bestValue: false
       },
       annual: {
           title: 'Annual',
-          price: '£60',
+          price: YEARLY,
           description: 'Per year, billed annually.',
-          features: ['Unlimited comparisons', 'Real-time data', 'Personalized alerts', 'Save £35+ per year'],
+          features: ['Unlimited comparisons', 'Real-time data', 'Personalized alerts', `Save ${YEARLY_SAVING} a year`],
           bestValue: true
       }
   };

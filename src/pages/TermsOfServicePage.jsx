@@ -6,7 +6,8 @@
 // Rewritten 17 October 2026 (legal package C). Owner decisions:
 //   - Trader: sole trader, trading as SnapGain. No company, no company
 //     number. Not VAT-registered, so prices include no VAT.
-//   - £14.99/month or £120/year, paid through Stripe. 7-day free trial,
+//   - £7.99/month or £60/year (src/config/pricing.js; owner, 23/10/2026),
+//     paid through Stripe. 7-day free trial,
 //     no card, does NOT convert into a paid plan.
 //   - Proportional refund within the 14-day cancellation period after an
 //     express request to start immediately (CCR 2013 regs 34, 36).
@@ -19,8 +20,9 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
+import { MONTHLY, YEARLY } from '@/config/pricing';
 
-const LAST_UPDATED = '17 October 2026';
+const LAST_UPDATED = '23 October 2026';
 
 const H2 = ({ id, children }) => (
   <h2 id={id} className="text-2xl font-bold mt-10 mb-3 scroll-mt-24">
@@ -69,7 +71,7 @@ function TermsOfServicePage() {
             SnapGain compares rewards from the UK platforms listed on our site.
             It is information, not financial advice. The 7-day free trial needs
             no card and simply ends; it never turns into a paid plan on its own.
-            A subscription costs £14.99 a month or £120 a year, renews
+            A subscription costs {MONTHLY} a month or {YEARLY} a year, renews
             automatically until you cancel, and you can cancel online at any
             time in Settings &rarr; Manage subscription. Your statutory rights
             are not affected.
@@ -213,8 +215,8 @@ function TermsOfServicePage() {
           <H2 id="subscription">7. Subscriptions, price and renewal</H2>
           <UL>
             <li>
-              <strong>Plans and price:</strong> £14.99 per month (monthly plan)
-              or £120 per year (annual plan). These are the total prices; no VAT
+              <strong>Plans and price:</strong> {MONTHLY} per month (monthly plan)
+              or {YEARLY} per year (annual plan). These are the total prices; no VAT
               or other charges are added.
             </li>
             <li>

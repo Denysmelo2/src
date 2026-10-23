@@ -34,7 +34,7 @@ sem que a conversa termine.
 | Robô de coleta | GitHub `Denysmelo2/snapgain-scraper` (privado, GitHub Actions) |
 | Loja de e-books | `Denysmelo2/snapgain-shop` → snapgain.shop |
 | Banco, login, Edge Functions, cron | Supabase `ffowgyjdbgkphsflxybk` (região eu-west-2, Londres) |
-| Pagamentos | Stripe conta "SnapGain" (`acct_1SfK3t9xccsM1Iim`), **modo real**. Preços: £14,99/mês `price_1TWkUQ9xccsM1IimtvrHpqeJ`, £120/ano `price_1TWkWA9xccsM1IimCfIOh98u`. |
+| Pagamentos | Stripe conta "SnapGain" (`acct_1SfK3t9xccsM1Iim`), **modo real**. Preços (desde 23/10/2026): £7,99/mês `price_1UTnaD9xccsM1Iimph4JSnTC`, £60/ano `price_1UTnay9xccsM1Iim820lZyFo`; os de £14,99 e £120 estão arquivados. No site, o preço fica só em `src/config/pricing.js`. |
 | Backup do banco | `snapgain-scraper` → workflow `db-backup` (todo dia 02:30 UTC, guarda 30 dias como artifact privado). Contém e-mails de clientes: tratar como dado pessoal. |
 
 **Limites das ferramentas:** a chave do Stripe ligada ao Claude **só lê**
