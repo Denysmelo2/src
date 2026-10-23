@@ -4,6 +4,29 @@ Conferência feita pelo Cowork em 23/10, à tarde: repositório, banco, Vercel,
 GitHub Actions e o site no ar. Uma tarefa por vez, uma proposta (PR) por
 tarefa, nesta ordem. O merge é sempre do dono.
 
+## REGRA NOVA (dono, 23/10/2026): projetos da Vercel
+
+**O Claude Code não liga, não desliga e não troca o repositório de nenhum
+projeto da Vercel.** Se achar necessário, escreve no handover e o Cowork
+faz com a aprovação do dono.
+
+| Projeto Vercel | Repositório | Endereço |
+|---|---|---|
+| `snapgainuk` | `Denysmelo2/src` | snapgain.uk |
+| `denysmelo` (portfólio) | nenhum (nunca o `src`) | denysmelo.vercel.app |
+| `doces-barbara` | `Denysmelo2/doces-barbara` | — |
+| `snapgain-shop` (loja do e-book) | nenhum por enquanto (nunca o `snapgain-scraper`) | snapgain.shop |
+
+O que aconteceu em 23/10:
+- O `snapgainuk` ficou desligado do GitHub entre 15:46 e 22:00, e os
+  merges não iam para o ar.
+- O portfólio estava ligado ao `src` desde 16/10.
+- A loja estava ligada ao `snapgain-scraper` desde 16/10.
+
+O Cowork religou o `snapgainuk`, publicou o #134 e desligou os outros dois.
+O `snapgain-scraper` é robô (GitHub Actions) e não é ligado a nenhum
+projeto da Vercel.
+
 ## Estado conferido
 
 - **Site no ar:** produção em `37a47c7` (PR #133), estado Ready.
