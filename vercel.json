@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "ignoreCommand": "if [ \"$VERCEL_PROJECT_ID\" = \"prj_YI0fDsXI7G54DoN4wJnIK316d8zD\" ] || [ \"$VERCEL_PROJECT_PRODUCTION_URL\" = \"denysmelo.vercel.app\" ]; then echo 'Portfolio project: SnapGain is not deployed here'; exit 0; fi; exit 1",
   "rewrites": [
     {
       "source": "/(.*)",
