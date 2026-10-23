@@ -144,6 +144,15 @@ Para o código, em ordem de prioridade:
      
      O código das funções não muda. O webhook lê o intervalo do preço, não
      o ID.
+
+     **Feito pelo Cowork em 23/10, às 20h:**
+     - preços novos `price_1UTnaD9xccsM1Iimph4JSnTC` (£7,99 por mês) e
+       `price_1UTnay9xccsM1Iim820lZyFo` (£60 por ano), os dois como
+       default;
+     - os de £14,99 e £120 foram arquivados;
+     - o portal do cliente oferece só os preços novos;
+     - os segredos `STRIPE_PRICE_*` foram trocados pelo dono e conferidos
+       pelo digest SHA256.
    - **Para o Claude Code:**
      - criar uma constante única de preço (por exemplo em
        `src/config/pricing.js`: mensal 7.99, anual 60) e usar em todo
