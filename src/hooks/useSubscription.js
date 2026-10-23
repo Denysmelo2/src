@@ -13,9 +13,18 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
  *   inTrial   — no active sub, but the locally-managed 7-day trial_end is in the future
  *   isPremium — isActive || inTrial. Use this to gate features.
  */
+// The last profile read, kept across mounts. Every protected page mounts
+// its own ProtectedRoute and with it this hook, so without this each
+// click in the menu started with loading = true and showed the
+// full-screen SplashScreen until the profile came back (owner,
+// 23/10/2026). A page for the same user now starts from this copy and
+// refreshes it in the background; a different user (or none) still waits.
+let lastLoaded = { uid: undefined, profile: null };
+
 export function useSubscription() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState(null);
+  const cached = lastLoaded.uid !== undefined && lastLoaded.uid === (user?.id ?? null);
+  const [profile, setProfile] = useState(cached ? lastLoaded.profile : null);
   // Which user the current `profile` was fetched for: a user id, `null`
   // for "no user", or `undefined` before the first fetch settles.
   //
@@ -33,7 +42,7 @@ export function useSubscription() {
   // that same render, with no gap. A realtime-triggered refresh for the
   // same user does not flip it, so the splash screen does not flash on
   // every webhook.
-  const [loadedFor, setLoadedFor] = useState(undefined);
+  const [loadedFor, setLoadedFor] = useState(cached ? lastLoaded.uid : undefined);
   const loading = loadedFor === undefined || loadedFor !== (user?.id ?? null);
 
   // The user this hook is rendering for RIGHT NOW. A fetch started for a
@@ -46,6 +55,7 @@ export function useSubscription() {
 
   const refresh = useCallback(async () => {
     if (!user) {
+      lastLoaded = { uid: null, profile: null };
       setProfile(null);
       setLoadedFor(null);
       return;
@@ -66,10 +76,14 @@ export function useSubscription() {
       } else {
         setProfile(data);
       }
+      // Only a good read is kept: after an error the next page fetches
+      // again rather than starting from an empty profile.
+      lastLoaded = error ? { uid: undefined, profile: null } : { uid, profile: data };
       setLoadedFor(uid);
     } catch (err) {
       if (currentUid.current !== uid) return;
       console.warn('[useSubscription] unexpected error:', err);
+      lastLoaded = { uid: undefined, profile: null };
       setProfile(null);
       setLoadedFor(uid);
     }
