@@ -10,6 +10,7 @@ import ResetPassword from '@/pages/Reset-password';
 import RequestReset from '@/pages/RequestReset';
 import SettingsPage from '@/pages/SettingsPage';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { AuthLinkErrorRedirect } from '@/components/auth/AuthLinkErrorRedirect';
 import { Layout } from '@/components/layout/Layout';
 import FeaturesPage from '@/pages/FeaturesPage';
 import PricingPage from '@/pages/PricingPage';
@@ -251,6 +252,7 @@ function App() {
           <meta name="description" content="Compare cashback, points, and gift cards in real-time. Find the best way to pay and maximize your rewards on every purchase." />
         </Helmet>
         <Toaster />
+        <AuthLinkErrorRedirect />
         <AppContent />
         <CookieConsentBanner />
       </I18nProvider>
