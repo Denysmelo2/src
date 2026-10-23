@@ -123,6 +123,14 @@ settings:
   non-live subscription never overwrites a row that tracks a different
   subscription. `plan` follows the price interval, so a portal plan
   switch is reflected. `deleted` writes `canceled`.
+- Emails (`stripe-webhook/emails.ts`, Resend, same `RESEND_API_KEY` and
+  `EMAIL_FROM` as the daily email): "Welcome to SnapGain Premium" the
+  first time a profile is `active` (plan, price, next payment, how to
+  cancel, the 14-day right), and "Your SnapGain subscription is
+  cancelled" once per subscription when it is set to cancel or ends.
+  Each is claimed in `subscription_email_log` (migration 0037) first, so
+  Stripe's retries send it once. A failed email is logged and never
+  turns the webhook into a 500.
 - Returns 500 only on real errors (database, Stripe API), so Stripe
   retries; 400 on a bad signature.
 

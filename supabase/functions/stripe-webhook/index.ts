@@ -20,6 +20,7 @@
 
 import Stripe from 'https://esm.sh/stripe@17.5.0?target=denonext';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { sendOnce, welcomeEmail, cancellationEmail } from './emails.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-12-18.acacia',
@@ -107,12 +108,13 @@ function profileFields(sub: Stripe.Subscription, statusOverride?: string) {
 
 // Writes a subscription onto the matching user_profiles row. Match order:
 // stripe_subscription_id, then stripe_customer_id, then the
-// supabase_user_id we put in subscription metadata at checkout.
+// supabase_user_id we put in subscription metadata at checkout. Returns
+// the user written to, or null when nothing was written.
 async function syncSubscription(
   supabase: Admin,
   sub: Stripe.Subscription,
   statusOverride?: string
-) {
+): Promise<string | null> {
   const fields = profileFields(sub, statusOverride);
   const status = fields.subscription_status as string;
 
@@ -122,7 +124,7 @@ async function syncSubscription(
     .eq('stripe_subscription_id', sub.id)
     .select('user_id');
   if (bySub.error) throw bySub.error;
-  if (bySub.data?.length) return;
+  if (bySub.data?.length) return bySub.data[0].user_id;
 
   // No row carries this subscription id yet (created event racing the
   // checkout event, or a row written before the id was stored).
@@ -149,7 +151,7 @@ async function syncSubscription(
   }
   if (!row) {
     console.warn('[stripe-webhook] no profile for subscription', sub.id);
-    return;
+    return null;
   }
 
   // The row already tracks a different subscription: only a live one may
@@ -164,7 +166,7 @@ async function syncSubscription(
       '[stripe-webhook] ignoring', status, sub.id,
       '— profile tracks', row.stripe_subscription_id
     );
-    return;
+    return null;
   }
 
   const { error } = await supabase
@@ -172,6 +174,25 @@ async function syncSubscription(
     .update(fields)
     .eq('user_id', row.user_id);
   if (error) throw error;
+  return row.user_id;
+}
+
+// The subscription emails (emails.ts): welcome the first time a profile
+// is active, and confirm a cancellation once per subscription. They never
+// throw, so an email can't make Stripe resend the event.
+async function notify(
+  supabase: Admin,
+  userId: string,
+  sub: Stripe.Subscription,
+  ended = false
+) {
+  // deno-lint-ignore no-explicit-any
+  const s = sub as any;
+  if (ended || s.cancel_at_period_end || s.cancel_at) {
+    await sendOnce(supabase, userId, 'cancellation', sub.id, () => cancellationEmail(sub, ended));
+  } else if (sub.status === 'active') {
+    await sendOnce(supabase, userId, 'premium_welcome', 'first', () => welcomeEmail(sub));
+  }
 }
 
 Deno.serve(async (req) => {
@@ -268,6 +289,8 @@ Deno.serve(async (req) => {
           // match by customer id or metadata and will retry the write;
           // a 500 here would only make Stripe resend this event.
           console.warn('[stripe-webhook] no profile for user', userId, 'on', event.id);
+        } else {
+          await notify(supabase, userId, subscription);
         }
         break;
       }
@@ -276,11 +299,13 @@ Deno.serve(async (req) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = await fresh(event.data.object as Stripe.Subscription);
-        await syncSubscription(
+        const ended = event.type === 'customer.subscription.deleted';
+        const userId = await syncSubscription(
           supabase,
           subscription,
-          event.type === 'customer.subscription.deleted' ? 'canceled' : undefined
+          ended ? 'canceled' : undefined
         );
+        if (userId) await notify(supabase, userId, subscription, ended);
         break;
       }
 
