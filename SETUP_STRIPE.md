@@ -16,8 +16,12 @@ One Stripe product, two GBP recurring prices (live mode):
 
 | Plan    | Price        | Interval | Price ID                          |
 | ------- | ------------ | -------- | --------------------------------- |
-| Monthly | **£14.99**   | month    | `price_1TWkUQ9xccsM1IimtvrHpqeJ`  |
-| Annual  | **£120.00**  | year     | `price_1TWkWA9xccsM1IimCfIOh98u`  |
+| Monthly | **£7.99**    | month    | `price_1UTnaD9xccsM1Iimph4JSnTC`  |
+| Annual  | **£60.00**   | year     | `price_1UTnay9xccsM1Iim820lZyFo`  |
+
+Since 23/10/2026 (owner's decision). The old £14.99 and £120 prices
+(`price_1TWkUQ…`, `price_1TWkWA…`) are archived. The site's copy of the
+prices is `src/config/pricing.js`; change both together.
 
 There is **no Stripe trial**. Every new account gets SnapGain's own
 7-day free trial with no card: the `handle_new_user` trigger sets

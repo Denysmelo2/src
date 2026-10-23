@@ -40,6 +40,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { MONTHLY, YEARLY } from '@/config/pricing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -941,7 +942,7 @@ function PricingCTA({ onSubscribe }) {
         </h2>
         <p className="text-lg md:text-xl text-muted-foreground mb-8">
           Free for 7 days with no card, and the trial ends on its own. To
-          keep going, subscribe for £14.99/month or £120/year; it renews
+          keep going, subscribe for {MONTHLY}/month or {YEARLY}/year; it renews
           until you cancel, and you can cancel online anytime.
         </p>
 
