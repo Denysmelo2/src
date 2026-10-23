@@ -610,6 +610,19 @@ function RouteBox({
               {item.gbpReturnDisplay}
             </div>
 
+            {/* Points routes show the points first, then their estimated
+                £ value, so they can be compared with the cashback rows
+                (owner, 23/10/2026: "800 Avios per order" read as a bare
+                number). The ranking already uses this £ value. */}
+            {item.source === 'auto' && item.strategy?.type === 'points' && item.gbpReturn > 0 && (
+              <div
+                className="text-xs text-muted-foreground leading-snug"
+                title="Estimate: Avios valued at £0.0092 each; other points at their programme's value"
+              >
+                ≈ £{item.gbpReturn.toFixed(2)}
+              </div>
+            )}
+
             {/* ALL-IN-AVIOS conversion for mixed routes. Shows what
                 the WHOLE route is worth in Avios if the user converts
                 the £ portion through the Avios Booster. The verdict
