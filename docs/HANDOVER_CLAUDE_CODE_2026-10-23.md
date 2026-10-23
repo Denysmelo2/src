@@ -145,6 +145,35 @@ O que já foi resolvido no painel, sem código:
   - O `STRIPE_WEBHOOK_SECRET` só vai ser conferido no primeiro pagamento
     real.
 
+- **Pagamento real feito pelo dono em 23/10, às 21:06 (conta de teste
+  `denysmelo080419`, £7,99), depois estornado.**
+  - O checkout passou e o perfil ficou `active` / `monthly`.
+  - O cancelamento pelo portal ficou como "Cancels 23 Nov 2026" no Stripe.
+  - O Stripe mandou os recibos.
+  - **Dois problemas para o código:**
+    - **(A) Erro no webhook em `checkout.session.completed`:** "23502 not
+      null violation" (eventos `evt_1UTok89xccsM1IimG80fbm2d`, 20:07 UTC,
+      duas tentativas).
+      - O `upsert` em `user_profiles` (`stripe-webhook/index.ts`, por volta
+        da linha 255) tenta um INSERT, e o Postgres confere o NOT NULL das
+        colunas obrigatórias de `user_profiles` antes do ON CONFLICT.
+      - O premium só entrou porque `customer.subscription.created` e
+        `updated` gravaram depois.
+      - Trocar por `update … eq('user_id', userId)`, porque o perfil sempre
+        existe, criado pelo trigger `handle_new_user`. Ou incluir as colunas
+        obrigatórias.
+      - Hoje o Stripe recebe 500 e fica reenviando o evento.
+    - **(B) Falta o e-mail "bem-vindo ao Premium".** Pedido do dono: o
+      cadastro manda o e-mail de boas-vindas do teste de 7 dias, mas virar
+      assinante não manda nada.
+      - Enviar pelo Resend (remetente igual ao do e-mail diário), uma vez,
+        quando o status passar a `active` pela primeira vez: plano, valor,
+        próxima cobrança, como cancelar (Settings → Manage subscription) e
+        o direito de 14 dias.
+      - Aproveitar e mandar também a confirmação de cancelamento ("seu
+        acesso vai até DD/MM").
+      - Os dois ajudam com a lei de assinaturas (DMCC).
+
 Para o código, em ordem de prioridade:
 1. **PREÇO: o certo é £7,99 por mês e £60 por ano** (decisão do dono,
    23/10).
