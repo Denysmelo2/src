@@ -112,9 +112,11 @@ settings:
 ### stripe-webhook
 
 - `checkout.session.completed`: resolves the user (metadata, else email),
-  re-fetches the subscription and upserts `stripe_customer_id`,
+  re-fetches the subscription and updates `stripe_customer_id`,
   `stripe_subscription_id`, `plan`, `subscription_status`,
-  `current_period_end` on `user_profiles`.
+  `current_period_end` on the user's `user_profiles` row (an update, not
+  an upsert: the row always exists, and an INSERT fails NOT NULL on
+  `id`/`email`).
 - `customer.subscription.created|updated|deleted`: re-fetches the
   subscription and updates the row matched by `stripe_subscription_id`,
   else `stripe_customer_id`, else `metadata.supabase_user_id`. A
