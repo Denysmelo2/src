@@ -35,8 +35,15 @@ function routeValue(route) {
   return route.gbpReturnDisplay;
 }
 
-export function LiveCompare({ storeId, storeName }) {
-  const [amountText, setAmountText] = useState(String(DEFAULT_AMOUNT));
+/** amount / onAmountChange: on /compare the box shares the page's amount
+ *  (both fields show the same number and the routes above follow it;
+ *  23/10/2026 the owner typed £100 here while the list stayed at £50).
+ *  With only `amount`, it is the starting value; with neither, £100. */
+export function LiveCompare({ storeId, storeName, amount: givenAmount, onAmountChange }) {
+  const [ownAmount, setOwnAmount] = useState(String(givenAmount || DEFAULT_AMOUNT));
+  const shared = typeof onAmountChange === 'function';
+  const amountText = shared ? String(givenAmount ?? '') : ownAmount;
+  const setAmountText = shared ? onAmountChange : setOwnAmount;
   const amount = Math.max(0, Number(amountText) || 0);
   const { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, loading } = useStoreOffers(storeId);
   const { programs: milesPrograms } = useMilesPrograms();
