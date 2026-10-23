@@ -132,15 +132,36 @@ O que já foi resolvido no painel, sem código:
   continua.
 
 Para o código, em ordem de prioridade:
-1. **Preço errado no site.**
-   - O Stripe cobra £14,99 por mês e £120 por ano, e a página Pricing mostra
-     esses valores.
-   - Em **Settings** e em outros lugares aparece "£7.99/month or £60/year":
-     - `src/locales/en.json:144` e `pt-BR.json:144` (`subscriptionTagline`);
-     - `src/components/sections/SubscriptionCTA.jsx:43` e `:50`;
-     - `src/data/ukData.js:747`.
-   - Corrigir para £14.99 e £120, de preferência tirando o preço de uma
-     única constante. É um risco de reclamação de consumidor.
+1. **PREÇO: o certo é £7,99 por mês e £60 por ano** (decisão do dono,
+   23/10).
+   - O Stripe e várias páginas estão com £14,99 e £120, o que está errado.
+     Settings e `SubscriptionCTA` já mostram £7,99 e £60.
+   - **O Cowork cuida do Stripe e dos segredos:**
+     - cria os preços novos;
+     - troca `STRIPE_PRICE_MONTHLY` e `STRIPE_PRICE_YEARLY` nas Edge
+       Functions;
+     - ajusta o portal do cliente.
+     
+     O código das funções não muda. O webhook lê o intervalo do preço, não
+     o ID.
+   - **Para o Claude Code:**
+     - criar uma constante única de preço (por exemplo em
+       `src/config/pricing.js`: mensal 7.99, anual 60) e usar em todo
+       lugar;
+     - trocar £14,99 e £120 por £7,99 e £60 em:
+       - `PricingPage.jsx` (linhas 134-156 e 300-301). No anual: "£60 every
+         year … £35.88 less than 12 monthly payments" e "Pay once a year:
+         £60 instead of £95.88";
+       - `LandingPage.jsx:944`;
+       - `TermsOfServicePage.jsx` (linhas 9, 72, 216-217);
+       - `RefundPolicyPage.jsx` (linhas 149-155). Refazer os exemplos:
+         - £7,99 × 25/30 = **£6,66**;
+         - £60 × 355/365 = **£58,36**.
+   - Conferir com `git grep -n "14\.99\|£120"` que não sobrou nada.
+     Atenção: `CardsPage`, `BanksPage` e a calculadora Revolut citam
+     £14,99 de outros produtos; esses ficam.
+   - Os textos legais mudaram de preço, então avisar o dono para levar a
+     versão nova ao solicitor.
 2. **`/compare`: mudar o valor não atualiza o resultado.**
    - No celular, o dono digitou £100 no Sainsbury's. O campo mostrava £100,
      mas a lista continuava calculada com £50: "NX Rewards £5.00", "NX or
