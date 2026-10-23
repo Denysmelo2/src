@@ -131,6 +131,20 @@ O que já foi resolvido no painel, sem código:
   senha atual (8 caracteres, com maiúscula, minúscula, número e símbolo)
   continua.
 
+- **O checkout nunca tinha funcionado.**
+  - O segredo `STRIPE_SECRET_KEY` guardava o *ID* de uma chave (`mk_…`),
+    não a chave. O Stripe respondia "Invalid API key provided … looks like
+    the ID of an API key".
+  - O dono criou uma chave secreta live nova ("snapgain-uk-supabase") e
+    trocou o segredo às 20:53.
+  - Testado: o checkout abre com £7,99 por mês e £60 por ano.
+  - **Sugestão para o código:** mostrar no front a mensagem de erro do
+    Stripe só para admin. E registrar em `ops` quando o
+    `create-checkout-session` falhar, para isso não passar 5 meses sem
+    ninguém ver.
+  - O `STRIPE_WEBHOOK_SECRET` só vai ser conferido no primeiro pagamento
+    real.
+
 Para o código, em ordem de prioridade:
 1. **PREÇO: o certo é £7,99 por mês e £60 por ano** (decisão do dono,
    23/10).
