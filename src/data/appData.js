@@ -70,7 +70,7 @@ export const filterOptions = [
 export const features = [
   {
     icon: <TrendingUp />,
-    title: "Real-Time UK Comparison",
+    title: "UK Comparison, Checked Daily",
     description: "Compare Quidco, Picodi, JamDoughnut, EverUp and Cheddar offers side by side, with GBP calculations."
   },
   {

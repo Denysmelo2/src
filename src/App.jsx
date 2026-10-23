@@ -15,6 +15,7 @@ import { Layout } from '@/components/layout/Layout';
 import FeaturesPage from '@/pages/FeaturesPage';
 import PricingPage from '@/pages/PricingPage';
 import AboutPage from '@/pages/AboutPage';
+import FaqPage from '@/pages/FaqPage';
 import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsOfServicePage from '@/pages/TermsOfServicePage';
 import CookiePolicyPage from '@/pages/CookiePolicyPage';
@@ -68,6 +69,7 @@ function AppContent() {
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/faq" element={<FaqPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/apps" element={
           <ProtectedRoute>
@@ -249,7 +251,7 @@ function App() {
         <DisplaySettingsBoot />
         <Helmet>
           <title>SnapGain - Smart Comparison App</title>
-          <meta name="description" content="Compare cashback, points, and gift cards in real-time. Find the best way to pay and maximize your rewards on every purchase." />
+          <meta name="description" content="Compare cashback, points, and gift cards across UK platforms, with rates checked daily. Find the best way to pay and maximise your rewards on every purchase." />
         </Helmet>
         <Toaster />
         <AuthLinkErrorRedirect />

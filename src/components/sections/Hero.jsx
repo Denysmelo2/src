@@ -16,7 +16,7 @@ export function Hero({ user, onSubscribe }) {
         <span className="block gradient-text">Maximum Rewards.</span>
       </h1>
       <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8">
-        SnapGain compares cashback, points, and gift cards in real-time, so you always get the best return on every purchase.
+        SnapGain compares cashback, points, and gift cards, with rates checked daily, so you can pick the best return on every purchase.
       </p>
       
       {!user && (
