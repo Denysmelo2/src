@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SnapGain</string>
+    <string name="title_activity_main">SnapGain</string>
+    <string name="package_name">uk.snapgain.app</string>
+    <string name="custom_url_scheme">uk.snapgain.app</string>
+</resources>

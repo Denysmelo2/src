@@ -1,0 +1,14 @@
+{
+  "appId": "uk.snapgain.app",
+  "appName": "SnapGain",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
