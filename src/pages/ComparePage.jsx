@@ -434,6 +434,8 @@ function RouteBox({
   rank,
   isBest,
   amount,
+  amountText,
+  onAmountChange,
   storeSlug,
   directAvios = 0,
   defaultOpen = false,
@@ -694,6 +696,8 @@ function RouteBox({
               strategy={item.curated}
               defaultOpen
               compact
+              amount={amountText}
+              onAmountChange={onAmountChange}
             />
           ) : (
             <AutoRouteDetail
@@ -1290,6 +1294,11 @@ function ComparePage() {
                       Top {Math.min(rankedRoutes.length, 5)} route
                       {Math.min(rankedRoutes.length, 5) === 1 ? '' : 's'} for{' '}
                       {selected.name}
+                      {amountParsed.ok && (
+                        <span className="text-muted-foreground font-semibold">
+                          {' '}· £{amountParsed.value.toFixed(2)}
+                        </span>
+                      )}
                     </h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Ranked by best £ return — tap any box to see the steps.
@@ -1329,6 +1338,8 @@ function ComparePage() {
                     rank={i + 1}
                     isBest={i === 0}
                     amount={amountParsed.value || 0}
+                    amountText={amountInput}
+                    onAmountChange={setAmountInput}
                     storeSlug={selected.slug}
                     directAvios={bestDirectAvios}
                     defaultOpen={false}

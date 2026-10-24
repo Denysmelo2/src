@@ -195,6 +195,8 @@ export function CuratedStrategyCard({
   onOpenStep,
   locked = false,
   onLockedClick,
+  amount,
+  onAmountChange,
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -307,7 +309,11 @@ export function CuratedStrategyCard({
               className="overflow-hidden"
             >
               {strategy.live_compare && strategy.target_store_id && !locked && (
-                <LiveCompare storeId={strategy.target_store_id} />
+                <LiveCompare
+                  storeId={strategy.target_store_id}
+                  amount={amount}
+                  onAmountChange={onAmountChange}
+                />
               )}
               <ol className="space-y-0 pl-0">
                 {steps.map((step, i) => (

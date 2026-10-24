@@ -253,7 +253,7 @@ function StrategyPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <CuratedStrategyCard strategy={topCurated} defaultOpen />
+            <CuratedStrategyCard strategy={topCurated} defaultOpen amount={amount} />
           </motion.section>
         )}
 
