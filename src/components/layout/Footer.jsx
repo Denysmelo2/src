@@ -61,6 +61,7 @@ export function Footer() {
           <div>
             <p className="font-semibold mb-2 md:mb-3 text-xs md:text-base">Support</p>
             <nav className="flex flex-col space-y-1.5 md:space-y-2">
+              <Link to="/faq" className="text-[11px] md:text-sm text-muted-foreground hover:text-primary">FAQ</Link>
               <Link to="/contact" className="text-[11px] md:text-sm text-muted-foreground hover:text-primary">Contact</Link>
               <a
                 href="mailto:support@snapgain.uk"

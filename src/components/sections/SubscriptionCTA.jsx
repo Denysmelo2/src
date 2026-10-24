@@ -43,14 +43,14 @@ export function SubscriptionCTA({ onSubscribe }) {
           title: 'Monthly',
           price: MONTHLY,
           description: 'Per month, billed monthly.',
-          features: ['Unlimited comparisons', 'Real-time data', 'Personalized alerts'],
+          features: ['Unlimited comparisons', 'Rates checked daily', 'Personalized alerts'],
           bestValue: false
       },
       annual: {
           title: 'Annual',
           price: YEARLY,
           description: 'Per year, billed annually.',
-          features: ['Unlimited comparisons', 'Real-time data', 'Personalized alerts', `Save ${YEARLY_SAVING} a year`],
+          features: ['Unlimited comparisons', 'Rates checked daily', 'Personalized alerts', `Save ${YEARLY_SAVING} a year`],
           bestValue: true
       }
   };
