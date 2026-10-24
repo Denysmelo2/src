@@ -27,6 +27,13 @@ O Cowork religou o `snapgainuk`, publicou o #134 e desligou os outros dois.
 O `snapgain-scraper` é robô (GitHub Actions) e não é ligado a nenhum
 projeto da Vercel.
 
+**24/10:** o merge da #135 foi feito pelo dono. O Cowork publicou o
+`stripe-webhook` (versão 18, `verify_jwt = false`) a partir da main
+(`32e9647`) e conferiu que ele responde: sem assinatura, devolve 400. A
+snapgain-scraper#44 também foi mesclada. O `member-scrape-dispatch`
+continua desligado: religar fica com o Claude Code, conforme a resposta do
+dono.
+
 ## Estado conferido
 
 - **Site no ar:** produção em `37a47c7` (PR #133), estado Ready.
