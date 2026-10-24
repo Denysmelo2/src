@@ -66,6 +66,12 @@ export function isNxPlatform(platform) {
   const key = String(platform || '').trim().toLowerCase();
   return key === 'nx rewards' || key === 'nxrewards' || key === 'nx';
 }
+
+/** True for the British Airways Avios eStore (point_offers.airline). */
+export function isAviosEstore(platform) {
+  const key = String(platform || '').trim().toLowerCase();
+  return key === 'british airways avios' || key === 'avios' || key === 'ba avios';
+}
 const NX_SYNTHETIC_ENABLED = false;
 
 export function withSyntheticNxOffer(cashbackOffers, store) {
@@ -424,9 +430,15 @@ export function computeStrategies({
   });
 
   // ─── Stack: gift_card × points ───────────────────────────────────────
+  // Never with the Avios eStore. BA's shopping terms: "Purchase of or using
+  // gift card to pay for whole or part of the transaction is not eligible
+  // to earn Avios, unless stated otherwise in retailer's purchase
+  // conditions" (checked 23/10/2026). Same rule as NX above: the eStore
+  // stays a separate route to compare against.
+  const pointsForGiftCardStacks = pointsToUse.filter((p) => !isAviosEstore(p.airline));
   giftCardOffers.forEach((g) => {
     const gc = giftCardLayer(g);
-    pointsToUse.forEach((p) => {
+    pointsForGiftCardStacks.forEach((p) => {
       const pt = pointsLayer(p);
       const total = gc.gbpReturn + pt.gbpReturn;
       out.push({
