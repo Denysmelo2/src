@@ -218,7 +218,7 @@ export function CuratedStrategyCard({
       <CardHeader className={cn('pb-3', compact && 'pb-2')}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full flex items-center gap-1">
                 <Award className="w-3 h-3" />
                 Pro Strategy
@@ -247,8 +247,11 @@ export function CuratedStrategyCard({
             )}
           </div>
 
-          {/* Hero return badge */}
-          <div className="shrink-0 text-right">
+          {/* Hero return badge. Width-capped so a long label ("NX 10% or
+              an Avios bonus, compared live") wraps under the number
+              instead of squeezing the title to one word per line on a
+              phone (owner, 23/10/2026). */}
+          <div className="shrink-0 text-right max-w-[7.5rem] sm:max-w-[11rem]">
             <div
               className={cn(
                 'font-extrabold gradient-text leading-none',
