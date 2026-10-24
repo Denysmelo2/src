@@ -22,7 +22,7 @@ export default function ResendConfirmationEmail({ defaultEmail = "" }) {
         type: "signup",
         email: email.trim(),
         options: {
-          emailRedirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/dashboard`,
+          emailRedirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/auth/callback`,
         },
       });
       if (error) throw error;
@@ -49,7 +49,7 @@ export default function ResendConfirmationEmail({ defaultEmail = "" }) {
 
   return (
     <>
-      <form onSubmit={onSubmit} className="flex items-center gap-2">
+      <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
         {/* Label invisível para acessibilidade */}
         <label htmlFor="resend-email" className="sr-only">Email address</label>
 
@@ -63,7 +63,7 @@ export default function ResendConfirmationEmail({ defaultEmail = "" }) {
           required
           disabled={busy}
           className="
-            h-9 w-[260px] rounded-md border border-gray-300
+            h-9 w-full sm:w-[260px] rounded-md border border-gray-300
             bg-white px-3 text-sm
             placeholder:text-gray-400
             focus:outline-none focus:ring-2 focus:ring-[#4285F4] focus:border-[#4285F4]
