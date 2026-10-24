@@ -252,10 +252,23 @@ Deno.serve(async (req) => {
           fields.plan = metaPlan === 'yearly' ? 'yearly' : 'monthly';
         }
 
-        const { error } = await supabase
+        // update, not upsert: the profile always exists (handle_new_user
+        // creates it with the account), and an upsert is an INSERT first,
+        // which fails NOT NULL on user_profiles.id and .email before ON
+        // CONFLICT is reached ("23502", 23/10/2026: Stripe got a 500 and
+        // kept resending the event).
+        const { data: updated, error } = await supabase
           .from('user_profiles')
-          .upsert({ user_id: userId, ...fields }, { onConflict: 'user_id' });
+          .update(fields)
+          .eq('user_id', userId)
+          .select('user_id');
         if (error) throw error;
+        if (!updated?.length) {
+          // No profile to write to. The customer.subscription.* events
+          // match by customer id or metadata and will retry the write;
+          // a 500 here would only make Stripe resend this event.
+          console.warn('[stripe-webhook] no profile for user', userId, 'on', event.id);
+        }
         break;
       }
 
