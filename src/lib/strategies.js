@@ -67,6 +67,11 @@ export function isNxPlatform(platform) {
   return key === 'nx rewards' || key === 'nxrewards' || key === 'nx';
 }
 
+/** True for Quidco, however the platform name is spelt. */
+export function isQuidcoPlatform(platform) {
+  return String(platform || '').trim().toLowerCase() === 'quidco';
+}
+
 /** True for the British Airways Avios eStore (point_offers.airline). */
 export function isAviosEstore(platform) {
   const key = String(platform || '').trim().toLowerCase();
@@ -408,7 +413,12 @@ export function computeStrategies({
   // purchases of gift cards or paying for a purchase using gift cards or
   // e-gift cards/codes." So "Cheddar + NX Rewards" pays only the gift
   // card; NX stays a separate route to compare against.
-  const cashbackForGiftCardStacks = cashbackToUse.filter((c) => !isNxPlatform(c.platform));
+  // Never with Quidco either: its standard exclusions (help centre,
+  // checked 23/10/2026) say cashback is lost when you pay with a gift card
+  // or shopping card, for every retailer, Deliveroo included.
+  const cashbackForGiftCardStacks = cashbackToUse.filter(
+    (c) => !isNxPlatform(c.platform) && !isQuidcoPlatform(c.platform)
+  );
   giftCardOffers.forEach((g) => {
     const gc = giftCardLayer(g);
     cashbackForGiftCardStacks.forEach((c) => {
