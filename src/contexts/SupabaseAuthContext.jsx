@@ -119,10 +119,12 @@ export const AuthProvider = ({ children }) => {
     return { error: null };
   }, [toast]);
 
-  const signIn = useCallback(async (email, password) => {
+  // captchaToken: from useAuthCaptcha; undefined while captcha is off.
+  const signIn = useCallback(async (email, password, captchaToken) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: captchaToken ? { captchaToken } : undefined,
     });
 
     if (error) {

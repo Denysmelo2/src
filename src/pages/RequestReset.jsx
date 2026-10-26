@@ -17,19 +17,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
+import { useAuthCaptcha } from '@/components/auth/AuthCaptcha';
 
 export default function RequestReset() {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const captcha = useAuthCaptcha();
 
   const submit = async (e) => {
     e.preventDefault();
-    if (busy) return;
+    if (busy || !captcha.ready) return;
     setBusy(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/reset-password`,
+        captchaToken: captcha.token,
       });
       // Rate-limit and network errors are worth showing; anything else
       // gets the neutral confirmation below.
@@ -44,6 +47,7 @@ export default function RequestReset() {
         variant: 'destructive',
       });
     } finally {
+      captcha.reset();
       setBusy(false);
     }
   };
@@ -106,9 +110,10 @@ export default function RequestReset() {
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
+                  {captcha.widget}
                   <Button
                     type="submit"
-                    disabled={busy}
+                    disabled={busy || !captcha.ready}
                     className="w-full bg-primary hover:bg-primary/90 text-white"
                   >
                     {busy ? 'Sending…' : 'Send reset link'}

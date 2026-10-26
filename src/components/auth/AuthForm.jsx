@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { OAuthButtons } from '@/components/auth/OAuthButtons';
 import { PasswordInput, isPasswordValid } from '@/components/auth/PasswordInput';
+import { useAuthCaptcha } from '@/components/auth/AuthCaptcha';
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -35,16 +36,27 @@ function AuthForm({ mode }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const captcha = useAuthCaptcha();
   const isLogin = mode === 'login';
   const redirectTo = location.state?.from?.pathname || '/home';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
+    if (!captcha.ready) {
+      toast({
+        title: 'Please confirm you are human',
+        description: 'Tick the box above the button, then try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setSubmitting(true);
+    let sent = false;
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        sent = true;
+        const { error } = await signIn(email, password, captcha.token);
         if (!error) {
           navigate(redirectTo, { replace: true });
         }
@@ -83,8 +95,10 @@ function AuthForm({ mode }) {
           setSubmitting(false);
           return;
         }
+        sent = true;
         const { error } = await signUp(email, password, {
           data: phoneClean ? { name, phone: phoneClean } : { name },
+          captchaToken: captcha.token,
         });
         if (!error) {
           toast({
@@ -95,6 +109,8 @@ function AuthForm({ mode }) {
         }
       }
     } finally {
+      // A captcha token is spent by the request, used or not.
+      if (sent) captcha.reset();
       setSubmitting(false);
     }
   };
@@ -197,10 +213,11 @@ function AuthForm({ mode }) {
             on optional emails in Settings.
           </motion.p>
         )}
+        {captcha.widget && <motion.div variants={itemVariants}>{captcha.widget}</motion.div>}
         <motion.div variants={itemVariants}>
           <Button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !captcha.ready}
             className="w-full bg-primary hover:bg-primary/90 text-white"
           >
             {submitting
