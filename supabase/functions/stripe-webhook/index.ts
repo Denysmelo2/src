@@ -65,6 +65,20 @@ function periodEnd(sub: Stripe.Subscription): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+// ISO time Stripe will end the subscription, or null while it renews.
+// `cancel_at` is set for a cancel date and, in recent API versions, for a
+// cancel at period end too; `cancel_at_period_end` alone falls back to
+// the period end.
+function cancelAt(sub: Stripe.Subscription, end: string | null): string | null {
+  // deno-lint-ignore no-explicit-any
+  const s = sub as any;
+  if (typeof s.cancel_at === 'number' && Number.isFinite(s.cancel_at)) {
+    const d = new Date(s.cancel_at * 1000);
+    if (!Number.isNaN(d.getTime())) return d.toISOString();
+  }
+  return s.cancel_at_period_end ? end : null;
+}
+
 // 'monthly' | 'yearly' from the price interval; null if unknown (the
 // user_profiles.plan CHECK only allows those two values or NULL).
 function planOf(sub: Stripe.Subscription): 'monthly' | 'yearly' | null {
@@ -101,6 +115,10 @@ function profileFields(sub: Stripe.Subscription, statusOverride?: string) {
   };
   const end = periodEnd(sub);
   if (end) fields.current_period_end = end;
+  // When a cancelled subscription ends (migration 0041), so /pricing and
+  // Settings say "Ends" instead of "Renews". Written every time, so a
+  // reactivation puts it back to null.
+  fields.cancel_at = cancelAt(sub, end);
   const plan = planOf(sub);
   if (plan) fields.plan = plan;
   return fields;

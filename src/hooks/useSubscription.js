@@ -65,7 +65,7 @@ export function useSubscription() {
       const { data, error } = await supabase
         .from('user_profiles')
         .select(
-          'id, role, plan, subscription_status, stripe_customer_id, stripe_subscription_id, current_period_end, trial_end, onboarding_done'
+          'id, role, plan, subscription_status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at, trial_end, onboarding_done'
         )
         .eq('user_id', user.id)
         .maybeSingle();
@@ -140,6 +140,11 @@ export function useSubscription() {
   const trialDaysLeft = inTrial
     ? Math.max(0, Math.ceil((trialEndMs - now) / (1000 * 60 * 60 * 24)))
     : 0;
+  // Cancelled in the Stripe portal but still paid up: access continues
+  // until cancel_at, and nothing renews (migration 0041). Pages say
+  // "Ends" and offer to reactivate instead of "Renews".
+  const cancelAtMs = profile?.cancel_at ? new Date(profile.cancel_at).getTime() : 0;
+  const willEnd = isActive && cancelAtMs > now;
   const periodDaysLeft = isActive && periodEndMs
     ? Math.max(0, Math.ceil((periodEndMs - now) / (1000 * 60 * 60 * 24)))
     : 0;
@@ -156,6 +161,9 @@ export function useSubscription() {
     status,
     trialEndsAt: profile?.trial_end || null,
     periodEndsAt: profile?.current_period_end || null,
+    willEnd,
+    endsAt: willEnd ? profile.cancel_at : null,
+    endsDaysLeft: willEnd ? Math.ceil((cancelAtMs - now) / (1000 * 60 * 60 * 24)) : 0,
     trialDaysLeft,
     periodDaysLeft,
   };

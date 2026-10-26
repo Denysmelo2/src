@@ -265,7 +265,19 @@ function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {sub.isActive && sub.periodEndsAt && (
+            {sub.willEnd && (
+              <p className="text-sm text-muted-foreground">
+                {t('settings.endsOn')}{' '}
+                <span className="font-semibold">
+                  {new Date(sub.endsAt).toLocaleDateString('en-GB')}
+                </span>
+                {sub.endsDaysLeft
+                  ? ` (${sub.endsDaysLeft} ${t('settings.days')})`
+                  : ''}
+                . {t('settings.endsNote')}
+              </p>
+            )}
+            {sub.isActive && !sub.willEnd && sub.periodEndsAt && (
               <p className="text-sm text-muted-foreground">
                 {t('settings.renewsOn')}{' '}
                 <span className="font-semibold">
@@ -305,7 +317,12 @@ function SettingsPage() {
                   <Link to="/pricing">{t('settings.changePlan')}</Link>
                 </Button>
               )}
-              {sub.isActive && (
+              {sub.willEnd && (
+                // The Stripe portal shows "Renew subscription" on a
+                // subscription cancelled at period end.
+                <ManageBillingButton>{t('settings.reactivate')}</ManageBillingButton>
+              )}
+              {sub.isActive && !sub.willEnd && (
                 <ManageBillingButton variant="outline">
                   {t('settings.manageSubscription')}
                 </ManageBillingButton>

@@ -84,7 +84,7 @@ const PlanCard = ({ title, price, period, description, features, bestValue, plan
 
 function PricingPage() {
   const { user } = useAuth();
-  const { profile, status, isPremium, inTrial, isActive, plan, trialDaysLeft, periodDaysLeft, periodEndsAt } = useSubscription();
+  const { profile, status, isPremium, inTrial, isActive, plan, trialDaysLeft, periodDaysLeft, periodEndsAt, willEnd, endsAt, endsDaysLeft } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const autoFiredRef = useRef(false);
   const hasSubscription = !!profile?.stripe_subscription_id && LIVE_STATUSES.includes(status);
@@ -212,15 +212,23 @@ function PricingPage() {
                       : `Trial: ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'} left`}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {isActive && periodEndsAt
-                      ? `Renews ${new Date(periodEndsAt).toLocaleDateString()}${
+                    {willEnd
+                      ? `Cancelled: ends ${new Date(endsAt).toLocaleDateString('en-GB')}${
+                          endsDaysLeft ? ` · ${endsDaysLeft} day${endsDaysLeft === 1 ? '' : 's'} left` : ''
+                        }. It won't renew.`
+                      : isActive && periodEndsAt
+                      ? `Renews ${new Date(periodEndsAt).toLocaleDateString('en-GB')}${
                           periodDaysLeft ? ` · ${periodDaysLeft} days left` : ''
                         }`
                       : 'Free trial: no card needed, and it ends on its own.'}
                   </p>
                 </div>
               </div>
-              {isActive && (
+              {willEnd ? (
+                // The Stripe portal shows "Renew subscription" on a
+                // subscription cancelled at period end.
+                <ManageBillingButton size="sm">Reactivate</ManageBillingButton>
+              ) : isActive && (
                 <Button asChild variant="outline" size="sm">
                   <Link to="/settings">
                     Manage <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
