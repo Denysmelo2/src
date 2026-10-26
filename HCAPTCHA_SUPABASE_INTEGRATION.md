@@ -4,7 +4,7 @@
 
 ### 1. **Instalação e Configuração**
 - ✅ Dependência `@hcaptcha/react-hcaptcha` adicionada ao package.json
-- ✅ Site key configurada: `ES_b1112a2a44c543d8807090a20fc6b7cf`
+- ✅ Site key configurada: `<removed: it was a secret key, see src/components/auth/AuthCaptcha.jsx>`
 - ✅ Variável de ambiente `VITE_HCAPTCHA_SITE_KEY` configurada
 
 ### 2. **AuthContext Atualizado**
@@ -56,7 +56,7 @@ await supabase.auth.signUp({
 
 3. **Configure hCaptcha:**
    ```
-   Site Key: ES_b1112a2a44c543d8807090a20fc6b7cf
+   Site Key: <removed: it was a secret key, see src/components/auth/AuthCaptcha.jsx>
    Secret Key: [sua secret key do hCaptcha]
    ```
 

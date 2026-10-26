@@ -2,18 +2,20 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useAuthCaptcha } from "@/components/auth/AuthCaptcha";
 
 export default function ResendConfirmationEmail({ defaultEmail = "" }) {
   const [email, setEmail] = useState(defaultEmail);
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [open, setOpen] = useState(false); // ← controla o popup
+  const captcha = useAuthCaptcha({ size: "compact" });
 
   useEffect(() => setEmail(defaultEmail), [defaultEmail]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!email || busy || cooldown) return;
+    if (!email || busy || cooldown || !captcha.ready) return;
 
     setBusy(true);
 
@@ -23,6 +25,7 @@ export default function ResendConfirmationEmail({ defaultEmail = "" }) {
         email: email.trim(),
         options: {
           emailRedirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/auth/callback`,
+          captchaToken: captcha.token,
         },
       });
       if (error) throw error;
@@ -43,6 +46,7 @@ export default function ResendConfirmationEmail({ defaultEmail = "" }) {
       console.error(err);
       alert(err?.message || "Something went wrong. Please try again shortly.");
     } finally {
+      captcha.reset();
       setBusy(false);
     }
   };
@@ -71,10 +75,13 @@ export default function ResendConfirmationEmail({ defaultEmail = "" }) {
           "
         />
 
+        {/* hCaptcha only once an address is typed, to keep the line short. */}
+        {email && captcha.widget && <div className="w-full">{captcha.widget}</div>}
+
         {/* BUTTON — branco com borda em degradê; fica #4285F4 sólido ao clicar */}
         <button
           type="submit"
-          disabled={busy || cooldown > 0}
+          disabled={busy || cooldown > 0 || !captcha.ready}
           className="
             group relative inline-flex items-center justify-center
             rounded-md text-sm font-medium

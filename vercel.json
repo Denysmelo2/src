@@ -16,8 +16,7 @@
     "VITE_APP_ENV": "production",
     "VITE_APP_URL": "https://snapgain.uk",
     "VITE_SUPABASE_REDIRECT_URL": "https://snapgain.uk/auth/callback",
-    "VITE_SITE_URL": "https://snapgain.uk",
-    "VITE_HCAPTCHA_SITE_KEY": "ES_b1112a2a44c543d8807090a20fc6b7cf"
+    "VITE_SITE_URL": "https://snapgain.uk"
   },
   "headers": [
     {
