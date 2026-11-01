@@ -37,10 +37,11 @@ const APP_URL = Deno.env.get('APP_URL') || 'https://snapgain.uk';
 const STALE_HOURS = 48;
 
 // Sources expected to update every day, as ops.data_freshness names them
-// (`fonte`), with the run that updates each one. NX is left out while its
-// robot only reads (first week from 25/10/2026): it writes nothing yet,
-// so it would always look stale. Add it here when the robot starts writing.
+// (`fonte`), with the run that updates each one. NX joined on 01/11/2026,
+// the day its robot started writing (scraper #47); before that it only
+// read, so it would always have looked stale.
 const WATCHED: Record<string, { label: string; run: string }> = {
+  'nx rewards': { label: 'NX Rewards', run: '09:00 run through the Mac (member-scrape)' },
   quidco: { label: 'Quidco', run: '09:00 run through the Mac (member-scrape)' },
   'british airways avios': { label: 'Avios eStore', run: '09:00 run through the Mac (member-scrape)' },
   jamdoughnut: { label: 'JamDoughnut', run: '08:00 daily run (scrape-daily)' },
