@@ -39,13 +39,13 @@ const STALE_HOURS = 48;
 // Sources expected to update every day, as ops.data_freshness names them
 // (`fonte`), with the run that updates each one. NX joined on 01/11/2026,
 // the day its robot started writing (scraper #47); before that it only
-// read, so it would always have looked stale.
+// read, so it would always have looked stale. Picodi left on 03/11/2026,
+// when it came off the 08:00 list (scraper #49, owner's call).
 const WATCHED: Record<string, { label: string; run: string }> = {
   'nx rewards': { label: 'NX Rewards', run: '09:00 run through the Mac (member-scrape)' },
   quidco: { label: 'Quidco', run: '09:00 run through the Mac (member-scrape)' },
   'british airways avios': { label: 'Avios eStore', run: '09:00 run through the Mac (member-scrape)' },
   jamdoughnut: { label: 'JamDoughnut', run: '08:00 daily run (scrape-daily)' },
-  picodi: { label: 'Picodi', run: '08:00 daily run (scrape-daily)' },
   cheddar: { label: 'Cheddar', run: '08:00 daily run (scrape-daily)' },
   everup: { label: 'EverUp', run: '08:00 daily run (scrape-daily)' },
 };
