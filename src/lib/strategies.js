@@ -72,6 +72,11 @@ export function isQuidcoPlatform(platform) {
   return String(platform || '').trim().toLowerCase() === 'quidco';
 }
 
+/** True for Picodi, however the platform name is spelt. */
+export function isPicodiPlatform(platform) {
+  return String(platform || '').trim().toLowerCase() === 'picodi';
+}
+
 /** True for the British Airways Avios eStore (point_offers.airline). */
 export function isAviosEstore(platform) {
   const key = String(platform || '').trim().toLowerCase();
@@ -416,8 +421,13 @@ export function computeStrategies({
   // Never with Quidco either: its standard exclusions (help centre,
   // checked 23/10/2026) say cashback is lost when you pay with a gift card
   // or shopping card, for every retailer, Deliveroo included.
+  // Never with Picodi: owner's decision of 26/10/2026, until Picodi's own
+  // rules on paying with a gift card are confirmed.
   const cashbackForGiftCardStacks = cashbackToUse.filter(
-    (c) => !isNxPlatform(c.platform) && !isQuidcoPlatform(c.platform)
+    (c) =>
+      !isNxPlatform(c.platform) &&
+      !isQuidcoPlatform(c.platform) &&
+      !isPicodiPlatform(c.platform)
   );
   giftCardOffers.forEach((g) => {
     const gc = giftCardLayer(g);
