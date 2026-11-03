@@ -11,9 +11,8 @@
 //   - SnapGain is a trading name of a SOLE TRADER. Never name a company,
 //     company number or "SnapGain Ltd" here.
 //   - Not VAT-registered.
-//   - TODO(owner): ICO data protection fee. Not registered yet. When the
-//     registration number is issued, add a line to section 1 such as
-//     "ICO registration number: ZBxxxxxxx". Do not show "pending".
+//   - Registered with the ICO (data protection fee paid): ZC289967,
+//     shown in section 1. Updated 3 November 2026.
 //
 // A UK solicitor should review the final wording before it is relied on.
 //
@@ -24,7 +23,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 
-const LAST_UPDATED = '17 October 2026';
+const LAST_UPDATED = '3 November 2026';
 
 const H2 = ({ id, children }) => (
   <h2 id={id} className="text-2xl font-bold mt-10 mb-3 scroll-mt-24">
@@ -111,9 +110,8 @@ function PrivacyPolicyPage() {
               <li>
                 Email (including data protection requests): <Mail subject="Data protection" />
               </li>
+              <li>ICO registration number: ZC289967</li>
             </UL>
-            {/* TODO(owner): add "ICO registration number: ..." here once the
-                data protection fee is paid and the number is issued. */}
             <P>
               SnapGain is a small business, so we have not appointed a data
               protection officer. Your requests go straight to the person
@@ -274,10 +272,9 @@ function PrivacyPolicyPage() {
             </P>
             {/* Locations: Supabase project ffowgyjdbgkphsflxybk is in
                 eu-west-2 (London), confirmed via the Supabase dashboard/API on
-                2026-10-17; re-confirm if the project moves. TODO(owner):
-                confirm the Sentry region (DSN host ingest.sentry.io = US,
-                ingest.de.sentry.io = EU) and the Resend sending region, and
-                update the table if either is EU. */}
+                2026-10-17; re-confirm if the project moves. Owner confirmed on
+                2026-11-02: Sentry is in the EU (Germany, DSN host
+                ingest.de.sentry.io) and Resend sends from the EU (Ireland). */}
             <Table
               head={['Provider', 'What for', 'Role', 'Where / transfer safeguard']}
               rows={[
@@ -303,13 +300,13 @@ function PrivacyPolicyPage() {
                   'Resend (Plus Five Five, Inc.)',
                   'Sending account emails and the optional boost email',
                   'Processor',
-                  `USA, under the ${TRANSFER}.`,
+                  `Emails are processed in the EU (Ireland), covered by the UK adequacy regulations for the EEA. Resend is a US company and may access data for support and operations under the ${TRANSFER}.`,
                 ],
                 [
                   'Sentry (Functional Software, Inc.)',
                   'Error monitoring; error session replay only with your consent',
                   'Processor',
-                  `USA, under the ${TRANSFER}.`,
+                  `Data stored in the EU (Germany), covered by the UK adequacy regulations for the EEA. Sentry is a US company and may access data for support and operations under the ${TRANSFER}.`,
                 ],
                 [
                   'Google (Google Ireland Limited / Google LLC)',
@@ -362,9 +359,9 @@ function PrivacyPolicyPage() {
 
           <section>
             <H2 id="retention">6. How long we keep it</H2>
-            {/* TODO(owner): confirm the Google Analytics data retention
-                setting (Admin → Data retention) is 14 months, and the Sentry
-                plan retention (up to 90 days). */}
+            {/* Google Analytics data retention (Admin → Data retention) is 14
+                months, confirmed by the owner on 2026-11-02. Sentry: up to 90
+                days on its plan. */}
             <Table
               head={['Data', 'How long']}
               rows={[
