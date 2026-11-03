@@ -125,7 +125,20 @@ Esta é a mesma lista do handover de 26/10. Fazer no celular e no computador.
    - opção 2: deixar que sumam sozinhas pela regra dos 30 dias, por volta de 02/12.
 2. **Doces (tarefa 4 do handover de 26/10):**
    - a tabela `doces_barbara_availability_blocks` aceita INSERT e DELETE de **qualquer visitante**;
-   - o Code vai fazer isso a seguir, num PR no repositório `doces-barbara`: primeiro o login real da Bárbara no `/admin` dos Doces, depois a política que fecha a tabela.
+   - **PR 1 pronto:** Denysmelo2/doces-barbara#1 troca a senha do `/admin`, que ficava dentro do JavaScript, pelo login real da Bárbara no Supabase, com hCaptcha;
+   - depois do merge e do teste da Bárbara, o Code abre o PR 2 no `src`: a migração que fecha a tabela, que o Cowork aplica;
+   - se o hCaptcha já estiver ligado no Supabase, antes do merge:
+     - colocar `VITE_HCAPTCHA_SITE_KEY` no projeto doces-barbara da Vercel;
+     - incluir o domínio dos Doces na chave do hCaptcha.
+3. **Fotos de inspiração dos Doces:**
+   - hoje qualquer pessoa pode enviar imagens para o bucket `doces-barbara-inspiration`, com limite de 5 MB e só imagens (6 arquivos até agora);
+   - é assim que o formulário de pedido recebe a foto do cliente;
+   - fechar o envio quebra esse recurso;
+   - opções:
+     - (a) deixar como está;
+     - (b) tirar a foto do formulário;
+     - (c) o Code faz uma Edge Function que valida e libera o envio;
+   - o dono decide.
 
 ## Parte D. Como o Code e o Cowork se falam
 
