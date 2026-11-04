@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { PasswordInput, isPasswordValid } from '@/components/auth/PasswordInput';
+import { isPwnedPassword, PWNED_MESSAGE } from '@/lib/pwnedPassword';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -48,6 +49,16 @@ export default function ResetPassword() {
 
     setBusy(true);
     try {
+      // Breached-password check (k-anonymity, see lib/pwnedPassword).
+      // null = the check could not run: let the new password through.
+      if ((await isPwnedPassword(pwd)) === true) {
+        toast({
+          title: 'Choose a different password',
+          description: PWNED_MESSAGE,
+          variant: 'destructive',
+        });
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: pwd });
       if (error) throw error;
       setDone(true);

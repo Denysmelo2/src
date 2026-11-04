@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { OAuthButtons } from '@/components/auth/OAuthButtons';
 import { PasswordInput, isPasswordValid } from '@/components/auth/PasswordInput';
 import { useAuthCaptcha } from '@/components/auth/AuthCaptcha';
+import { isPwnedPassword, PWNED_MESSAGE } from '@/lib/pwnedPassword';
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -90,6 +91,17 @@ function AuthForm({ mode }) {
           toast({
             title: 'Passwords do not match',
             description: 'Re-type both fields so they match exactly.',
+            variant: 'destructive',
+          });
+          setSubmitting(false);
+          return;
+        }
+        // Breached-password check (k-anonymity, see lib/pwnedPassword).
+        // null = the check could not run: let the sign-up through.
+        if ((await isPwnedPassword(password)) === true) {
+          toast({
+            title: 'Choose a different password',
+            description: PWNED_MESSAGE,
             variant: 'destructive',
           });
           setSubmitting(false);
