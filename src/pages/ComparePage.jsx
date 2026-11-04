@@ -61,6 +61,7 @@ import { RateBreakdown } from '@/components/RateBreakdown';
 import { labelForStrategy } from '@/components/AutoStrategyCard';
 import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
 import { oldestVerifiedAt, reviewedLabel } from '@/lib/dataFreshness';
+import { curatedGbp } from '@/lib/curatedReturn';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
@@ -107,8 +108,9 @@ function pointsToGbp(points, programName, milesPrograms) {
 /** Normalise a curated strategy into the same shape we use for the
  * unified route list — so ranking, badge and expand UX share code. */
 function curatedToItem(curated, amount, milesPrograms) {
-  const pct = Number(curated.hero_return_pct) || 0;
-  const gbpFromPct = (pct / 100) * amount;
+  // Today's return from today's rates (lib/curatedReturn.js, attached
+  // by useCuratedStrategies), never the typed hero_return_pct.
+  const gbpFromPct = curatedGbp(curated.live, amount) || 0;
   const gbpFromPoints = pointsToGbp(
     curated.bonus_points,
     curated.bonus_points_program,
@@ -119,10 +121,12 @@ function curatedToItem(curated, amount, milesPrograms) {
     source: 'curated',
     id: `curated-${curated.id}`,
     title: curated.title,
-    subtitle: curated.hero_return_label,
+    subtitle: curated.live?.label || curated.hero_return_label,
     gbpReturn: total,
     gbpReturnDisplay: `£${total.toFixed(2)}`,
     difficulty: curated.difficulty,
+    // Age of the oldest live rate used; null when no step reads one.
+    verifiedAt: curated.live?.verifiedAt || null,
     curated,
   };
 }
@@ -491,8 +495,8 @@ function RouteBox({
   //   (£400 → 43,478 Avios via Booster) + 35,000 = 78,478 Avios total
   //
   // Split the route into its £ side and Avios side from the strategy
-  // shape: for auto stacks, walk layers[]; for curated, use the
-  // hero_return_pct and bonus_points fields.
+  // shape: for auto stacks, walk layers[]; for curated, use
+  // today's return (live) and bonus_points.
   const mixedAvios = useMemo(() => {
     let gbpPortion = 0;
     let aviosPortion = 0;
@@ -505,11 +509,10 @@ function RouteBox({
         }
       }
     } else if (item.source === 'curated') {
-      const pct = Number(item.curated?.hero_return_pct) || 0;
       // The amount the user typed into Compare — passed in from the
       // page-level scope so RouteBox can compute the £ side without
-      // re-reading the form.
-      gbpPortion = (pct / 100) * (Number(amount) || 0);
+      // re-reading the form. Today's rates, not hero_return_pct.
+      gbpPortion = curatedGbp(item.curated?.live, amount) || 0;
       aviosPortion = Number(item.curated?.bonus_points) || 0;
     }
     if (gbpPortion <= 0 || aviosPortion <= 0) return null;
@@ -569,12 +572,12 @@ function RouteBox({
                 {item.subtitle}
               </p>
             )}
-            {/* How old the numbers above are. Auto routes come from the
-                ingestion pipeline and carry last_verified_at. Curated
-                strategies are hand-written and have no such column, so
-                they show when the strategy itself was last edited
-                (updated_at), not a verification age. */}
-            {isCurated ? (
+            {/* How old the numbers above are. Auto routes, and curated
+                strategies with a live step, show the age of the oldest
+                rate used. A curated strategy with no live step (only a
+                card % or a fixed £ per order) shows when it was last
+                edited (updated_at). */}
+            {isCurated && !item.verifiedAt ? (
               reviewedLabel(item.curated?.updated_at) && (
                 <p className="text-[11px] leading-none text-muted-foreground">
                   {reviewedLabel(item.curated.updated_at)}
