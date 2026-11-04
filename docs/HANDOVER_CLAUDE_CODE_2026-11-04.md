@@ -1,0 +1,126 @@
+# Handover do Cowork para o Claude Code (04/11/2026)
+
+Os handovers de 26/10 (Parte A) e 03/11 (repositórios separados) continuam
+valendo. Este traz duas tarefas novas de 04/11: a EverUp (snapgain-scraper) e
+as senhas vazadas (src). Um PR por vez: primeiro a EverUp, depois as senhas.
+
+## O que o Cowork fez depois do merge de src#152 e src#153 (03–04/11)
+
+- `source-alert` publicado (v5, sem a Picodi). `?dry_run=1` respondeu
+  `200`, `stale: []`.
+- hCaptcha: ligado no Supabase (o dono conferiu). O quadro do hCaptcha
+  carrega em `/auth/signup`, `/auth/login` e `/auth/request-reset` em
+  produção.
+- Robô das 09:00 em 04/11: verde.
+  - NX gravou 1.330 datas, 3 lojas novas e 5 taxas seguradas para o dono.
+  - Quidco desativou 84 (abaixo de 150).
+  - Avios rodou normal.
+- Tesco £100, com os dados reais: NX 10% primeiro, depois Cheddar,
+  EverUp e JamDoughnut. Nenhuma rota soma gift card com NX.
+
+## Tarefa 1: EverUp lê a lista de marcas pelo sitemap (snapgain-scraper)
+
+### O problema
+
+- O robô das 08:00 falhou em **03/11 e 04/11**, nos dois casos na EverUp:
+  - `[everup] /brands lists 24 brands`; em 02/11 eram 355;
+  - `sweepStaleOffers gift_card_offers/everup ABORTED — would mark 306/326 (93.9%)`.
+- A trava funcionou e o banco **não** foi alterado. Mas as 306 ofertas
+  da EverUp estão sem verificação desde 02/11. Elas somem do site pela
+  regra dos 30 dias, por volta de 02/12, se nada mudar.
+- **Causa**, conferida pelo Cowork em 04/11:
+  - `https://www.everup.com/brands` agora **redireciona** para `/cashback`;
+  - essa página tem um ItemList com só 24 marcas em destaque (`numberOfItems: 24`);
+  - as páginas de marca continuam no ar, e o formato delas não mudou:
+    - `/brands/argos` responde 200 com `cashback_perc_label`;
+    - testadas também `asos`, `currys`, `boots`, `john-lewis`, `nike` e `tesco`;
+  - `https://www.everup.com/sitemap.xml` lista **357** URLs
+    `/brands/<id>` (por exemplo `argos-cashback-uk` e `tesco`). É o mesmo
+    formato de id que `parseBrandIds` já entende.
+
+### O que mudar (`scrapers/everup.js`)
+
+- Ler os ids de `sitemap.xml` em vez de `/brands`. Ainda é HTTP simples,
+  sem navegador.
+- `parseBrandIds` já casa `everup.com/brands/<id>`, então pode servir para
+  o sitemap. Conferir que só entram URLs de `/brands/<id>`.
+- Se o sitemap vier vazio ou com bem menos marcas que antes, **parar com
+  erro** antes de tocar no banco, como já faz hoje. Não usar `SWEEP_FORCE`.
+- `MIN_PARSED_RATIO` e a trava de 50% do `sweepStaleOffers` ficam como
+  estão.
+- Atualizar o comentário do topo: a lista muda de `/brands` para
+  `sitemap.xml` em 04/11/2026.
+- Teste:
+  1. `EVERUP_LIMIT=20` rodando local;
+  2. depois uma rodada completa sem gravar (se houver modo de leitura);
+  3. no PR, mostrar o número de marcas lidas e quantas ofertas o sweep
+     desativaria.
+
+### Depois do merge
+
+- O Cowork dispara o `daily-scrape` à mão uma vez e confere:
+  - EverUp verde;
+  - cerca de 330 marcas;
+  - o sweep desativa poucas.
+
+## Tarefa 2: bloquear senhas vazadas sem o plano Pro (src)
+
+### O problema
+
+- A opção "Leaked password protection" do Supabase só existe no plano Pro.
+- O dono **não** vai assinar o Pro (decisão de 04/11/2026).
+- O tamanho mínimo de 8 caracteres continua no painel do Supabase, que é
+  gratuito e vale no servidor. O dono configura isso.
+
+### O que fazer
+
+Conferir a senha no site, antes de enviar, pela API gratuita do Have I Been
+Pwned, no modo k-anonymity:
+
+- `GET https://api.pwnedpasswords.com/range/<5 primeiros caracteres do SHA-1>`;
+- sem chave e sem custo;
+- a senha nunca sai do navegador, só os 5 primeiros caracteres do hash;
+- usar `crypto.subtle.digest('SHA-1', …)`, procurar o resto do hash na
+  resposta e mandar o cabeçalho `Add-Padding: true`.
+
+Onde:
+
+- cadastro: `src/components/auth/AuthForm.jsx`, antes de `signUp`;
+- nova senha: `src/pages/Reset-password.jsx`, antes de
+  `supabase.auth.updateUser({ password })`;
+- qualquer outra tela que troque a senha.
+
+Regras:
+
+- **Senha encontrada:** bloquear, com uma mensagem clara em inglês. Por
+  exemplo: "This password has appeared in a data breach. Please choose a
+  different one."
+- **API fora do ar ou lenta** (timeout de uns 3 s): deixar passar. O
+  cadastro não pode quebrar por causa de um serviço de fora.
+- Mostrar também o mínimo de 8 caracteres no formulário, igual ao painel.
+- `vercel.json`, CSP: incluir `https://api.pwnedpasswords.com` em
+  `connect-src`.
+- Política de privacidade: só se o texto disser que nada sai do
+  navegador. Os 5 caracteres do hash não identificam ninguém, mas anotar
+  isso no PR.
+- Isso protege quem usa o site, não quem chama a API do Supabase direto.
+  Para esses casos ficam o hCaptcha e o mínimo de 8 do servidor. Dizer
+  isso no PR.
+
+### Depois do merge
+
+- O Cowork testa em produção: `password123` tem que ser recusada; uma
+  senha longa e aleatória tem que passar.
+
+## Para o Code pensar (não é para fazer sem combinar)
+
+- O `source-alert` não avisou dessa falha. Ele olha a última verificação
+  **mais nova** de cada fonte, e as 20 marcas lidas em 04/11 deixaram a
+  EverUp com cara de "fresca".
+- Uma ideia é avisar também quando o número de ofertas verificadas nas
+  últimas 48 h cai muito em relação ao total ativo (por exemplo, menos da
+  metade).
+- Se o Code achar que vale, propõe no PR seguinte. O dono decide.
+
+---
+_Cowork, 04/11/2026._
