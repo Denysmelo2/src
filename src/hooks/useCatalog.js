@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { hiddenBeforeIso } from '@/lib/dataFreshness';
+import { computeCuratedLive, liveStepKind, stepStoreSlugs } from '@/lib/curatedReturn';
 
 /**
  * useStores — list of UK retailers from public.stores.
@@ -277,6 +278,79 @@ export function useStoreOffers(storeId) {
 }
 
 /**
+ * Today's rates for the live steps of these curated strategies, and each
+ * strategy with `live` attached (lib/curatedReturn.js). Offers follow the
+ * site-wide rule: active and verified in the last STALE_DAYS.
+ *
+ * contextStoreId is the store being looked at (Compare, store page); a
+ * live step with no store_slug reads its rate there, else at the
+ * strategy's target store.
+ */
+async function attachLiveReturns(strategies, contextStoreId = null) {
+  const list = strategies || [];
+  if (list.length === 0) return list;
+  const slugs = stepStoreSlugs(list);
+  const ids = new Set();
+  if (contextStoreId) ids.add(contextStoreId);
+  for (const s of list) {
+    const needsDefault = (Array.isArray(s.steps) ? s.steps : []).some(
+      (st) => liveStepKind(st) && !st.store_slug
+    );
+    if (needsDefault && s.target_store_id) ids.add(s.target_store_id);
+  }
+
+  const storesBySlug = new Map();
+  const storesById = new Map();
+  const giftCards = new Map();
+  const cashback = new Map();
+  const ors = [];
+  if (ids.size) ors.push(`id.in.(${[...ids].join(',')})`);
+  if (slugs.length) ors.push(`slug.in.(${slugs.map((x) => `"${x}"`).join(',')})`);
+  if (ors.length) {
+    const { data: stores, error } = await supabase
+      .from('stores')
+      .select('id, slug, name')
+      .or(ors.join(','));
+    if (error) console.warn('[curated live] stores:', error.message);
+    for (const st of stores || []) {
+      storesById.set(st.id, st);
+      storesBySlug.set(st.slug, st);
+    }
+  }
+  const storeIds = [...storesById.keys()];
+  if (storeIds.length) {
+    const cutoff = hiddenBeforeIso();
+    const [gc, cb] = await Promise.all([
+      supabase
+        .from('gift_card_offers')
+        .select('store_id, platform, discount_pct, last_verified_at')
+        .in('store_id', storeIds)
+        .eq('is_active', true)
+        .gte('last_verified_at', cutoff),
+      supabase
+        .from('cashback_offers')
+        .select('store_id, platform, rate, last_verified_at')
+        .in('store_id', storeIds)
+        .eq('is_active', true)
+        .gte('last_verified_at', cutoff),
+    ]);
+    if (gc.error) console.warn('[curated live] gift cards:', gc.error.message);
+    if (cb.error) console.warn('[curated live] cashback:', cb.error.message);
+    for (const o of gc.data || []) {
+      if (!giftCards.has(o.store_id)) giftCards.set(o.store_id, []);
+      giftCards.get(o.store_id).push(o);
+    }
+    for (const o of cb.data || []) {
+      if (!cashback.has(o.store_id)) cashback.set(o.store_id, []);
+      cashback.get(o.store_id).push(o);
+    }
+  }
+
+  const ctx = { contextStoreId, storesBySlug, storesById, giftCards, cashback };
+  return list.map((s) => ({ ...s, live: computeCuratedLive(s, ctx) }));
+}
+
+/**
  * useCuratedStrategies — multi-step "Pro Strategies" curated from
  * Bárbara's playbook (ebook). These are the marquee multi-platform
  * routes (e.g. "Buy a Sainsbury's gift card on EverUp → open Sainsbury's
@@ -287,8 +361,11 @@ export function useStoreOffers(storeId) {
  *   - applicable_store_ids[]     — extra stores it also works at
  *   - applicable_categories[]    — whole categories (text[] match)
  *
- * Pass `storeId` and (optionally) the store's category array. The
- * hook returns curated strategies sorted by hero_return_pct desc.
+ * Pass `storeId` and (optionally) the store's category array. Each
+ * strategy comes back with `live` (today's return, lib/curatedReturn.js);
+ * one whose live step has no rate today is left out rather than shown
+ * with an old number. Sorted by today's % (then display_order).
+ * `hero_return_pct` is no longer used for any number (04/11/2026).
  *
  * `playbook_only = true` strategies (Ribbon, Revolut Ultra, etc.) are
  * NEVER returned here — they only show in /playbook. They wouldn't
@@ -335,12 +412,21 @@ export function useCuratedStrategies(storeId, storeCategories = null) {
       .eq('is_active', true)
       .eq('playbook_only', false)
       .or(filters.join(','))
-      .order('hero_return_pct', { ascending: false, nullsFirst: false })
       .order('display_order', { ascending: true })
-      .then(({ data, error }) => {
-        if (!alive) return;
+      .then(async ({ data, error }) => {
         if (error) console.warn('[useCuratedStrategies] error:', error.message);
-        setStrategies(data || []);
+        let withLive = [];
+        try {
+          withLive = await attachLiveReturns(data || [], storeId);
+        } catch (err) {
+          console.warn('[useCuratedStrategies] live rates:', err?.message || err);
+        }
+        if (!alive) return;
+        const shown = withLive
+          .filter((s) => s.live && s.live.missing.length === 0)
+          // Stable: equal % keeps display_order from the query.
+          .sort((a, b) => (b.live.pct ?? -1) - (a.live.pct ?? -1));
+        setStrategies(shown);
         setLoading(false);
       });
 
@@ -373,10 +459,18 @@ export function useCuratedPlaybook() {
       )
       .eq('is_active', true)
       .order('display_order', { ascending: true })
-      .then(({ data, error }) => {
-        if (!alive) return;
+      .then(async ({ data, error }) => {
         if (error) console.warn('[useCuratedPlaybook] error:', error.message);
-        setStrategies(data || []);
+        // The playbook is a guide: a strategy whose live step has no
+        // rate today stays listed, but the card shows no number for it.
+        let withLive = data || [];
+        try {
+          withLive = await attachLiveReturns(data || []);
+        } catch (err) {
+          console.warn('[useCuratedPlaybook] live rates:', err?.message || err);
+        }
+        if (!alive) return;
+        setStrategies(withLive);
         setLoading(false);
       });
     return () => {

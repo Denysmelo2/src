@@ -57,7 +57,7 @@ function StrategyPage() {
     store?.id,
     store?.category || null
   );
-  // The top-ranked curated strategy (by hero_return_pct desc). If
+  // The top-ranked curated strategy (by today's % from live rates, see useCuratedStrategies). If
   // present, we render it ABOVE the auto-generated highlighted route
   // because curated routes routinely beat single-platform stacks.
   const topCurated = curatedStrategies[0] || null;

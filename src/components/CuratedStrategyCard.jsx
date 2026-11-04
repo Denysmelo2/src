@@ -52,6 +52,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { reviewedLabel } from '@/lib/dataFreshness';
+import { curatedHeadline } from '@/lib/curatedReturn';
+import { DataAge } from '@/components/DataAge';
 import { LiveCompare } from '@/components/LiveCompare';
 import { platformLabel } from '@/lib/platformNames';
 
@@ -202,11 +204,15 @@ export function CuratedStrategyCard({
 
   if (!strategy) return null;
   const steps = Array.isArray(strategy.steps) ? strategy.steps : [];
-  const heroLabel =
-    strategy.hero_return_label ||
-    (strategy.hero_return_pct != null
-      ? `${strategy.hero_return_pct}% cashback`
-      : 'Multi-step strategy');
+  // Today's numbers (lib/curatedReturn.js, attached by the hooks). With
+  // no `live` (an old caller), fall back to the written label, never to
+  // the typed hero_return_pct (owner, 04/11/2026).
+  const live = strategy.live || null;
+  const headline = curatedHeadline(live);
+  const liveMissing = live && live.missing.length > 0;
+  const heroLabel = liveMissing
+    ? 'No current rate today'
+    : live?.label || strategy.hero_return_label || 'Multi-step strategy';
 
   return (
     <Card
@@ -235,10 +241,14 @@ export function CuratedStrategyCard({
             >
               {strategy.title}
             </CardTitle>
-            {reviewedLabel(strategy.updated_at) && (
-              <p className="mt-1 text-[11px] leading-none text-muted-foreground">
-                {reviewedLabel(strategy.updated_at)}
-              </p>
+            {live?.verifiedAt ? (
+              <DataAge verifiedAt={live.verifiedAt} className="mt-1" />
+            ) : (
+              reviewedLabel(strategy.updated_at) && (
+                <p className="mt-1 text-[11px] leading-none text-muted-foreground">
+                  {reviewedLabel(strategy.updated_at)}
+                </p>
+              )
             )}
             {strategy.description && !compact && (
               <CardDescription className="mt-1.5 leading-relaxed">
@@ -258,9 +268,7 @@ export function CuratedStrategyCard({
                 compact ? 'text-xl' : 'text-3xl'
               )}
             >
-              {strategy.hero_return_pct != null
-                ? `${strategy.hero_return_pct}%`
-                : '★'}
+              {!liveMissing && headline ? headline : '★'}
             </div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
               {heroLabel}
