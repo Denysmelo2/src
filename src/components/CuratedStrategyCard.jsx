@@ -210,7 +210,12 @@ export function CuratedStrategyCard({
   const live = strategy.live || null;
   const headline = curatedHeadline(live);
   const liveMissing = live && live.missing.length > 0;
-  const heroLabel = liveMissing
+  // A "compare" card (live_compare) is the comparison of the routes,
+  // not a route: no number of its own (handover 04/11/2026, task 5).
+  const isCompare = !!strategy.live_compare;
+  const heroLabel = isCompare
+    ? 'Routes compared live'
+    : liveMissing
     ? 'No current rate today'
     : live?.label || strategy.hero_return_label || 'Multi-step strategy';
 
@@ -268,7 +273,7 @@ export function CuratedStrategyCard({
                 compact ? 'text-xl' : 'text-3xl'
               )}
             >
-              {!liveMissing && headline ? headline : '★'}
+              {isCompare ? 'Compare' : !liveMissing && headline ? headline : '★'}
             </div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
               {heroLabel}

@@ -4,7 +4,8 @@
  * Redesign 2026-05-19 (Bárbara UX rewrite). Goals:
  *   - "Direta, simples, sem poluição visual"
  *   - One job: pick a store + amount → see the best route.
- *   - First box ALWAYS the best route — Pro curated wins ties.
+ *   - First box ALWAYS the best route. On a tie in £ the automatic
+ *     route wins (owner, 04/11/2026; lib/rankRoutes.js).
  *   - Each route box expands inline with step-by-step action buttons.
  *   - "Browse retailers" at the bottom for people without a store
  *     in mind, grouped by category for accessibility.
@@ -62,6 +63,7 @@ import { labelForStrategy } from '@/components/AutoStrategyCard';
 import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
 import { oldestVerifiedAt, reviewedLabel } from '@/lib/dataFreshness';
 import { curatedGbp } from '@/lib/curatedReturn';
+import { rankRoutes, splitCurated } from '@/lib/rankRoutes';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
@@ -1132,22 +1134,27 @@ function ComparePage() {
     return Math.round(Number(aviosOffer.earn_rate || 0) * amountParsed.value);
   }, [submitted, pointOffers, amountParsed.value, amountParsed.ok]);
 
+  // Curated "compare" cards (live_compare) are not routes: they compare
+  // the automatic routes, so they sit under the first box with no £ of
+  // their own (handover 04/11/2026, task 5).
+  const { ranked: rankedCurated, compare: compareCards } = useMemo(
+    () => splitCurated(curatedStrategies),
+    [curatedStrategies]
+  );
+
   // Unified ranked list (curated converted to £ value + auto items).
-  // First box wins — usually curated, but if an auto stack beats it
-  // we respect the £ ranking per Bárbara's spec ("best route, no
-  // importa se é pro ou nao").
+  // Best £ first, whatever the source ("best route, no importa se é pro
+  // ou nao"); on a tie the automatic route wins (lib/rankRoutes.js).
   const rankedRoutes = useMemo(() => {
     if (!submitted) return [];
-    const curatedItems = curatedStrategies.map((c) =>
+    const curatedItems = rankedCurated.map((c) =>
       curatedToItem(c, amountParsed.value || 0, milesPrograms)
     );
     const autoItems = autoStrategies.map(autoToItem);
-    const combined = [...curatedItems, ...autoItems];
-    combined.sort((a, b) => b.gbpReturn - a.gbpReturn);
-    return combined;
+    return rankRoutes([...curatedItems, ...autoItems]);
   }, [
     submitted,
-    curatedStrategies,
+    rankedCurated,
     autoStrategies,
     amountParsed.value,
     milesPrograms,
@@ -1348,19 +1355,33 @@ function ComparePage() {
                     Golden Rule comparison (cashback-via-Booster vs
                     direct-eStore). */}
                 {rankedRoutes.slice(0, 5).map((item, i) => (
-                  <RouteBox
-                    key={item.id}
-                    item={item}
-                    rank={i + 1}
-                    isBest={i === 0}
-                    amount={amountParsed.value || 0}
-                    amountText={amountInput}
-                    onAmountChange={setAmountInput}
-                    storeSlug={selected.slug}
-                    directAvios={bestDirectAvios}
-                    defaultOpen={false}
-                    now={routesComputedAt}
-                  />
+                  <React.Fragment key={item.id}>
+                    <RouteBox
+                      item={item}
+                      rank={i + 1}
+                      isBest={i === 0}
+                      amount={amountParsed.value || 0}
+                      amountText={amountInput}
+                      onAmountChange={setAmountInput}
+                      storeSlug={selected.slug}
+                      directAvios={bestDirectAvios}
+                      defaultOpen={false}
+                      now={routesComputedAt}
+                    />
+                    {/* "Compare" cards go right under the best route,
+                        with no £ of their own. */}
+                    {i === 0 &&
+                      compareCards.map((c) => (
+                        <CuratedStrategyCard
+                          key={`compare-${c.id}`}
+                          strategy={c}
+                          compact
+                          defaultOpen={false}
+                          amount={amountInput}
+                          onAmountChange={setAmountInput}
+                        />
+                      ))}
+                  </React.Fragment>
                 ))}
               </>
             )}
