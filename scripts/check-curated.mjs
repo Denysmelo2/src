@@ -6,6 +6,8 @@
 // unseen. The site now computes every strategy's return from today's
 // rates (src/lib/curatedReturn.js); this script runs the same function
 // against the live database and prints what each strategy shows today.
+// The £ is the ranked total: the 1% card step is not in it (owner,
+// 05/11/2026, option a) and is printed apart.
 //
 // It exits 1 when a strategy that is in the ranking (playbook_only
 // false) cannot be computed: a live step with no rate in the last 30
@@ -93,7 +95,8 @@ for (const s of strategies) {
   const flag = s.playbook_only ? 'playbook' : ok.length === rows.length ? 'ok' : ok.length ? 'partly hidden' : 'HIDDEN';
   console.log(
     `${flag.padEnd(13)} ${s.slug.padEnd(28)} ${(gbp == null ? '—' : `£${gbp.toFixed(2)}`).padStart(8)}  ` +
-      `${r0.live.label || '(no number)'}${rows.length > 1 ? `  [${ok.length}/${rows.length} stores, e.g. ${where}]` : ''}`
+      `${r0.live.label || '(no number)'}` +
+      `${r0.live.cardPct ? `  (+ ${r0.live.cardPct}% card, shown apart, not ranked)` : ''}${rows.length > 1 ? `  [${ok.length}/${rows.length} stores, e.g. ${where}]` : ''}`
   );
   if (!s.playbook_only && ok.length < rows.length) {
     const miss = rows.find((r) => r.live.missing.length);

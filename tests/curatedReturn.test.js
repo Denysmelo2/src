@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeCuratedLive, curatedGbp, curatedHeadline, liveStepKind } from '../src/lib/curatedReturn.js';
+import { computeCuratedLive, curatedGbp, curatedHeadline, liveStepKind, cardLine } from '../src/lib/curatedReturn.js';
 
 const AMAZON = { id: 'amazon', slug: 'amazon', name: 'Amazon' };
 const CURRYS = { id: 'currys', slug: 'currys', name: 'Currys' };
@@ -50,30 +50,33 @@ const CURRYS_GC = [
   { platform: 'jamdoughnut', discount_pct: 3, last_verified_at: '2026-11-04T08:02:00Z' },
 ];
 
-test('Amazon with Rakuten: £1 per order + 1% card = £2 on £100, not the old 5%', () => {
+test('Amazon with Rakuten: £1 per order; the 1% card is shown apart, not ranked (05/11)', () => {
   const live = computeCuratedLive(amazonOptimiser, ctx({ contextStoreId: 'amazon' }));
-  assert.equal(live.pct, 1);
+  assert.equal(live.pct, null);
+  assert.equal(live.cardPct, 1);
   assert.equal(live.flatGbp, 1);
   assert.equal(live.isLive, false);
   assert.equal(live.verifiedAt, null);
-  assert.equal(curatedGbp(live, 100), 2);
-  assert.equal(curatedHeadline(live), '1% + £1');
-  assert.equal(live.label, '£1 per order (Rakuten) + 1% card');
+  assert.equal(curatedGbp(live, 100), 1);
+  assert.equal(curatedHeadline(live), '£1');
+  assert.equal(live.label, '£1 per order (Rakuten)');
 });
 
 test('Amazon via a Currys gift card reads the best Currys rate today', () => {
   const live = computeCuratedLive(amazonViaCurrys, ctx({ contextStoreId: 'amazon', giftCards: { currys: CURRYS_GC } }));
   assert.deepEqual(live.missing, []);
-  assert.equal(live.pct, 7.5);
-  assert.equal(curatedGbp(live, 100), 7.5);
-  assert.equal(live.label, 'Currys gift card 6.5% (Cheddar) + 1% card');
+  assert.equal(live.pct, 6.5);
+  assert.equal(live.cardPct, 1);
+  assert.equal(curatedGbp(live, 100), 6.5);
+  assert.equal(live.label, 'Currys gift card 6.5% (Cheddar)');
+  assert.deepEqual(live.liveParts, [{ kind: 'gift_card', platform: 'cheddar', value: 6.5 }]);
   assert.equal(live.verifiedAt, '2026-11-04T08:20:00Z');
 });
 
 test('the rate follows the table, not the number typed in the step', () => {
   const gc = [{ platform: 'everup', discount_pct: 5.9, last_verified_at: '2026-11-04T08:00:00Z' }];
   const live = computeCuratedLive(amazonViaCurrys, ctx({ giftCards: { currys: gc } }));
-  assert.equal(live.pct, 6.9);
+  assert.equal(live.pct, 5.9);
   assert.match(live.label, /Currys gift card 5.9% \(EverUp\)/);
 });
 
@@ -96,7 +99,7 @@ test('a live step without store_slug reads the store being looked at, else the t
     ],
   };
   const live = computeCuratedLive(treatwell, ctx({ giftCards: gc }));
-  assert.equal(live.pct, 8.45);
+  assert.equal(live.pct, 7.45);
   assert.equal(live.verifiedAt, '2026-11-02T08:00:00Z');
 });
 
@@ -132,4 +135,11 @@ test('a strategy with no earning step has no number', () => {
   assert.equal(live.pct, null);
   assert.equal(curatedGbp(live, 100), null);
   assert.equal(curatedHeadline(live), null);
+});
+
+test('the card line: same on every route, on the whole purchase', () => {
+  assert.equal(cardLine(1, 100), '+ ~£1.00 if you pay with a 1% card (or 100 points)');
+  assert.equal(cardLine(1, 250), '+ ~£2.50 if you pay with a 1% card (or 250 points)');
+  assert.equal(cardLine(0, 100), null);
+  assert.equal(cardLine(1, 0), null);
 });

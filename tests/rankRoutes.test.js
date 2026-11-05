@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rankRoutes, splitCurated } from '../src/lib/rankRoutes.js';
+import { rankRoutes, splitCurated, mergeCopies } from '../src/lib/rankRoutes.js';
 
 const r = (id, source, gbpReturn) => ({ id, source, gbpReturn });
 
@@ -35,4 +35,32 @@ test('live_compare cards are kept out of the ranking', () => {
   ]);
   assert.deepEqual(ranked.map((x) => x.slug), ['amazon-optimiser']);
   assert.deepEqual(compare.map((x) => x.slug), ['sainsburys-max-stack']);
+});
+
+// Uber at £100, 05/11: with the card out, the curated "Uber gift card +
+// card" is Cheddar 4.5% = £4.50, the same as the automatic Cheddar route.
+const uberCurated = {
+  id: 'curated-uber', source: 'curated', gbpReturn: 4.5,
+  curated: { slug: 'uber-easy-combo', live: { pct: 4.5, flatGbp: 0, cardPct: 1, liveParts: [{ kind: 'gift_card', platform: 'cheddar', value: 4.5 }] } },
+};
+const autoCheddar = { id: 'giftcard-1', source: 'auto', gbpReturn: 4.5, strategy: { type: 'gift_card', layers: [{ platform: 'cheddar' }] } };
+const autoJam = { id: 'giftcard-2', source: 'auto', gbpReturn: 2.75, strategy: { type: 'gift_card', layers: [{ platform: 'jamdoughnut' }] } };
+
+test('Uber: the curated copy of the Cheddar route leaves the ranking and becomes its guide', () => {
+  const { curated, auto } = mergeCopies([uberCurated], [autoCheddar, autoJam]);
+  assert.deepEqual(curated, []);
+  assert.equal(auto[0].guide.slug, 'uber-easy-combo');
+  assert.equal(auto[1].guide, undefined);
+  const ranked = rankRoutes([...curated, ...auto]);
+  assert.deepEqual(ranked.map((x) => [x.id, x.gbpReturn]), [['giftcard-1', 4.5], ['giftcard-2', 2.75]]);
+  assert.equal(autoCheddar.guide, undefined); // inputs untouched
+});
+
+test('not a copy: a fixed £, another platform, or another amount keeps the curated route', () => {
+  const withFlat = { ...uberCurated, curated: { ...uberCurated.curated, live: { ...uberCurated.curated.live, flatGbp: 1 } } };
+  assert.equal(mergeCopies([withFlat], [autoCheddar]).curated.length, 1);
+  const otherPlatform = { ...uberCurated, curated: { ...uberCurated.curated, live: { ...uberCurated.curated.live, liveParts: [{ kind: 'gift_card', platform: 'everup', value: 4.5 }] } } };
+  assert.equal(mergeCopies([otherPlatform], [autoCheddar]).curated.length, 1);
+  const twoSteps = { ...uberCurated, gbpReturn: 7.5, curated: { ...uberCurated.curated, live: { ...uberCurated.curated.live, pct: 7.5 } } };
+  assert.equal(mergeCopies([twoSteps], [autoCheddar]).curated.length, 1);
 });

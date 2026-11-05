@@ -34,3 +34,42 @@ export function splitCurated(curated) {
   for (const c of curated || []) (c.live_compare ? compare : ranked).push(c);
   return { ranked, compare };
 }
+
+const normP = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * A curated route that is only a copy of an automatic one (handover
+ * 05/11/2026, task 6): one live step, nothing else counted (no fixed £,
+ * no written %), and an automatic route of the same kind on the same
+ * platform paying the same £. Uber's "gift card + card" is Cheddar 4.5%
+ * once the card is out of the total, the same as the automatic Cheddar
+ * route. Such a curated route leaves the ranking and rides along with the
+ * automatic one as its step-by-step guide (`guide`), so the same route
+ * never shows twice.
+ *
+ * Items are /compare route items: curated ones carry `curated.live`
+ * (lib/curatedReturn.js), automatic ones carry `strategy` (lib/strategies).
+ * Returns { curated, auto } with copies removed from `curated` and
+ * attached to their twin in `auto`.
+ */
+export function mergeCopies(curatedItems, autoItems) {
+  const auto = (autoItems || []).map((a) => ({ ...a }));
+  const kept = [];
+  for (const c of curatedItems || []) {
+    const live = c.curated?.live;
+    const part = live?.liveParts?.length === 1 ? live.liveParts[0] : null;
+    const onlyThatStep = part && !live.flatGbp && Number(live.pct) === Number(part.value);
+    const twin =
+      onlyThatStep &&
+      auto.find(
+        (a) =>
+          !a.guide &&
+          a.strategy?.type === part.kind &&
+          normP(a.strategy?.layers?.[0]?.platform) === part.platform &&
+          Math.abs((Number(a.gbpReturn) || 0) - (Number(c.gbpReturn) || 0)) < TIE_GBP
+      );
+    if (twin) twin.guide = c.curated;
+    else kept.push(c);
+  }
+  return { curated: kept, auto };
+}

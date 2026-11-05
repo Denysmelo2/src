@@ -62,8 +62,8 @@ import { RateBreakdown } from '@/components/RateBreakdown';
 import { labelForStrategy } from '@/components/AutoStrategyCard';
 import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
 import { oldestVerifiedAt, reviewedLabel } from '@/lib/dataFreshness';
-import { curatedGbp } from '@/lib/curatedReturn';
-import { rankRoutes, splitCurated } from '@/lib/rankRoutes';
+import { curatedGbp, cardLine } from '@/lib/curatedReturn';
+import { rankRoutes, splitCurated, mergeCopies } from '@/lib/rankRoutes';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
@@ -95,30 +95,15 @@ function routeBadge(item) {
   return labelForStrategy(item.strategy)?.toUpperCase() || 'EASY';
 }
 
-/** Map an "Avios" point value to its approximate £ worth, so we can
- * rank curated strategies (which include points bonuses) alongside
- * pure-£ auto strategies on a single scale. */
-function pointsToGbp(points, programName, milesPrograms) {
-  if (!points) return 0;
-  const prog = (milesPrograms || []).find(
-    (p) => (p.name || '').toLowerCase() === String(programName || '').toLowerCase()
-  );
-  const rate = prog?.conversion_rate;
-  return rate ? points * Number(rate) : 0;
-}
-
 /** Normalise a curated strategy into the same shape we use for the
  * unified route list — so ranking, badge and expand UX share code. */
-function curatedToItem(curated, amount, milesPrograms) {
+function curatedToItem(curated, amount) {
   // Today's return from today's rates (lib/curatedReturn.js, attached
-  // by useCuratedStrategies), never the typed hero_return_pct.
-  const gbpFromPct = curatedGbp(curated.live, amount) || 0;
-  const gbpFromPoints = pointsToGbp(
-    curated.bonus_points,
-    curated.bonus_points_program,
-    milesPrograms
-  );
-  const total = gbpFromPct + gbpFromPoints;
+  // by useCuratedStrategies), never the typed hero_return_pct. The card
+  // step is out of it (owner, 05/11/2026, option a), and so are the
+  // strategy's bonus Avios (e.g. linking Uber to BA): both can be had on
+  // any route, so they are shown beside the route, not ranked.
+  const total = curatedGbp(curated.live, amount) || 0;
   return {
     source: 'curated',
     id: `curated-${curated.id}`,
@@ -450,6 +435,11 @@ function RouteBox({
   const [open, setOpen] = useState(defaultOpen);
   const badge = routeBadge(item);
   const isCurated = item.source === 'curated';
+  const cardExtra = isCurated
+    ? cardLine(item.curated?.live?.cardPct, amount)
+    : ['cashback', 'points'].includes(item.strategy?.type)
+    ? cardLine(1, amount)
+    : null;
 
   // Golden Rule comparison (Bárbara's ebook): for any route that earns
   // cashback (£), show how many Avios that £ would buy via the Avios
@@ -615,6 +605,16 @@ function RouteBox({
               {item.gbpReturnDisplay}
             </div>
 
+            {/* The card's 1% is never in the £ above (owner, 05/11/2026,
+                option a): one extra line, the same on every route paid
+                by card. Not on gift-card routes (paid with the gift card
+                in the shop). */}
+            {cardExtra && (
+              <div className="text-[11px] text-muted-foreground leading-snug max-w-[11rem]">
+                {cardExtra}
+              </div>
+            )}
+
             {/* Points routes show the points first, then their estimated
                 £ value, so they can be compared with the cashback rows
                 (owner, 23/10/2026: "800 Avios per order" read as a bare
@@ -718,12 +718,27 @@ function RouteBox({
               onAmountChange={onAmountChange}
             />
           ) : (
-            <AutoRouteDetail
-              strategy={item.strategy}
-              storeSlug={storeSlug}
-              amount={amount}
-              now={now}
-            />
+            <>
+              <AutoRouteDetail
+                strategy={item.strategy}
+                storeSlug={storeSlug}
+                amount={amount}
+                now={now}
+              />
+              {/* A curated strategy that is this same route: its steps,
+                  as a guide (lib/rankRoutes.js mergeCopies). */}
+              {item.guide && (
+                <div className="mt-4">
+                  <CuratedStrategyCard
+                    strategy={item.guide}
+                    compact
+                    defaultOpen={false}
+                    amount={amountText}
+                    onAmountChange={onAmountChange}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -1147,11 +1162,14 @@ function ComparePage() {
   // ou nao"); on a tie the automatic route wins (lib/rankRoutes.js).
   const rankedRoutes = useMemo(() => {
     if (!submitted) return [];
-    const curatedItems = rankedCurated.map((c) =>
-      curatedToItem(c, amountParsed.value || 0, milesPrograms)
+    const amount = amountParsed.value || 0;
+    // A curated route that only copies an automatic one rides along
+    // with it as its step-by-step guide (lib/rankRoutes.js mergeCopies).
+    const { curated, auto } = mergeCopies(
+      rankedCurated.map((c) => curatedToItem(c, amount)),
+      autoStrategies.map(autoToItem)
     );
-    const autoItems = autoStrategies.map(autoToItem);
-    return rankRoutes([...curatedItems, ...autoItems]);
+    return rankRoutes([...curated, ...auto]);
   }, [
     submitted,
     rankedCurated,
