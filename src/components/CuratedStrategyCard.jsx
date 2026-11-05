@@ -278,6 +278,13 @@ export function CuratedStrategyCard({
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
               {heroLabel}
             </div>
+            {/* The card's % is never in the number above (owner,
+                05/11/2026, option a). */}
+            {!isCompare && live?.cardPct > 0 && (
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                + {live.cardPct}% if you pay with a card
+              </div>
+            )}
           </div>
         </div>
 

@@ -15,8 +15,12 @@
 //   * the store of a live step is `store_slug` on the step (Amazon via a
 //     Currys gift card: "currys"), else the store being looked at, else
 //     the strategy's target store;
-//   * any other step with `earn_pct` (a 1% card, Ribbon) counts as
-//     written: it is not a rate anyone publishes;
+//   * a card step (`platform_slug: "credit_card"`) does NOT count in the
+//     return: owner's decision of 05/11/2026 (option a). It is reported
+//     as `cardPct` and shown as an extra line, the same on every route
+//     paid by card, so it never changes the ranking;
+//   * any other step with `earn_pct` (Ribbon) counts as written: it is
+//     not a rate anyone publishes;
 //   * `earn_flat_gbp` on a step is a fixed amount per order (Rakuten's
 //     £1 on Amazon);
 //   * `rate_source: "fixed"` on a step forces it to count as written.
@@ -46,6 +50,9 @@ const label = (platform) => LABELS[norm(platform)] || String(platform || '');
 const round2 = (n) => Math.round(n * 100) / 100;
 const fmtPct = (n) => `${round2(n)}%`;
 const fmtGbp = (n) => `£${Number.isInteger(n) ? n : n.toFixed(2)}`;
+
+/** A "pay with a card that earns 1%" step. */
+export const isCardStep = (step) => norm(step?.platform_slug) === 'creditcard';
 
 /** 'gift_card', 'cashback' or null (counts as written). */
 export function liveStepKind(step) {
@@ -89,7 +96,9 @@ function stepStoreId(step, strategy, ctx) {
  * Offers in ctx must already be active and verified in the last 30 days.
  *
  * Returns {
- *   pct,         // sum of the percentage steps, or null if none
+ *   pct,         // sum of the percentage steps (card excluded), or null
+ *   cardPct,     // the card step's %, shown apart, never ranked
+ *   liveParts,   // [{kind, platform, value}] per live step
  *   flatGbp,     // sum of the fixed £ per order
  *   isLive,      // at least one step reads a rate from the tables
  *   verifiedAt,  // oldest last_verified_at among the live steps
@@ -102,6 +111,8 @@ export function computeCuratedLive(strategy, ctx = {}) {
   const steps = Array.isArray(strategy?.steps) ? strategy.steps : [];
   let pct = 0;
   let hasPct = false;
+  let cardPct = 0;
+  const liveParts = [];
   let flatGbp = 0;
   let isLive = false;
   let oldest = null;
@@ -136,6 +147,7 @@ export function computeCuratedLive(strategy, ctx = {}) {
       }
       pct += best.value;
       hasPct = true;
+      liveParts.push({ kind, platform: norm(best.platform), value: best.value });
       if (best.at && (!oldest || new Date(best.at) < new Date(oldest))) oldest = best.at;
       parts.push({
         text:
@@ -145,9 +157,13 @@ export function computeCuratedLive(strategy, ctx = {}) {
       });
     } else if (step.earn_pct != null && Number(step.earn_pct) > 0) {
       const v = Number(step.earn_pct);
-      pct += v;
-      hasPct = true;
-      parts.push({ text: norm(step.platform_slug) === 'creditcard' ? `${fmtPct(v)} card` : `${step.platform || 'Step'} ${fmtPct(v)}` });
+      if (isCardStep(step)) {
+        cardPct += v;
+      } else {
+        pct += v;
+        hasPct = true;
+        parts.push({ text: `${step.platform || 'Step'} ${fmtPct(v)}` });
+      }
     }
     if (step.earn_flat_gbp != null && Number(step.earn_flat_gbp) > 0) {
       const f = Number(step.earn_flat_gbp);
@@ -158,6 +174,8 @@ export function computeCuratedLive(strategy, ctx = {}) {
 
   return {
     pct: hasPct ? round2(pct) : null,
+    cardPct: round2(cardPct),
+    liveParts,
     flatGbp: round2(flatGbp),
     isLive,
     verifiedAt: isLive && missing.length === 0 ? oldest : null,
@@ -173,7 +191,20 @@ export function curatedGbp(live, amount) {
   return round2(((live.pct || 0) / 100) * (Number(amount) || 0) + (live.flatGbp || 0));
 }
 
-/** The big number on a card: "7.5%", "1% + £1", or null. */
+/**
+ * The extra card line: "+ ~£1.00 if you pay with a 1% card (or 100
+ * points)" for a purchase of `amount`, or null when `pct` is 0.
+ */
+export function cardLine(pct, amount) {
+  const p = Number(pct) || 0;
+  const a = Number(amount) || 0;
+  if (p <= 0 || a <= 0) return null;
+  const gbp = (p / 100) * a;
+  // Points cards earn about 1 point per £1 spent.
+  return `+ ~£${gbp.toFixed(2)} if you pay with a ${fmtPct(p)} card (or ${Math.round(a).toLocaleString('en-GB')} points)`;
+}
+
+/** The big number on a card: "6.5%", "£1", or null. */
 export function curatedHeadline(live) {
   if (!live) return null;
   const bits = [];
