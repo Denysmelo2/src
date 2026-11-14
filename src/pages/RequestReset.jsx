@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { useAuthCaptcha } from '@/components/auth/AuthCaptcha';
+import { siteOrigin } from '@/lib/authRedirects';
 
 export default function RequestReset() {
   const [email, setEmail] = useState('');
@@ -31,7 +32,7 @@ export default function RequestReset() {
     setBusy(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/reset-password`,
+        redirectTo: `${siteOrigin()}/reset-password`,
         captchaToken: captcha.token,
       });
       // Rate-limit and network errors are worth showing; anything else
