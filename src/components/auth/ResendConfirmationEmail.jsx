@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuthCaptcha } from "@/components/auth/AuthCaptcha";
+import { siteOrigin } from "@/lib/authRedirects";
 
 export default function ResendConfirmationEmail({ defaultEmail = "" }) {
   const [email, setEmail] = useState(defaultEmail);
@@ -24,7 +25,7 @@ export default function ResendConfirmationEmail({ defaultEmail = "" }) {
         type: "signup",
         email: email.trim(),
         options: {
-          emailRedirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/auth/callback`,
+          emailRedirectTo: `${siteOrigin()}/auth/callback`,
           captchaToken: captcha.token,
         },
       });

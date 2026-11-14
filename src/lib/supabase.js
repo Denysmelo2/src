@@ -16,6 +16,7 @@
 // user currently has cached. Changing it would log everyone out.
 
 import { createClient } from '@supabase/supabase-js';
+import { recoveryTarget } from '@/lib/authRedirects';
 
 const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
@@ -31,6 +32,20 @@ const supabaseAnonKey =
 const g = globalThis;
 if (!g.__snapgain_supabase__) {
   g.__snapgain_supabase__ = createClient(supabaseUrl, supabaseAnonKey);
+  // A password-reset link signs the person in with a PASSWORD_RECOVERY
+  // event. Send them to /reset-password wherever Supabase landed them
+  // (08/11/2026: a bad redirect_to dropped them on the home page, signed
+  // in, with no way to set the password). Registered here, right after
+  // createClient, because supabase-js emits that event once, shortly
+  // after it reads the link, and a listener added later in a React
+  // effect can miss it. The session is already saved when it fires, so
+  // a full page load keeps the person signed in.
+  if (typeof window !== 'undefined') {
+    g.__snapgain_supabase__.auth.onAuthStateChange((event) => {
+      const target = recoveryTarget(event, window.location.pathname);
+      if (target) window.location.replace(target);
+    });
+  }
 }
 
 export const supabase = g.__snapgain_supabase__;
