@@ -38,10 +38,17 @@
 //     a guess.
 //
 // POST {} or {"dryRun": true} — dry run reports every change it would
-// make and writes nothing. Run that first.
+// make and writes nothing. Run that first. {"dry_run": true}, ?dry_run=1
+// and ?dryRun=1 also mean a dry run (request.ts).
+//
+// Callers (14/11/2026, task C): only with X-Internal-Key: <INTERNAL_SYNC_KEY>
+// or Authorization: Bearer <service role key>. The site's publishable key
+// gets 401. Nothing schedules this function, and nothing should
+// (owner's rule: never run or schedule it unattended).
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isAuthorized, wantsDryRun } from './request.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -120,11 +127,14 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  let dryRun = false;
-  try {
-    const payload = await req.json().catch(() => ({}));
-    dryRun = payload?.dryRun === true;
-  } catch { /* empty body is a real run */ }
+  const keys = {
+    internalKey: Deno.env.get('INTERNAL_SYNC_KEY'),
+    serviceRoleKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+  };
+  if (!isAuthorized(req.headers, keys)) return json({ ok: false, error: 'Unauthorized' }, 401);
+
+  const payload = await req.json().catch(() => ({}));
+  const dryRun = wantsDryRun(req.url, payload);
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',

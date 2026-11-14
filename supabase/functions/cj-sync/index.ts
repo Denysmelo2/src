@@ -1,175 +1,97 @@
-// ╔══════════════════════════════════════════════════════════════════╗
-// ║  cj-sync — Pull advertisers + commissions from CJ Affiliate      ║
-// ║                                                                  ║
-// ║  Calls CJ's Advertiser Lookup API for every joined advertiser,   ║
-// ║  upserts them into public.stores (catalog) and public.cashback_  ║
-// ║  offers (rates) with the SnapGain deep-link.                     ║
-// ║                                                                  ║
-// ║  Env vars (set in Supabase Dashboard → Functions → cj-sync):     ║
-// ║    CJ_PAT             Personal Access Token (Bearer)             ║
-// ║    CJ_PUBLISHER_CID   Your CJ publisher CID (numeric)            ║
-// ║    SUPABASE_URL       (auto-provided)                            ║
-// ║    SUPABASE_SERVICE_ROLE_KEY  (auto-provided)                    ║
-// ║                                                                  ║
-// ║  Invoke:                                                         ║
-// ║    curl -X POST https://<project>.functions.supabase.co/cj-sync  ║
-// ║      -H "Authorization: Bearer $SERVICE_ROLE"                    ║
-// ║                                                                  ║
-// ║  Or schedule via pg_cron / Supabase Schedules → daily            ║
-// ╚══════════════════════════════════════════════════════════════════╝
+// cj-sync — read the advertisers SnapGain has JOINED on CJ Affiliate
+// (from CJ's products feed) and add the missing ones to public.stores.
+//
+// 14/11/2026 (handover, task C). This file now matches what was deployed
+// (the products-feed version; the repository still had an older one),
+// with three fixes:
+//   * callers: only X-Internal-Key: <INTERNAL_SYNC_KEY> or
+//     Authorization: Bearer <service role key> (request.ts). The site's
+//     publishable key gets 401; on 14/11 an anonymous visitor could run
+//     it and it wrote to the database.
+//   * offers: never without a rate, and one per store (plan.ts). The
+//     products feed has no commission rate, so today no offer is written
+//     and the summary says so. Before, each call inserted another row
+//     with rate = null.
+//   * stores: only NEW slugs are added; existing stores are not changed,
+//     and a domain is never taken from a CJ click-tracking link.
+//
+// IMPORTANT: CJ only returns advertisers you have JOINED at
+// https://members.cj.com.
+//
+// Env (Supabase → Edge Functions → secrets): CJ_PAT, CJ_PUBLISHER_CID,
+// INTERNAL_SYNC_KEY; SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are
+// provided.
+//
+// POST {} — real run. {"dryRun": true}, {"dry_run": true}, ?dry_run=1 —
+// read and report only.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isAuthorized, wantsDryRun } from './request.ts';
+import { CJ_PLATFORM, planOffers, storeDomain } from './plan.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-internal-key, apikey, content-type',
 };
 
-const CJ_BASE = 'https://advertiser-lookup.api.cj.com/v2/advertiser-lookup';
+const QUERY = `
+  query Products($cid: ID!, $offset: Int!, $limit: Int!) {
+    products(
+      companyId: $cid
+      partnerStatus: JOINED
+      offset: $offset
+      limit: $limit
+    ) {
+      totalCount
+      resultList {
+        advertiserId
+        advertiserName
+        advertiserCountry
+        link
+        brand
+      }
+    }
+  }
+`;
 
-interface CJAdvertiser {
-  'advertiser-id': string;
-  'account-status': string;
-  'seven-day-epc': string;
-  'three-month-epc': string;
-  'language': string;
-  'advertiser-name': string;
-  'program-url': string;
-  'relationship-status': string;
-  'mobile-tracking-certified': string;
-  'cookieless-tracking-enabled': string;
-  'network-rank': string;
-  'primary-category'?: { parent?: string; child?: string };
-  'performance-incentives': string;
-  'actions'?: {
-    action?: Array<{
-      name?: string;
-      type?: string;
-      'commission'?: { default?: string };
-    }>;
-  };
-}
-
-/**
- * Fetch one page of advertisers from CJ.
- * CJ paginates with `page-number` (1-indexed) and returns `records-returned`.
- * Page size is 100.
- */
-async function fetchCJPage(pat: string, cid: string, page: number) {
-  const url = `${CJ_BASE}?advertiser-ids=joined&records-per-page=100&page-number=${page}`;
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${pat}`,
-      Accept: 'application/xml',
-      'requestor-cid': cid,
-    },
+async function fetchPage(pat: string, cid: string, offset: number, limit: number) {
+  const res = await fetch('https://ads.api.cj.com/query', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${pat}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: QUERY, variables: { cid, offset, limit } }),
   });
-  if (!res.ok) {
-    throw new Error(
-      `CJ API page ${page} returned ${res.status}: ${await res.text()}`
-    );
-  }
-  return await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  const json = await res.json();
+  if (json.errors) throw new Error(`GraphQL: ${JSON.stringify(json.errors)}`);
+  return json.data.products;
 }
 
-/**
- * Very small XML parser specialised for CJ's advertiser-lookup format.
- * Each <advertiser> block becomes a flat object.
- * Avoids pulling a full XML library into the Edge Function bundle.
- */
-function parseAdvertisers(xml: string): CJAdvertiser[] {
-  const out: CJAdvertiser[] = [];
-  const blockRe = /<advertiser>([\s\S]*?)<\/advertiser>/g;
-  let m: RegExpExecArray | null;
-  while ((m = blockRe.exec(xml)) !== null) {
-    const block = m[1];
-    const get = (tag: string) => {
-      const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`);
-      const x = block.match(re);
-      return x ? x[1].trim() : '';
-    };
-    // Try to find an "action" with a commission percentage for the default rate.
-    const commission = (() => {
-      const actions = block.match(
-        /<action>[\s\S]*?<commission>[\s\S]*?<default>([^<]+)<\/default>[\s\S]*?<\/commission>[\s\S]*?<\/action>/
-      );
-      return actions ? actions[1].trim() : '';
-    })();
-
-    out.push({
-      'advertiser-id': get('advertiser-id'),
-      'account-status': get('account-status'),
-      'seven-day-epc': get('seven-day-epc'),
-      'three-month-epc': get('three-month-epc'),
-      'language': get('language'),
-      'advertiser-name': get('advertiser-name'),
-      'program-url': get('program-url'),
-      'relationship-status': get('relationship-status'),
-      'mobile-tracking-certified': get('mobile-tracking-certified'),
-      'cookieless-tracking-enabled': get('cookieless-tracking-enabled'),
-      'network-rank': get('network-rank'),
-      'primary-category': {
-        parent: get('parent'),
-        child: get('child'),
-      },
-      'performance-incentives': get('performance-incentives'),
-      actions: {
-        action: commission
-          ? [{ commission: { default: commission } }]
-          : undefined,
-      },
-    });
-  }
-  return out;
-}
-
-/**
- * Extract a numeric commission rate from CJ's free-text "default" field,
- * which can be "5%", "5.00%", "£5.00", "Up to 5%", etc.
- * Returns the first percentage found or null.
- */
-function parseRatePct(text: string | undefined): number | null {
-  if (!text) return null;
-  const m = text.match(/([0-9]+(?:\.[0-9]+)?)\s*%/);
-  return m ? parseFloat(m[1]) : null;
-}
-
-/** Slugify an advertiser name (used as `stores.slug`). */
 function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80);
-}
-
-/** Best-guess at the retailer domain from the program-url. */
-function domainFrom(url: string): string | null {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return null;
-  }
+  return s.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body, null, 2), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  const keys = {
+    internalKey: Deno.env.get('INTERNAL_SYNC_KEY'),
+    serviceRoleKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+  };
+  if (!isAuthorized(req.headers, keys)) return json({ ok: false, error: 'Unauthorized' }, 401);
+
+  const payload = await req.json().catch(() => ({}));
+  const dryRun = wantsDryRun(req.url, payload);
 
   const PAT = Deno.env.get('CJ_PAT');
   const CID = Deno.env.get('CJ_PUBLISHER_CID');
-  if (!PAT || !CID) {
-    return new Response(
-      JSON.stringify({
-        error: 'Missing env vars CJ_PAT and/or CJ_PUBLISHER_CID',
-      }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+  if (!PAT || !CID) return json({ error: 'Missing CJ_PAT and/or CJ_PUBLISHER_CID' }, 400);
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
@@ -177,91 +99,125 @@ serve(async (req) => {
   );
 
   const summary = {
+    dryRun,
     pagesFetched: 0,
-    advertisersSeen: 0,
-    storesUpserted: 0,
-    offersUpserted: 0,
+    productsScanned: 0,
+    uniqueAdvertisers: 0,
+    storesAdded: 0,
+    storesAlreadyThere: 0,
+    offersInserted: 0,
+    offersUpdated: 0,
+    offersSkippedNoRate: 0,
+    offersSkippedNoStore: 0,
     errors: [] as string[],
+    hint: '',
   };
 
   try {
-    // Walk CJ pages until we get fewer than 100 records.
-    let page = 1;
-    while (true) {
-      const xml = await fetchCJPage(PAT, CID, page);
+    const PAGE_SIZE = 1000;
+    const MAX_PAGES = 50;
+    // CJ's products feed has no commission rate, so `rate` stays null and
+    // planOffers writes no offer for it. A source with a rate can fill it.
+    const seen = new Map<string, { name: string; link: string; rate: number | null }>();
+
+    for (let i = 0; i < MAX_PAGES; i++) {
+      const data = await fetchPage(PAT, CID, i * PAGE_SIZE, PAGE_SIZE);
       summary.pagesFetched += 1;
-      const advertisers = parseAdvertisers(xml);
-      if (advertisers.length === 0) break;
-      summary.advertisersSeen += advertisers.length;
-
-      // Build the stores upsert payload
-      const storeRows = advertisers
-        .filter((a) => a['advertiser-name'])
-        .map((a) => ({
-          slug: slugify(a['advertiser-name']),
-          name: a['advertiser-name'],
-          domain: domainFrom(a['program-url']),
-          category: a['primary-category']?.child
-            ? [a['primary-category'].child]
-            : null,
-          is_active: a['relationship-status'] === 'joined',
-        }));
-
-      if (storeRows.length > 0) {
-        const { error } = await supabase
-          .from('stores')
-          .upsert(storeRows, { onConflict: 'slug', ignoreDuplicates: false });
-        if (error) summary.errors.push(`stores upsert: ${error.message}`);
-        else summary.storesUpserted += storeRows.length;
+      const list = data.resultList ?? [];
+      summary.productsScanned += list.length;
+      if (list.length === 0) break;
+      for (const p of list) {
+        const id = String(p.advertiserId || '').trim();
+        if (!id || seen.has(id)) continue;
+        seen.set(id, { name: p.advertiserName || '', link: p.link || '', rate: null });
       }
+      if (list.length < PAGE_SIZE) break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    summary.uniqueAdvertisers = seen.size;
 
-      // Now build cashback_offers rows. We need each store's id, so
-      // re-select by slug. (One round-trip per page is fine for 100 rows.)
-      const slugs = storeRows.map((s) => s.slug);
-      const { data: storeIds } = await supabase
-        .from('stores')
-        .select('id, slug')
-        .in('slug', slugs);
-      const slugToId = new Map((storeIds || []).map((r) => [r.slug, r.id]));
-
-      const offerRows = advertisers
-        .map((a) => {
-          const ratePct = parseRatePct(a.actions?.action?.[0]?.commission?.default);
-          if (ratePct == null) return null;
-          const storeId = slugToId.get(slugify(a['advertiser-name']));
-          if (!storeId) return null;
-          return {
-            store_id: storeId,
-            platform: 'CJ Affiliate',
-            rate: ratePct,
-            affiliate_link: a['program-url'] || null,
-            last_verified_at: new Date().toISOString(),
-            is_active: true,
-          };
-        })
-        .filter(Boolean);
-
-      if (offerRows.length > 0) {
-        const { error } = await supabase
-          .from('cashback_offers')
-          .insert(offerRows);
-        if (error) summary.errors.push(`offers insert: ${error.message}`);
-        else summary.offersUpserted += offerRows.length;
-      }
-
-      if (advertisers.length < 100) break;
-      page += 1;
-      // Be polite — small pause between pages
-      await new Promise((r) => setTimeout(r, 250));
+    if (seen.size === 0) {
+      summary.hint =
+        'No JOINED advertisers found. Join UK advertiser programmes at https://members.cj.com (Advertisers → search → Apply), then run this again.';
+      return json({ ok: true, summary });
     }
 
-    return new Response(JSON.stringify({ ok: true, summary }, null, 2), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ ok: false, error: String(err), summary }, null, 2),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    const named = [...seen.values()].filter((a) => a.name);
+    const slugs = [...new Set(named.map((a) => slugify(a.name)))];
+    const CHUNK = 500;
+
+    // Which slugs already exist: those stores are left exactly as they are.
+    const slugToId = new Map<string, string>();
+    for (let i = 0; i < slugs.length; i += CHUNK) {
+      const { data, error } = await supabase.from('stores').select('id, slug').in('slug', slugs.slice(i, i + CHUNK));
+      if (error) summary.errors.push(`stores read ${i}: ${error.message}`);
+      (data || []).forEach((r: { id: string; slug: string }) => slugToId.set(r.slug, r.id));
+    }
+    summary.storesAlreadyThere = slugToId.size;
+
+    const newStores = named
+      .filter((a, i, all) => !slugToId.has(slugify(a.name)) && all.findIndex((b) => slugify(b.name) === slugify(a.name)) === i)
+      .map((a) => ({ slug: slugify(a.name), name: a.name, domain: storeDomain(a.link), is_active: true }));
+
+    if (!dryRun) {
+      for (let i = 0; i < newStores.length; i += CHUNK) {
+        const chunk = newStores.slice(i, i + CHUNK);
+        const { data, error } = await supabase
+          .from('stores')
+          .upsert(chunk, { onConflict: 'slug', ignoreDuplicates: true })
+          .select('id, slug');
+        if (error) summary.errors.push(`stores add ${i}: ${error.message}`);
+        (data || []).forEach((r: { id: string; slug: string }) => slugToId.set(r.slug, r.id));
+      }
+    }
+    summary.storesAdded = newStores.length;
+
+    // Each store's current CJ offer, so a run updates it instead of adding one.
+    const storeIds = [...new Set([...slugToId.values()])];
+    const existing = new Map<string, string>();
+    for (let i = 0; i < storeIds.length; i += CHUNK) {
+      const { data, error } = await supabase
+        .from('cashback_offers')
+        .select('id, store_id')
+        .eq('platform', CJ_PLATFORM)
+        .in('store_id', storeIds.slice(i, i + CHUNK));
+      if (error) summary.errors.push(`offers read ${i}: ${error.message}`);
+      (data || []).forEach((r: { id: string; store_id: string }) => {
+        if (!existing.has(r.store_id)) existing.set(r.store_id, r.id);
+      });
+    }
+
+    const plan = planOffers(
+      named.map((a) => ({ storeId: slugToId.get(slugify(a.name)), link: a.link, rate: a.rate })),
+      existing,
+      new Date().toISOString()
     );
+    summary.offersSkippedNoRate = plan.skippedNoRate;
+    summary.offersSkippedNoStore = plan.skippedNoStore;
+    if (plan.skippedNoRate && !plan.inserts.length && !plan.updates.length) {
+      summary.hint = "CJ's products feed has no commission rate, so no offer was written.";
+    }
+
+    if (!dryRun) {
+      for (let i = 0; i < plan.inserts.length; i += CHUNK) {
+        const rows = plan.inserts.slice(i, i + CHUNK);
+        const { error } = await supabase.from('cashback_offers').insert(rows);
+        if (error) summary.errors.push(`offers insert ${i}: ${error.message}`);
+        else summary.offersInserted += rows.length;
+      }
+      for (const u of plan.updates) {
+        const { id, ...row } = u;
+        const { error } = await supabase.from('cashback_offers').update(row).eq('id', id);
+        if (error) summary.errors.push(`offer update ${id}: ${error.message}`);
+        else summary.offersUpdated += 1;
+      }
+    } else {
+      summary.offersInserted = plan.inserts.length;
+      summary.offersUpdated = plan.updates.length;
+    }
+
+    return json({ ok: summary.errors.length === 0, wrote: !dryRun, summary });
+  } catch (err) {
+    return json({ ok: false, error: String(err), summary }, 500);
   }
 });
