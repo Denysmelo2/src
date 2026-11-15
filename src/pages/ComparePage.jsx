@@ -559,6 +559,13 @@ function RouteBox({
             <h3 className="text-base font-semibold leading-snug">
               {item.title}
             </h3>
+            {/* A fixed bonus for new customers only (Sainsbury's Avios,
+                14/11/2026): an existing customer gets far less. */}
+            {item.strategy?.newCustomersOnly && (
+              <span className="inline-block rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                New customers only
+              </span>
+            )}
             {item.subtitle && (
               <p className="text-xs text-muted-foreground">
                 {item.subtitle}
