@@ -13,6 +13,7 @@
 
 import { getAffiliateLink, resolveOpenUrl } from '@/lib/affiliateLinks';
 import { platformLabel as label } from '@/lib/platformNames';
+import { bonusSubtitle, matchesContext as matchesBonusContext, pickBonuses } from '@/lib/bonusOffers';
 
 const POINT_LABELS_BY_PROGRAM = [
   { match: /avios/i, unit: 'Avios' },
@@ -327,37 +328,24 @@ export function computeStrategies({
   // ─── Flat: fixed bonus per order ("700 Avios") ───────────────────────
   // Only when the order reaches the minimum spend. With a context, only
   // the bonus for that customer and channel (the best if several match).
-  const matchesContext = (b) =>
-    !bonusContext ||
-    ((b.customer_type === 'any' || b.customer_type === bonusContext.customerType) &&
-      (b.channel === 'any' || b.channel === bonusContext.channel));
+  // Without one (/compare): one route per programme and customer type,
+  // the best channel, the others in the subtitle (lib/bonusOffers.js,
+  // 14/11/2026: Sainsbury's showed the same new-customer bonus twice).
   const bonusPool =
     userWallet && userWallet.milesProgramNames instanceof Set
       ? bonusOffers.filter((b) => userWallet.milesProgramNames.has(b.airline))
       : bonusOffers;
   const reachable = bonusPool.filter(
-    (b) => numAmount > 0 && numAmount >= safeNumber(b.min_spend, 0) && matchesContext(b)
+    (b) => numAmount > 0 && numAmount >= safeNumber(b.min_spend, 0) && matchesBonusContext(b, bonusContext)
   );
-  const bonusesToShow = bonusContext
-    ? Object.values(
-        reachable.reduce((best, b) => {
-          const cur = best[b.airline];
-          if (!cur || safeNumber(b.bonus_points) > safeNumber(cur.bonus_points)) best[b.airline] = b;
-          return best;
-        }, {})
-      )
-    : reachable;
-  bonusesToShow.forEach((b) => {
+  pickBonuses(reachable, { context: bonusContext || null }).forEach((picked) => {
+    const b = picked.bonus;
     const program = milesPrograms.find(
       (p) => String(p.name || '').toLowerCase() === String(b.airline || '').toLowerCase()
     );
     const points = safeNumber(b.bonus_points, 0);
     const conversionRate = program ? safeNumber(program.conversion_rate, 0) : 0;
     const unit = pointUnitLabel(b.airline);
-    const who = { new: 'new customers', existing: 'existing customers' }[b.customer_type];
-    const where = { web: 'website', app: 'app' }[b.channel];
-    const minSpend = safeNumber(b.min_spend, 0);
-    const conditions = [who, where, minSpend > 0 ? `min £${minSpend}` : null].filter(Boolean).join(' · ');
     const layer = {
       kind: 'points',
       platform: b.airline,
@@ -375,7 +363,7 @@ export function computeStrategies({
       id: `bonus-${b.id}`,
       type: 'points',
       title: label(b.airline),
-      subtitle: `${points.toLocaleString()} ${unit} per order${conditions ? ` (${conditions})` : ''}`,
+      subtitle: bonusSubtitle(picked, unit),
       gbpReturn: layer.gbpReturn,
       gbpReturnDisplay: `${points.toLocaleString()} ${unit}`,
       providerName: label(b.airline),
@@ -383,6 +371,7 @@ export function computeStrategies({
       lastVerifiedAt: layer.lastVerifiedAt,
       points,
       pointUnit: unit,
+      newCustomersOnly: b.customer_type === 'new',
       layers: [layer],
       raw: b,
     });
