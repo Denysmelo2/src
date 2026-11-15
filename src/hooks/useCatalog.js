@@ -297,7 +297,7 @@ export function useStoreOffers(storeId) {
           .order('earn_rate', { ascending: false }),
         supabase
           .from('gift_card_offers')
-          .select('id, store_id, platform, discount_pct, affiliate_link, conditions, last_verified_at, is_active')
+          .select('id, store_id, platform, discount_pct, affiliate_link, conditions, valid_to, last_verified_at, is_active')
           .eq('store_id', storeId)
           .eq('is_active', true)
           .gte('last_verified_at', cutoff)
@@ -393,7 +393,7 @@ async function attachLiveReturns(strategies, contextStoreId = null) {
     const [gc, cb] = await Promise.all([
       supabase
         .from('gift_card_offers')
-        .select('store_id, platform, discount_pct, last_verified_at')
+        .select('store_id, platform, discount_pct, conditions, valid_to, last_verified_at')
         .in('store_id', storeIds)
         .eq('is_active', true)
         .gte('last_verified_at', cutoff),

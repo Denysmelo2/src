@@ -29,8 +29,15 @@
 // step with no such rate makes the whole strategy unavailable: the
 // caller hides it instead of showing an old number.
 //
+//   * a JamDoughnut Pump Up rate that needs a bank transfer (or
+//     JamDoughnut points) to pay for the gift card leaves no card 1% on
+//     that purchase: cardPct is 0 and the label says how to pay
+//     (handover 15/11/2026, task 4).
+//
 // Pure functions, no imports from '@/': tests/curatedReturn.test.js runs
 // them under plain Node.
+
+import { pumpUpInfo, untilText } from './pumpUp.js';
 
 const GIFT_CARD_PLATFORMS = new Set(['everup', 'cheddar', 'jamdoughnut']);
 const CASHBACK_PLATFORMS = new Set(['nxrewards', 'nx', 'quidco', 'rakuten', 'topcashback']);
@@ -92,6 +99,7 @@ function stepStoreId(step, strategy, ctx) {
  *   storesById:   Map<id, {id, name, slug}>,
  *   giftCards:    Map<storeId, [{platform, discount_pct, last_verified_at}]>,
  *   cashback:     Map<storeId, [{platform, rate, last_verified_at}]>,
+ *   now,          // optional Date, for the Pump Up end (tests)
  * }
  * Offers in ctx must already be active and verified in the last 30 days.
  *
@@ -118,6 +126,8 @@ export function computeCuratedLive(strategy, ctx = {}) {
   let oldest = null;
   const missing = [];
   const parts = [];
+  let pumpUp = null; // the first gift-card step's live Pump Up, if any
+  let notByCard = false;
 
   for (const step of steps) {
     const kind = liveStepKind(step);
@@ -129,7 +139,7 @@ export function computeCuratedLive(strategy, ctx = {}) {
       if (storeId && kind === 'gift_card') {
         for (const o of ctx.giftCards?.get(storeId) || []) {
           const d = Number(o.discount_pct);
-          if (d > 0 && (!best || d > best.value)) best = { value: d, platform: o.platform, at: o.last_verified_at };
+          if (d > 0 && (!best || d > best.value)) best = { value: d, platform: o.platform, at: o.last_verified_at, offer: o };
         }
       } else if (storeId && kind === 'cashback') {
         const want = norm(step.platform_slug || step.platform);
@@ -149,10 +159,16 @@ export function computeCuratedLive(strategy, ctx = {}) {
       hasPct = true;
       liveParts.push({ kind, platform: norm(best.platform), value: best.value });
       if (best.at && (!oldest || new Date(best.at) < new Date(oldest))) oldest = best.at;
+      const pu = kind === 'gift_card' ? pumpUpInfo(best.offer, ctx.now) : null;
+      if (pu) {
+        pumpUp = pumpUp || pu;
+        if (!pu.byCard) notByCard = true;
+      }
+      const how = pu ? `, paying by ${pu.method} ${untilText(pu.endsAt, ctx.now)}` : '';
       parts.push({
         text:
           kind === 'gift_card'
-            ? `${store?.name ? `${store.name} gift card` : 'Gift card'} ${fmtPct(best.value)} (${label(best.platform)})`
+            ? `${store?.name ? `${store.name} gift card` : 'Gift card'} ${fmtPct(best.value)} (${label(best.platform)}${how})`
             : `${label(best.platform)} ${fmtPct(best.value)}`,
       });
     } else if (step.earn_pct != null && Number(step.earn_pct) > 0) {
@@ -174,7 +190,9 @@ export function computeCuratedLive(strategy, ctx = {}) {
 
   return {
     pct: hasPct ? round2(pct) : null,
-    cardPct: round2(cardPct),
+    // Paying the gift card by bank transfer: no card, so no card 1%.
+    cardPct: notByCard ? 0 : round2(cardPct),
+    pumpUp,
     liveParts,
     flatGbp: round2(flatGbp),
     isLive,
