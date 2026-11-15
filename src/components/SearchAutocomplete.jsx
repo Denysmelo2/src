@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useStores } from '@/hooks/useCatalog';
+import { useStores, useLiveStoreIds } from '@/hooks/useCatalog';
+import { rankStores, dedupeByName, hasNoOffers } from '@/lib/storeSearch';
 import { StoreLogo } from '@/components/StoreLogo';
 import { cn } from '@/lib/utils';
 
@@ -78,41 +79,26 @@ export function SearchAutocomplete({
     setValue(initialValue);
   }, [initialValue]);
 
-  const matches = useMemo(() => {
-    const q = value.trim().toLowerCase();
+  // Candidates: exact, then starts-with, then contains (the first 40).
+  // Then stores with a live offer move to the top (lib/storeSearch.js,
+  // handover 14/11/2026, task E: "John Lewis" listed an empty store next
+  // to "John Lewis & Partners").
+  const candidates = useMemo(() => {
+    const q = value.trim();
     if (!q) return [];
-    const exact = [];
-    const prefix = [];
-    const contains = [];
-    for (const s of stores) {
-      const name = s.name.toLowerCase();
-      if (name === q) exact.push(s);
-      else if (name.startsWith(q)) prefix.push(s);
-      else if (name.includes(q)) contains.push(s);
-    }
-    // 2026-07-05 (Bárbara): the stores catalogue has ~640 near-duplicate
-    // rows from scraper slug drift ("adidas" vs "adidas-shop", "Sainsbury's
-    // Groceries" vs "Sainsbury's Grocery", etc.). DB cleanup is in flight,
-    // but until it lands users see 3-5 near-identical rows per merchant in
-    // the dropdown, which reads as sloppy. Normalise names (strip apostrophes,
-    // "the ", trailing "s", collapse whitespace) and keep the first match
-    // per normalised key — prefer rows with more offers when we can tell.
-    const seen = new Set();
-    const dedup = [];
-    for (const s of [...exact, ...prefix, ...contains]) {
-      const key = s.name
-        .toLowerCase()
-        .replace(/['’‘`"]/g, '')
-        .replace(/^the\s+/, '')
-        .replace(/\s+/g, ' ')
-        .replace(/s$/, '')
-        .trim();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      dedup.push(s);
-    }
-    return dedup.slice(0, 8);
+    return rankStores(stores, q, null).slice(0, 40);
   }, [value, stores]);
+  const live = useLiveStoreIds(candidates.map((s) => s.id));
+
+  const matches = useMemo(() => {
+    if (!candidates.length) return [];
+    // 2026-07-05 (Bárbara): the stores catalogue has near-duplicate rows
+    // from scraper slug drift ("adidas" vs "adidas-shop", "Sainsbury's
+    // Groceries" vs "Sainsbury's Grocery"). Keep the first row per
+    // normalised name; after the live-first order that is the row with
+    // offers.
+    return dedupeByName(rankStores(candidates, value.trim(), live)).slice(0, 8);
+  }, [candidates, value, live]);
 
   // Close on outside click
   useEffect(() => {
@@ -286,6 +272,9 @@ export function SearchAutocomplete({
                   <StoreLogo store={store} size="sm" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{store.name}</div>
+                    {hasNoOffers(store, live) && (
+                      <div className="text-xs text-muted-foreground">No offers yet</div>
+                    )}
                     {(() => {
                       // Sainsbury's has category=[gift-card, groceries] so the
                       // dropdown was rendering "Gift-Card", which makes users

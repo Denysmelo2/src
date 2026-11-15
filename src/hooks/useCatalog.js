@@ -147,6 +147,76 @@ export function useStoreSearch(query, { limit = 24, startsWith = false } = {}) {
 }
 
 /**
+ * useLiveStoreIds — which of `storeIds` have at least one live offer:
+ * active and verified in the last 30 days (hiddenBeforeIso, the site's
+ * rule), in cashback, gift card, points or fixed-bonus offers. Used by
+ * the store searches to list stores with offers first (handover
+ * 14/11/2026, task E, lib/storeSearch.js).
+ *
+ * Returns a Set of ids, or null while it loads (callers then keep the
+ * plain name order). Only the ids passed in are looked up, 100 per
+ * request, so a search never reads whole offer tables.
+ */
+const LIVE_OFFER_TABLES = ['cashback_offers', 'gift_card_offers', 'point_offers', 'point_bonus_offers'];
+
+export function useLiveStoreIds(storeIds) {
+  const key = [...new Set((storeIds || []).filter(Boolean))].sort().join(',');
+  const [live, setLive] = useState(null);
+
+  useEffect(() => {
+    const ids = key ? key.split(',') : [];
+    if (!ids.length) {
+      setLive(new Set());
+      return undefined;
+    }
+    let alive = true;
+    setLive(null);
+    const cutoff = hiddenBeforeIso();
+    const CHUNK = 100;
+    const requests = [];
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const chunk = ids.slice(i, i + CHUNK);
+      for (const table of LIVE_OFFER_TABLES) {
+        requests.push(
+          supabase
+            .from(table)
+            .select('store_id')
+            .in('store_id', chunk)
+            .eq('is_active', true)
+            .gte('last_verified_at', cutoff)
+        );
+      }
+    }
+    Promise.all(requests)
+      .then((results) => {
+        if (!alive) return;
+        const found = new Set();
+        for (const { data, error } of results) {
+          if (error) {
+            // Unknown is not "no offers": keep the plain order.
+            console.warn('[useLiveStoreIds]', error.message);
+            setLive(null);
+            return;
+          }
+          for (const r of data || []) found.add(r.store_id);
+        }
+        setLive(found);
+      })
+      .catch((err) => {
+        if (alive) {
+          console.warn('[useLiveStoreIds] unexpected error:', err);
+          setLive(null);
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+
+  return live;
+}
+
+/**
  * useStoreBySlug — single store row matched by slug.
  */
 export function useStoreBySlug(slug) {

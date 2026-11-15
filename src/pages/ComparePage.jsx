@@ -44,6 +44,7 @@ import { Label } from '@/components/ui/label';
 import { SearchAutocomplete } from '@/components/SearchAutocomplete';
 import {
   useStoreSearch,
+  useLiveStoreIds,
   useStoreBySlug,
   useStoreOffers,
   useMilesPrograms,
@@ -54,6 +55,7 @@ import { useUserWallet } from '@/hooks/useUserState';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { useSubscription } from '@/hooks/useSubscription';
 import { computeStrategies } from '@/lib/strategies';
+import { rankStores, hasNoOffers } from '@/lib/storeSearch';
 import { StoreLogo } from '@/components/StoreLogo';
 import { CuratedStrategyCard } from '@/components/CuratedStrategyCard';
 import { buildWalletFilter } from '@/lib/walletFilter';
@@ -297,7 +299,15 @@ function StoreAutocomplete({ value, onChange, selected, onSelect, onClear }) {
   // BEGINS with the typed text. Typing "sain" matches "Sainsbury's"
   // but NOT "All Saints" — the previous fuzzy %X% search confused
   // users by returning loosely-related stores.
-  const { stores, loading } = useStoreSearch(value, { limit: 8, startsWith: true });
+  // 30 by name from the database, then stores with a live offer first,
+  // 8 shown (lib/storeSearch.js, handover 14/11/2026, task E).
+  const { stores: found, loading: searching } = useStoreSearch(value, { limit: 30, startsWith: true });
+  const live = useLiveStoreIds(found.map((s) => s.id));
+  const stores = useMemo(
+    () => rankStores(found, value, live, { matchOnly: false }).slice(0, 8),
+    [found, value, live]
+  );
+  const loading = searching;
   // Only show the dropdown when there's a real search term that
   // doesn't already match the selected store's name.
   const shouldShow =
@@ -399,7 +409,9 @@ function StoreAutocomplete({ value, onChange, selected, onSelect, onClear }) {
                 <StoreLogo store={s} size="sm" />
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate">{s.name}</div>
-                  {s.category?.[0] && (
+                  {hasNoOffers(s, live) ? (
+                    <div className="text-xs text-muted-foreground">No offers yet</div>
+                  ) : s.category?.[0] && (
                     <div className="text-xs text-muted-foreground capitalize truncate">
                       {String(s.category[0]).replace(/[-_]/g, ' ')}
                     </div>

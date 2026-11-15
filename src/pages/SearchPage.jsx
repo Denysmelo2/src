@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useStores } from '@/hooks/useCatalog';
+import { useStores, useLiveStoreIds } from '@/hooks/useCatalog';
+import { rankStores, hasNoOffers } from '@/lib/storeSearch';
 import { useRecentSearches, useUserFavourites } from '@/hooks/useUserState';
 import { SearchAutocomplete } from '@/components/SearchAutocomplete';
 import { StoreLogo } from '@/components/StoreLogo';
@@ -43,7 +44,7 @@ function SearchPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
-  const results = useMemo(() => {
+  const matched = useMemo(() => {
     const q = initialQuery.trim().toLowerCase();
     let out = stores;
     if (q) {
@@ -57,6 +58,16 @@ function SearchPage() {
     }
     return out;
   }, [initialQuery, initialCat, stores]);
+
+  // Stores with a live offer first, the others after them and marked
+  // (lib/storeSearch.js, handover 14/11/2026, task E). Offers are looked
+  // up for the first 300 matches; past that the name order stays.
+  const LIVE_LOOKUP = 300;
+  const live = useLiveStoreIds(matched.slice(0, LIVE_LOOKUP).map((s) => s.id));
+  const results = useMemo(() => {
+    const head = rankStores(matched.slice(0, LIVE_LOOKUP), initialQuery, live, { matchOnly: false });
+    return [...head, ...matched.slice(LIVE_LOOKUP)];
+  }, [matched, initialQuery, live]);
 
   const handleSubmit = (query) => {
     const next = new URLSearchParams(searchParams);
@@ -215,7 +226,9 @@ function SearchPage() {
                       </div>
                       <CardTitle className="text-xl pt-2">{store.name}</CardTitle>
                       <CardDescription className="capitalize">
-                        {store.category?.[0] || 'Retailer'} · Cashback · Points
+                        {hasNoOffers(store, live)
+                          ? 'No offers yet'
+                          : `${store.category?.[0] || 'Retailer'} · Cashback · Points`}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
