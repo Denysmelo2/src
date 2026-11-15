@@ -3,9 +3,182 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "ignoreCommand": "if [ \"$VERCEL_PROJECT_ID\" = \"prj_YI0fDsXI7G54DoN4wJnIK316d8zD\" ] || [ \"$VERCEL_PROJECT_PRODUCTION_URL\" = \"denysmelo.vercel.app\" ]; then echo 'Portfolio project: SnapGain is not deployed here'; exit 0; fi; exit 1",
+  "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/auth/callback",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/auth/request-reset",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reset-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/auth/:mode",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/features",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pricing",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/faq",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/apps",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/terms-of-service",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cookie-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/refund-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/home",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/search",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/store/:storeId",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/compare",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/strategy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/strategies",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/calculator",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/banks",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cards",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/saved-strategies",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/wallet",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/alerts",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/library",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/hot-deals",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/platform-changes",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/rates",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/miles",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cashback",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/hot-deals",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/playbook",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/learn/platforms",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/deals/supermarket",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/deals/gift-cards",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/menu",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/subscription/success",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/onboarding",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/profile",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings",
       "destination": "/index.html"
     }
   ],

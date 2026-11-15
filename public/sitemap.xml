@@ -21,34 +21,14 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://snapgain.uk/learn/platforms</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://snapgain.uk/playbook</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://snapgain.uk/compare</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://snapgain.uk/search</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://snapgain.uk/faq</loc>
+    <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://snapgain.uk/auth/signup</loc>
+    <loc>https://snapgain.uk/contact</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://snapgain.uk/auth/login</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://snapgain.uk/privacy-policy</loc>
