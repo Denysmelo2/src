@@ -65,6 +65,7 @@ import { labelForStrategy } from '@/components/AutoStrategyCard';
 import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
 import { oldestVerifiedAt, reviewedLabel } from '@/lib/dataFreshness';
 import { curatedGbp, cardLine } from '@/lib/curatedReturn';
+import { PumpUpBadge } from '@/components/PumpUpBadge';
 import { rankRoutes, splitCurated, mergeCopies } from '@/lib/rankRoutes';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
@@ -573,6 +574,10 @@ function RouteBox({
             </h3>
             {/* A fixed bonus for new customers only (Sainsbury's Avios,
                 14/11/2026): an existing customer gets far less. */}
+            {/* JamDoughnut Pump Up (handover 15/11/2026): the rate is a
+                temporary one, often only when paying by bank transfer;
+                the subtitle says how and until when. */}
+            {(item.strategy?.pumpUp || item.curated?.live?.pumpUp) && <PumpUpBadge />}
             {item.strategy?.newCustomersOnly && (
               <span className="inline-block rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
                 New customers only

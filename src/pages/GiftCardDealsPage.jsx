@@ -27,6 +27,8 @@ import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 import { platformLabel } from '@/lib/platformNames';
+import { pumpUpInfo, pumpUpLine, baseConditions } from '@/lib/pumpUp';
+import { PumpUpBadge } from '@/components/PumpUpBadge';
 
 const isExternal = (url) => /^https?:\/\//i.test(url || '');
 
@@ -44,7 +46,7 @@ function GiftCardDealsPage() {
       const { data, error } = await supabase
         .from('gift_card_offers')
         .select(
-          'id, store_id, platform, discount_pct, affiliate_link, conditions, store:stores(id, slug, name, category, logo_url, domain, is_active)'
+          'id, store_id, platform, discount_pct, affiliate_link, conditions, valid_to, store:stores(id, slug, name, category, logo_url, domain, is_active)'
         )
         .eq('is_active', true)
         .gte('last_verified_at', hiddenBeforeIso())
@@ -169,6 +171,10 @@ function DealRow({ offer, idx }) {
   });
   const external = isExternal(href);
   const isBest = idx === 0;
+  // JamDoughnut Pump Up (handover 15/11/2026): badge + how to pay, and
+  // the conditions without the long Pump Up text.
+  const pumpUp = pumpUpInfo(offer);
+  const conditions = pumpUp ? baseConditions(offer.conditions) : offer.conditions;
 
   const inner = (
     <Card
@@ -186,11 +192,17 @@ function DealRow({ offer, idx }) {
               Best today
             </span>
           )}
-          <div className="font-semibold truncate text-base">{store.name}</div>
+          <div className="font-semibold truncate text-base flex items-center gap-2">
+            <span className="truncate">{store.name}</span>
+            {pumpUp && <PumpUpBadge />}
+          </div>
           <div className="text-xs text-muted-foreground">
             via {platformLabel(offer.platform)}
-            {offer.conditions ? ` · ${offer.conditions}` : ''}
+            {conditions ? ` · ${conditions}` : ''}
           </div>
+          {pumpUp && (
+            <div className="text-xs font-medium text-fuchsia-800">{pumpUpLine(pumpUp)}</div>
+          )}
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-0.5">
           <div className="text-2xl md:text-3xl font-bold gradient-text leading-none">

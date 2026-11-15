@@ -30,6 +30,8 @@ import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 import { platformLabel } from '@/lib/platformNames';
+import { pumpUpInfo, pumpUpLine, baseConditions } from '@/lib/pumpUp';
+import { PumpUpBadge } from '@/components/PumpUpBadge';
 
 const isExternal = (url) => /^https?:\/\//i.test(url || '');
 
@@ -670,6 +672,10 @@ function OrganicTopDealCard({ offer, rank }) {
   const external = isExternal(href);
   const isBest = rank === 1;
   const countdown = formatExpiryCountdown(offer.valid_to);
+  // JamDoughnut Pump Up (handover 15/11/2026): badge + how to pay, and
+  // the conditions without the long Pump Up text.
+  const pumpUp = offer.kind === 'gift_card' ? pumpUpInfo(offer) : null;
+  const conditions = pumpUp ? baseConditions(offer.conditions) : offer.conditions;
   // Pulse urgency once we're under 24h. Stays subtle — small chip, no
   // banner animation that would feel like a fire sale.
   const urgent = countdown && /Ends in \d+(m|h)$/.test(countdown);
@@ -689,18 +695,22 @@ function OrganicTopDealCard({ offer, rank }) {
           <div className="flex items-center gap-2 min-w-0">
             <StoreLogo store={store} size="sm" />
             <div className="min-w-0">
-              <div className="font-semibold text-sm truncate">
-                {store.name || 'Unknown store'}
+              <div className="font-semibold text-sm truncate flex items-center gap-2">
+                <span className="truncate">{store.name || 'Unknown store'}</span>
+                {pumpUp && <PumpUpBadge />}
               </div>
               <div className="text-xs text-muted-foreground">
                 via {platformLabel(offer.platform)}
                 {/* 2026-07-05: 'Up to' moved to the big rate number
                     itself so users can't miss it. Only render other
                     conditions here (e.g. minimum spend, category limits). */}
-                {offer.conditions && offer.conditions !== 'Up to'
-                  ? ` · ${offer.conditions}`
+                {conditions && conditions !== 'Up to'
+                  ? ` · ${conditions}`
                   : ''}
               </div>
+              {pumpUp && (
+                <div className="text-xs font-medium text-fuchsia-800">{pumpUpLine(pumpUp)}</div>
+              )}
             </div>
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted text-foreground/70 shrink-0">

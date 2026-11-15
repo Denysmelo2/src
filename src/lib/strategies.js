@@ -14,6 +14,7 @@
 import { getAffiliateLink, resolveOpenUrl } from '@/lib/affiliateLinks';
 import { platformLabel as label } from '@/lib/platformNames';
 import { bonusSubtitle, matchesContext as matchesBonusContext, pickBonuses } from '@/lib/bonusOffers';
+import { pumpUpInfo, pumpUpLine } from '@/lib/pumpUp';
 
 const POINT_LABELS_BY_PROGRAM = [
   { match: /avios/i, unit: 'Avios' },
@@ -266,8 +267,12 @@ export function computeStrategies({
       affiliateLink: g.affiliate_link || getAffiliateLink(g.platform),
       lastVerifiedAt: g.last_verified_at,
       offerId: g.id,
+      // JamDoughnut Pump Up (handover 15/11/2026): the rate above is the
+      // highest one, which may need a bank transfer; null when no boost.
+      pumpUp: pumpUpInfo(g),
     };
   };
+  const pumpUpSuffix = (gc) => (gc.pumpUp ? ` · ${pumpUpLine(gc.pumpUp)}` : '');
 
   // ─── Flat: cashback only ─────────────────────────────────────────────
   cashbackToUse.forEach((o) => {
@@ -384,7 +389,8 @@ export function computeStrategies({
       id: `giftcard-${g.id}`,
       type: 'gift_card',
       title: label(layer.platform),
-      subtitle: `${layer.discountPct}% off gift card`,
+      subtitle: `${layer.discountPct}% off gift card${pumpUpSuffix(layer)}`,
+      pumpUp: layer.pumpUp,
       gbpReturn: layer.gbpReturn,
       gbpReturnDisplay: `£${layer.gbpReturn.toFixed(2)}`,
       providerName: label(layer.platform),
@@ -428,7 +434,8 @@ export function computeStrategies({
         id: `stack-gc${g.id}-cb${c.id}`,
         type: 'stack',
         title: `${label(gc.platform)} + ${label(cb.platform)}`,
-        subtitle: `${gc.discountPct}% off + ${cashbackPctText(cb)} cashback`,
+        subtitle: `${gc.discountPct}% off + ${cashbackPctText(cb)} cashback${pumpUpSuffix(gc)}`,
+        pumpUp: gc.pumpUp,
         gbpReturn: total,
         gbpReturnDisplay: gbpText(total, totalMax),
         providerName: `${label(gc.platform)} + ${label(cb.platform)}`,
@@ -454,7 +461,8 @@ export function computeStrategies({
         id: `stack-gc${g.id}-pt${p.id}`,
         type: 'stack',
         title: `${label(gc.platform)} + ${label(pt.platform)}`,
-        subtitle: `${gc.discountPct}% off + ${pt.earnRate} pts/£`,
+        subtitle: `${gc.discountPct}% off + ${pt.earnRate} pts/£${pumpUpSuffix(gc)}`,
+        pumpUp: gc.pumpUp,
         // Show gift-card £ saving AND points separately — both are real
         // value the user collects on the same purchase.
         gbpReturn: total,
