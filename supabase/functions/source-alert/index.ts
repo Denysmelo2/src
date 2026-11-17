@@ -48,6 +48,9 @@ const WATCHED: Record<string, { label: string; run: string }> = {
   jamdoughnut: { label: 'JamDoughnut', run: '08:00 daily run (scrape-daily)' },
   cheddar: { label: 'Cheddar', run: '08:00 daily run (scrape-daily)' },
   everup: { label: 'EverUp', run: '08:00 daily run (scrape-daily)' },
+  // Student discounts (handover 17/11/2026; table student_offers, 0045).
+  studentbeans: { label: 'Student Beans', run: '08:00 daily run (scrape-daily)' },
+  unidays: { label: 'UNiDAYS', run: '08:00 daily run (scrape-daily)' },
 };
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
