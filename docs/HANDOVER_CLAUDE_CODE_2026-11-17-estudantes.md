@@ -21,6 +21,25 @@ na **UNiDAYS**. Quem não marca não vê nada disso.
    A NX registrou o cashback. Total: 15% off + 10% de cashback + pontos do
    cartão.
 3. A opção aparece no cadastro e em Settings.
+4. **Os percentuais não são fixos** (esclarecimento do dono, 17/11, 16:15).
+   Os 15% e os £23,50 deste documento são **só exemplos**. O desconto de
+   estudante varia como o das outras plataformas, e segue exatamente os
+   mesmos critérios:
+   - o site mostra sempre o percentual da **última leitura do robô** (a de
+     hoje), nunca um número digitado à mão ou guardado no código;
+   - vale a mesma regra de validade das outras ofertas
+     (`last_verified_at` e `hiddenBeforeIso` em `src/lib/dataFreshness.js`):
+     uma oferta que o robô não confirmou dentro do prazo some da busca e do
+     ranking, em vez de mostrar um número velho;
+   - subidas e quedas são aplicadas pelo robô sozinho, como na JamDoughnut,
+     na Cheddar e na EverUp, e entram no histórico (`rate_history`, se as
+     outras ofertas de gift card já gravam lá);
+   - no `/compare`, a conta usa o desconto de estudante de hoje e a taxa de
+     cashback de hoje da mesma loja, pelas mesmas funções que já ordenam as
+     outras rotas. Nenhum valor de estudante entra em `curated_strategies`
+     nem em constantes;
+   - entre Student Beans e UNiDAYS vale a maior **de hoje**, a mesma lógica
+     de "melhor taxa do dia" das outras plataformas.
 
 ## O que o Cowork conferiu (17/11)
 
@@ -136,10 +155,14 @@ Mac.
    a hoje.
 2. Marcar "I'm a student" em Settings: ASOS mostra "Student −10%", e o
    `/compare` mostra a rota de estudante com a conta acima.
-3. Charlotte Tilbury £100, se a loja estiver na Student Beans com 15% e
-   na NX com 10%: £23,50.
-4. Desmarcar: tudo volta ao que era.
-5. `user_profiles`: o usuário consegue mudar `is_student`, mas não
+3. Charlotte Tilbury £100: a conta da rota tem que bater com o desconto de
+   estudante e a taxa da NX **gravados hoje no banco** (fórmula da tarefa
+   3). Com 15% e 10% daria £23,50; com outros números, outro total.
+4. Mudar à mão o `discount_pct` de uma oferta de estudante no banco: o site
+   passa a mostrar o novo valor. Com `last_verified_at` antigo, a oferta
+   some.
+5. Desmarcar: tudo volta ao que era.
+6. `user_profiles`: o usuário consegue mudar `is_student`, mas não
    `role` nem nenhuma coluna de assinatura.
 
 ## Depois do merge (Cowork)
