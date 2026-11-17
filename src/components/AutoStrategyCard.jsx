@@ -30,6 +30,8 @@ export function labelForStrategy(strategy) {
   const layers = strategy.layers || [];
   const layerKinds = layers.map((l) => l.kind);
 
+  // Student discount routes (handover 17/11/2026).
+  if (type === 'student') return 'Student';
   if (type === 'points' || (layerKinds.length === 1 && layerKinds[0] === 'points')) {
     return 'Avios only';
   }

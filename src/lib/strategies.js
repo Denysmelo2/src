@@ -15,6 +15,7 @@ import { getAffiliateLink, resolveOpenUrl } from '@/lib/affiliateLinks';
 import { platformLabel as label } from '@/lib/platformNames';
 import { bonusSubtitle, matchesContext as matchesBonusContext, pickBonuses } from '@/lib/bonusOffers';
 import { pumpUpInfo, pumpUpLine } from '@/lib/pumpUp';
+import { bestStudentOffer, studentMath, pctText as studentPct, STUDENT_WARNING } from '@/lib/studentDiscount';
 
 const POINT_LABELS_BY_PROGRAM = [
   { match: /avios/i, unit: 'Avios' },
@@ -130,6 +131,10 @@ export function withSyntheticNxOffer(cashbackOffers, store) {
  *                                         channel: 'web'|'app' }. Without it,
  *                                         every bonus that the amount reaches
  *                                         is listed with its conditions.
+ * @param {Array}  [args.studentOffers]   rows from public.student_offers for
+ *                                         this store, passed ONLY for a user with
+ *                                         user_profiles.is_student (handover
+ *                                         17/11/2026). Adds the student routes.
  * @param {boolean} [args.includeStacks=true]  When false, only flat per-route
  *                                              strategies are returned (gates the
  *                                              stacking feature behind premium).
@@ -146,6 +151,7 @@ export function computeStrategies({
   milesPrograms = [],
   userWallet = null,
   includeStacks = true,
+  studentOffers = [],
 }) {
   const out = [];
   const numAmount = safeNumber(amount, 0);
@@ -401,6 +407,114 @@ export function computeStrategies({
     });
   });
 
+  // ─── Student discount (students only) ────────────────────────────────
+  // Handover 17/11/2026: the student code cuts the price; cashback, points
+  // or a gift card then apply to what is paid. Owner's test (17/11): NX
+  // tracked its 10% with a Student Beans code on Charlotte Tilbury. The
+  // best of Student Beans and UNiDAYS today, named alone. Shown to every
+  // student (not a subscriber-only stack): it is the student feature.
+  const student = bestStudentOffer(studentOffers);
+  if (student) {
+    const sMath = studentMath(numAmount, student.pct);
+    const studentLayer = {
+      kind: 'student',
+      platform: student.platform,
+      label: student.label,
+      discountPct: student.pct,
+      channel: student.channel,
+      gbpReturn: sMath.saving,
+      lastVerifiedAt: student.lastVerifiedAt,
+      offerId: student.offerId,
+    };
+    const codeText = `${studentPct(student.pct)} student code (${student.label})`;
+    const studentRoute = (r) => ({ ...r, type: 'student', student: studentLayer });
+
+    out.push(
+      studentRoute({
+        id: `student-${student.platform}`,
+        title: `${student.label} student discount`,
+        subtitle: `${studentPct(student.pct)} student discount on ${student.label}`,
+        gbpReturn: sMath.saving,
+        gbpReturnDisplay: `£${sMath.saving.toFixed(2)}`,
+        providerName: student.label,
+        paidAmount: sMath.paid,
+        cardOnPaid: true,
+        layers: [studentLayer],
+        partner: null,
+      })
+    );
+
+    cashbackToUse.forEach((c) => {
+      const cb = cashbackLayer(c);
+      const m = studentMath(numAmount, student.pct, cb.ratePct);
+      const mMax = cb.ratePctMax != null ? studentMath(numAmount, student.pct, cb.ratePctMax) : null;
+      const cbOnPaid = { ...cb, gbpReturn: m.other, gbpReturnMax: mMax ? mMax.other : null };
+      out.push(
+        studentRoute({
+          id: `student-${student.platform}-cb${c.id}`,
+          title: `${student.label} + ${label(cb.platform)}`,
+          subtitle: `${codeText} + ${cashbackPctText(cb)} cashback on the £${m.paid.toFixed(2)} you pay`,
+          gbpReturn: m.total,
+          gbpReturnDisplay: gbpText(m.total, mMax ? mMax.total : null),
+          providerName: `${student.label} + ${label(cb.platform)}`,
+          paidAmount: m.paid,
+          cardOnPaid: true,
+          layers: [studentLayer, cbOnPaid],
+          partner: cbOnPaid,
+        })
+      );
+    });
+
+    pointsToUse.forEach((p) => {
+      const pt = pointsLayer(p);
+      const m = studentMath(numAmount, student.pct);
+      const share = numAmount > 0 ? m.paid / numAmount : 0;
+      const ptOnPaid = { ...pt, points: pt.points * share, gbpReturn: pt.gbpReturn * share };
+      out.push(
+        studentRoute({
+          id: `student-${student.platform}-pt${p.id}`,
+          title: `${student.label} + ${label(pt.platform)}`,
+          subtitle: `${codeText} + ${pt.earnRate} pts/£ on the £${m.paid.toFixed(2)} you pay`,
+          gbpReturn: m.saving + ptOnPaid.gbpReturn,
+          gbpReturnDisplay: `£${m.saving.toFixed(2)} + ${Math.round(ptOnPaid.points).toLocaleString()} ${pt.pointUnit}`,
+          providerName: `${student.label} + ${label(pt.platform)}`,
+          paidAmount: m.paid,
+          cardOnPaid: true,
+          layers: [studentLayer, ptOnPaid],
+          partner: ptOnPaid,
+        })
+      );
+    });
+
+    // Gift card pays what is left after the code. Never NX with a gift
+    // card (see the stacks below): this route has no cashback layer.
+    giftCardOffers.forEach((g) => {
+      const gc = giftCardLayer(g);
+      const m = studentMath(numAmount, student.pct, gc.discountPct);
+      const gcOnPaid = { ...gc, gbpReturn: m.other };
+      out.push(
+        studentRoute({
+          id: `student-${student.platform}-gc${g.id}`,
+          title: `${student.label} + ${label(gc.platform)}`,
+          subtitle: `${codeText} + ${gc.discountPct}% off a £${m.paid.toFixed(2)} gift card`,
+          gbpReturn: m.total,
+          gbpReturnDisplay: `£${m.total.toFixed(2)}`,
+          providerName: `${student.label} + ${label(gc.platform)}`,
+          paidAmount: m.paid,
+          cardOnPaid: false,
+          pumpUp: gc.pumpUp,
+          layers: [studentLayer, gcOnPaid],
+          partner: gcOnPaid,
+        })
+      );
+    });
+  }
+
+  // Student routes carry their steps (the store name is known here).
+  for (const r of out) {
+    if (r.type === 'student') r.steps = buildStrategySteps(r, store);
+  }
+
   // ─── Stacks (premium-only) ───────────────────────────────────────────
   if (!includeStacks) {
     out.sort((a, b) => b.gbpReturn - a.gbpReturn);
@@ -571,6 +685,48 @@ export function buildStrategySteps(strategy, store) {
         detail: 'The discount is locked in upfront — no waiting for tracking.',
       },
     ];
+  }
+
+  if (strategy.type === 'student') {
+    const st = strategy.student || strategy.layers?.[0];
+    const partner = strategy.partner;
+    const paid = Number(strategy.paidAmount) || 0;
+    const steps = [
+      {
+        // No link (owner, 17/11/2026): the code comes from the platform's
+        // app once the student is verified.
+        title: `Get your ${studentPct(st?.discountPct)} student code on ${st?.label}`,
+        detail: `Student verification needed. Open the ${st?.label} app, verify, and copy the ${storeName} code.`,
+      },
+    ];
+    if (partner?.kind === 'cashback') {
+      steps.push({
+        title: `Open ${storeName} through ${label(partner.platform)}`,
+        detail: 'Sign in first so cashback tracks to your account.',
+        actionUrl: urlFor(partner),
+        actionLabel: `Open ${label(partner.platform)}`,
+      });
+    } else if (partner?.kind === 'points') {
+      steps.push({
+        title: `Open ${storeName} through the ${label(partner.platform)} portal`,
+        detail: 'Sign in to your programme account so the points credit correctly.',
+        actionUrl: urlFor(partner),
+        actionLabel: `Open ${label(partner.platform)}`,
+      });
+    } else if (partner?.kind === 'gift_card') {
+      steps.push({
+        title: `Buy a £${paid.toFixed(2)} ${storeName} gift card via ${label(partner.platform)}`,
+        detail: `${partner.discountPct}% off — saves £${(Number(partner.gbpReturn) || 0).toFixed(2)}.`,
+        actionUrl: urlFor(partner),
+        actionLabel: `Open ${label(partner.platform)}`,
+      });
+    }
+    steps.push({
+      title: partner?.kind === 'gift_card' ? 'Enter the code at checkout, then pay with the gift card' : 'Enter the code at checkout',
+      detail: `You pay £${paid.toFixed(2)} instead of £${(paid + (Number(st?.gbpReturn) || 0)).toFixed(2)}.`,
+      warning: STUDENT_WARNING,
+    });
+    return steps;
   }
 
   if (strategy.type === 'stack') {

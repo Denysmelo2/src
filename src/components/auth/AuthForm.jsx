@@ -6,6 +6,7 @@ import { ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { OAuthButtons } from '@/components/auth/OAuthButtons';
@@ -34,6 +35,9 @@ function AuthForm({ mode }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  // "I'm a student" (handover 17/11/2026), off by default. Sent as user
+  // metadata; handle_new_user() copies it to user_profiles.is_student.
+  const [isStudent, setIsStudent] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -109,7 +113,11 @@ function AuthForm({ mode }) {
         }
         sent = true;
         const { error } = await signUp(email, password, {
-          data: phoneClean ? { name, phone: phoneClean } : { name },
+          data: {
+            name,
+            ...(phoneClean ? { phone: phoneClean } : {}),
+            ...(isStudent ? { is_student: true } : {}),
+          },
           captchaToken: captcha.token,
         });
         if (!error) {
@@ -175,6 +183,19 @@ function AuthForm({ mode }) {
                 won&rsquo;t sell it or use it for marketing.
               </span>
             </div>
+          </motion.div>
+        )}
+        {!isLogin && (
+          <motion.div variants={itemVariants} className="flex items-start gap-2">
+            <Checkbox
+              id="is-student"
+              checked={isStudent}
+              onCheckedChange={(v) => setIsStudent(v === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="is-student" className="text-sm font-normal leading-snug cursor-pointer">
+              I&rsquo;m a student (see Student Beans and UNiDAYS discounts)
+            </Label>
           </motion.div>
         )}
         <motion.div variants={itemVariants}>

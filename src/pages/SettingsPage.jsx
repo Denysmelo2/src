@@ -22,6 +22,7 @@ import {
   AlignLeft,
   RotateCcw,
   Wallet,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -142,6 +143,25 @@ function SettingsPage() {
     // we don't need them in deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, searchParams]);
+
+  // "I'm a student" (handover 17/11/2026): user_profiles.is_student, which
+  // the user may change on their own row only (migration 0045).
+  const [studentSaving, setStudentSaving] = useState(false);
+  const setStudent = async (value) => {
+    if (!user) return;
+    setStudentSaving(true);
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ is_student: value })
+      .eq('user_id', user.id);
+    setStudentSaving(false);
+    if (error) {
+      toast({ title: "Couldn't save preference", description: error.message, variant: 'destructive' });
+      return;
+    }
+    await sub.refresh();
+    toast({ title: value ? 'Student discounts on.' : 'Student discounts off.' });
+  };
 
   const setBoostEmail = async (value) => {
     if (!user) return;
@@ -353,6 +373,25 @@ function SettingsPage() {
               description="Hide cashback platforms and miles programs you haven't added on your Profile. If your wallet is empty we still show all routes so you can browse."
               checked={prefs.walletOnly}
               onChange={(v) => updatePref({ walletOnly: v })}
+            />
+          </CardContent>
+        </Card>
+
+        {/* ─── Student discounts (user_profiles.is_student, 0045) ──────── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-primary" />
+              Student discounts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ToggleRow
+              id="is-student"
+              label="I'm a student (see Student Beans and UNiDAYS discounts)"
+              description="Shows each store's student discount in search, on the store page and in Compare, and which of the two platforms gives more today. You get the code in the platform's app after verifying you're a student."
+              checked={sub.isStudent}
+              onChange={(v) => !studentSaving && setStudent(v)}
             />
           </CardContent>
         </Card>

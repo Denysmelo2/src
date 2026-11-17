@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { hiddenBeforeIso } from '@/lib/dataFreshness';
 import { computeCuratedLive, liveStepKind, stepStoreSlugs } from '@/lib/curatedReturn';
+import { bestStudentOffer } from '@/lib/studentDiscount';
 
 /**
  * useStores — list of UK retailers from public.stores.
@@ -261,6 +262,7 @@ export function useStoreOffers(storeId) {
   const [pointOffers, setPointOffers] = useState([]);
   const [giftCardOffers, setGiftCardOffers] = useState([]);
   const [bonusOffers, setBonusOffers] = useState([]);
+  const [studentOffers, setStudentOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -270,6 +272,7 @@ export function useStoreOffers(storeId) {
       setPointOffers([]);
       setGiftCardOffers([]);
       setBonusOffers([]);
+      setStudentOffers([]);
       setLoading(false);
       return;
     }
@@ -311,10 +314,19 @@ export function useStoreOffers(storeId) {
           .eq('is_active', true)
           .gte('last_verified_at', cutoff)
           .order('bonus_points', { ascending: false }),
+        // Student discounts (0045). Read for everyone; the pages show
+        // them only when user_profiles.is_student is true.
+        supabase
+          .from('student_offers')
+          .select('id, store_id, platform, discount_pct, title, channel, last_verified_at')
+          .eq('store_id', storeId)
+          .eq('is_active', true)
+          .gte('last_verified_at', cutoff)
+          .order('discount_pct', { ascending: false }),
       ]);
     };
 
-    const apply = ([cbRes, ptRes, gcRes, bnRes]) => {
+    const apply = ([cbRes, ptRes, gcRes, bnRes, stRes]) => {
       if (!alive) return;
       if (cbRes.error) setError(cbRes.error);
       else setCashbackOffers(cbRes.data || []);
@@ -324,6 +336,7 @@ export function useStoreOffers(storeId) {
       else setGiftCardOffers(gcRes.data || []);
       // A missing bonus table must not hide the other offers.
       setBonusOffers(bnRes.error ? [] : bnRes.data || []);
+      setStudentOffers(stRes.error ? [] : stRes.data || []);
       setLoading(false);
     };
 
@@ -344,7 +357,76 @@ export function useStoreOffers(storeId) {
     };
   }, [storeId]);
 
-  return { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, loading, error };
+  return { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, loading, error };
+}
+
+/**
+ * useStudentStoreMap — the best student discount today (Student Beans or
+ * UNiDAYS) for each of `storeIds`: Map storeId → {platform, label, pct,
+ * channel}, or null while loading. Same freshness rule as every offer
+ * (hiddenBeforeIso). Used by the searches: students get a badge, others
+ * do not see stores whose only offer is a student discount
+ * (lib/studentDiscount.js studentSearchView). 100 ids per request.
+ */
+export function useStudentStoreMap(storeIds) {
+  const key = [...new Set((storeIds || []).filter(Boolean))].sort().join(',');
+  const [map, setMap] = useState(null);
+
+  useEffect(() => {
+    const ids = key ? key.split(',') : [];
+    if (!ids.length) {
+      setMap(new Map());
+      return undefined;
+    }
+    let alive = true;
+    setMap(null);
+    const cutoff = hiddenBeforeIso();
+    const requests = [];
+    for (let i = 0; i < ids.length; i += 100) {
+      requests.push(
+        supabase
+          .from('student_offers')
+          .select('store_id, platform, discount_pct, channel')
+          .in('store_id', ids.slice(i, i + 100))
+          .eq('is_active', true)
+          .gte('last_verified_at', cutoff)
+      );
+    }
+    Promise.all(requests)
+      .then((results) => {
+        if (!alive) return;
+        const rowsByStore = new Map();
+        for (const { data, error } of results) {
+          if (error) {
+            // Unknown is not "none": leave the lists as they are.
+            console.warn('[useStudentStoreMap]', error.message);
+            setMap(new Map());
+            return;
+          }
+          for (const r of data || []) {
+            if (!rowsByStore.has(r.store_id)) rowsByStore.set(r.store_id, []);
+            rowsByStore.get(r.store_id).push(r);
+          }
+        }
+        const out = new Map();
+        for (const [id, rows] of rowsByStore) {
+          const best = bestStudentOffer(rows);
+          if (best) out.set(id, best);
+        }
+        setMap(out);
+      })
+      .catch((err) => {
+        if (alive) {
+          console.warn('[useStudentStoreMap] unexpected error:', err);
+          setMap(new Map());
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+
+  return map;
 }
 
 /**

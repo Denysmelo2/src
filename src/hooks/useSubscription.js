@@ -65,7 +65,7 @@ export function useSubscription() {
       const { data, error } = await supabase
         .from('user_profiles')
         .select(
-          'id, role, plan, subscription_status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at, trial_end, onboarding_done'
+          'id, role, plan, subscription_status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at, trial_end, onboarding_done, is_student'
         )
         .eq('user_id', user.id)
         .maybeSingle();
@@ -158,6 +158,9 @@ export function useSubscription() {
     isActive,
     isAdmin,
     plan: profile?.plan || null,
+    // "I'm a student" (handover 17/11/2026): Student Beans / UNiDAYS
+    // discounts show only when this is true.
+    isStudent: profile?.is_student === true,
     status,
     trialEndsAt: profile?.trial_end || null,
     periodEndsAt: profile?.current_period_end || null,

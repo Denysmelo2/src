@@ -51,7 +51,7 @@ function StrategyPage() {
   const amount = Number(searchParams.get('amount')) || 100;
 
   const { store, loading: storeLoading } = useStoreBySlug(storeSlug);
-  const { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, loading: offersLoading } = useStoreOffers(store?.id);
+  const { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, loading: offersLoading } = useStoreOffers(store?.id);
   const { programs: milesPrograms } = useMilesPrograms();
   const { strategies: curatedStrategies } = useCuratedStrategies(
     store?.id,
@@ -62,7 +62,7 @@ function StrategyPage() {
   // because curated routes routinely beat single-platform stacks.
   const topCurated = curatedStrategies[0] || null;
   const { strategies: savedStrategies, save, reachedFreeCap, FREE_SAVED_CAP } = useSavedStrategies();
-  const { isPremium, isAdmin } = useSubscription();
+  const { isPremium, isAdmin, isStudent } = useSubscription();
   const wallet = useUserWallet();
   const { walletOnly } = useWalletOnlyPref();
   const userWalletForStrategy = useMemo(
@@ -82,8 +82,10 @@ function StrategyPage() {
         milesPrograms,
         userWallet: userWalletForStrategy,
         includeStacks: isPremium || isAdmin,
+        // Student routes only for "I'm a student" (handover 17/11/2026).
+        studentOffers: isStudent ? studentOffers : [],
       }),
-    [store, amount, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, milesPrograms, userWalletForStrategy, isPremium, isAdmin]
+    [store, amount, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, isStudent, milesPrograms, userWalletForStrategy, isPremium, isAdmin]
   );
 
   // Pick the highlighted strategy: routeId from URL > best by GBP return
@@ -108,6 +110,8 @@ function StrategyPage() {
   // the direct eStore baseline to see whether stacking still wins.
   const mixedAvios = useMemo(() => {
     if (!highlighted || !Array.isArray(highlighted.layers)) return null;
+    // A student discount is a lower price, not cashback to convert.
+    if (highlighted.type === 'student') return null;
     let gbpPortion = 0;
     let aviosPortion = 0;
     for (const l of highlighted.layers) {

@@ -13,7 +13,10 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useStores, useLiveStoreIds } from '@/hooks/useCatalog';
+import { useStores, useLiveStoreIds, useStudentStoreMap } from '@/hooks/useCatalog';
+import { useSubscription } from '@/hooks/useSubscription';
+import { studentSearchView } from '@/lib/studentDiscount';
+import { StudentBadge } from '@/components/StudentBadge';
 import { rankStores, hasNoOffers } from '@/lib/storeSearch';
 import { useRecentSearches, useUserFavourites } from '@/hooks/useUserState';
 import { SearchAutocomplete } from '@/components/SearchAutocomplete';
@@ -63,11 +66,21 @@ function SearchPage() {
   // (lib/storeSearch.js, handover 14/11/2026, task E). Offers are looked
   // up for the first 300 matches; past that the name order stays.
   const LIVE_LOOKUP = 300;
-  const live = useLiveStoreIds(matched.slice(0, LIVE_LOOKUP).map((s) => s.id));
+  const headIds = matched.slice(0, LIVE_LOOKUP).map((s) => s.id);
+  const liveOffers = useLiveStoreIds(headIds);
+  // Student discounts (handover 17/11/2026): a badge for students; for
+  // everyone else, stores whose only offer is a student discount stay out.
+  const { isStudent } = useSubscription();
+  const studentMap = useStudentStoreMap(headIds);
+  const view = useMemo(
+    () => studentSearchView({ stores: matched.slice(0, LIVE_LOOKUP), live: liveOffers, student: studentMap, isStudent }),
+    [matched, liveOffers, studentMap, isStudent]
+  );
+  const live = view.live;
   const results = useMemo(() => {
-    const head = rankStores(matched.slice(0, LIVE_LOOKUP), initialQuery, live, { matchOnly: false });
+    const head = rankStores(view.stores, initialQuery, live, { matchOnly: false });
     return [...head, ...matched.slice(LIVE_LOOKUP)];
-  }, [matched, initialQuery, live]);
+  }, [view, matched, initialQuery, live]);
 
   const handleSubmit = (query) => {
     const next = new URLSearchParams(searchParams);
@@ -224,7 +237,10 @@ function SearchPage() {
                           <Star className="w-5 h-5 text-secondary fill-secondary" />
                         )}
                       </div>
-                      <CardTitle className="text-xl pt-2">{store.name}</CardTitle>
+                      <CardTitle className="text-xl pt-2 flex items-center gap-2 flex-wrap">
+                        {store.name}
+                        {isStudent && <StudentBadge best={studentMap?.get(store.id)} />}
+                      </CardTitle>
                       <CardDescription className="capitalize">
                         {hasNoOffers(store, live)
                           ? 'No offers yet'
