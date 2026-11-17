@@ -62,14 +62,22 @@ export function useSubscription() {
     }
     const uid = user.id;
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select(
-          'id, role, plan, subscription_status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at, trial_end, onboarding_done, is_student'
-        )
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const [{ data: base, error }, student] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select(
+            'id, role, plan, subscription_status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at, trial_end, onboarding_done'
+          )
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        // "I'm a student" is read on its own (17/11/2026): if the column
+        // is not there yet (migration 0045 not applied), only the student
+        // feature goes off. Inside the main select, the missing column
+        // failed the whole read and every subscriber looked unsubscribed.
+        supabase.from('user_profiles').select('is_student').eq('user_id', user.id).maybeSingle(),
+      ]);
       if (currentUid.current !== uid) return; // superseded, see currentUid
+      const data = base ? { ...base, is_student: student?.data?.is_student === true } : base;
       if (error) {
         console.warn('[useSubscription] profile fetch error:', error.message);
         setProfile(null);
