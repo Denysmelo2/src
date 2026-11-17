@@ -3,7 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useStores, useLiveStoreIds } from '@/hooks/useCatalog';
+import { useStores, useLiveStoreIds, useStudentStoreMap } from '@/hooks/useCatalog';
+import { useSubscription } from '@/hooks/useSubscription';
+import { studentSearchView } from '@/lib/studentDiscount';
+import { StudentBadge } from '@/components/StudentBadge';
 import { rankStores, dedupeByName, hasNoOffers } from '@/lib/storeSearch';
 import { StoreLogo } from '@/components/StoreLogo';
 import { cn } from '@/lib/utils';
@@ -88,17 +91,26 @@ export function SearchAutocomplete({
     if (!q) return [];
     return rankStores(stores, q, null).slice(0, 40);
   }, [value, stores]);
-  const live = useLiveStoreIds(candidates.map((s) => s.id));
+  const liveOffers = useLiveStoreIds(candidates.map((s) => s.id));
+  // Student discounts (handover 17/11/2026): a badge for students; for
+  // everyone else, stores whose only offer is a student discount stay out.
+  const { isStudent } = useSubscription();
+  const studentMap = useStudentStoreMap(candidates.map((s) => s.id));
+  const view = useMemo(
+    () => studentSearchView({ stores: candidates, live: liveOffers, student: studentMap, isStudent }),
+    [candidates, liveOffers, studentMap, isStudent]
+  );
+  const live = view.live;
 
   const matches = useMemo(() => {
-    if (!candidates.length) return [];
+    if (!view.stores.length) return [];
     // 2026-07-05 (Bárbara): the stores catalogue has near-duplicate rows
     // from scraper slug drift ("adidas" vs "adidas-shop", "Sainsbury's
     // Groceries" vs "Sainsbury's Grocery"). Keep the first row per
     // normalised name; after the live-first order that is the row with
     // offers.
-    return dedupeByName(rankStores(candidates, value.trim(), live)).slice(0, 8);
-  }, [candidates, value, live]);
+    return dedupeByName(rankStores(view.stores, value.trim(), live)).slice(0, 8);
+  }, [view, value, live]);
 
   // Close on outside click
   useEffect(() => {
@@ -271,7 +283,10 @@ export function SearchAutocomplete({
                 <>
                   <StoreLogo store={store} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{store.name}</div>
+                    <div className="font-medium truncate flex items-center gap-2">
+                      <span className="truncate">{store.name}</span>
+                      {isStudent && <StudentBadge best={studentMap?.get(store.id)} />}
+                    </div>
                     {hasNoOffers(store, live) && (
                       <div className="text-xs text-muted-foreground">No offers yet</div>
                     )}

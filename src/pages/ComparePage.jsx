@@ -45,6 +45,7 @@ import { SearchAutocomplete } from '@/components/SearchAutocomplete';
 import {
   useStoreSearch,
   useLiveStoreIds,
+  useStudentStoreMap,
   useStoreBySlug,
   useStoreOffers,
   useMilesPrograms,
@@ -66,6 +67,8 @@ import { compareCashbackVsAvios, gbpToAviosBooster } from '@/lib/aviosMath';
 import { oldestVerifiedAt, reviewedLabel } from '@/lib/dataFreshness';
 import { curatedGbp, cardLine } from '@/lib/curatedReturn';
 import { PumpUpBadge } from '@/components/PumpUpBadge';
+import { StudentBadge } from '@/components/StudentBadge';
+import { studentSearchView } from '@/lib/studentDiscount';
 import { rankRoutes, splitCurated, mergeCopies } from '@/lib/rankRoutes';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
@@ -303,10 +306,19 @@ function StoreAutocomplete({ value, onChange, selected, onSelect, onClear }) {
   // 30 by name from the database, then stores with a live offer first,
   // 8 shown (lib/storeSearch.js, handover 14/11/2026, task E).
   const { stores: found, loading: searching } = useStoreSearch(value, { limit: 30, startsWith: true });
-  const live = useLiveStoreIds(found.map((s) => s.id));
+  const liveOffers = useLiveStoreIds(found.map((s) => s.id));
+  // Student discounts (handover 17/11/2026): badge for students; stores
+  // whose only offer is a student discount stay out for everyone else.
+  const { isStudent } = useSubscription();
+  const studentMap = useStudentStoreMap(found.map((s) => s.id));
+  const view = useMemo(
+    () => studentSearchView({ stores: found, live: liveOffers, student: studentMap, isStudent }),
+    [found, liveOffers, studentMap, isStudent]
+  );
+  const live = view.live;
   const stores = useMemo(
-    () => rankStores(found, value, live, { matchOnly: false }).slice(0, 8),
-    [found, value, live]
+    () => rankStores(view.stores, value, live, { matchOnly: false }).slice(0, 8),
+    [view, value, live]
   );
   const loading = searching;
   // Only show the dropdown when there's a real search term that
@@ -409,7 +421,10 @@ function StoreAutocomplete({ value, onChange, selected, onSelect, onClear }) {
               >
                 <StoreLogo store={s} size="sm" />
                 <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{s.name}</div>
+                  <div className="text-sm font-medium truncate flex items-center gap-2">
+                    <span className="truncate">{s.name}</span>
+                    {isStudent && <StudentBadge best={studentMap?.get(s.id)} />}
+                  </div>
                   {hasNoOffers(s, live) ? (
                     <div className="text-xs text-muted-foreground">No offers yet</div>
                   ) : s.category?.[0] && (
@@ -448,10 +463,14 @@ function RouteBox({
   const [open, setOpen] = useState(defaultOpen);
   const badge = routeBadge(item);
   const isCurated = item.source === 'curated';
+  const isStudentRoute = item.strategy?.type === 'student';
   const cardExtra = isCurated
     ? cardLine(item.curated?.live?.cardPct, amount)
     : ['cashback', 'points'].includes(item.strategy?.type)
     ? cardLine(1, amount)
+    : isStudentRoute && item.strategy.cardOnPaid
+    ? // Student routes: the card earns on what is paid after the code.
+      cardLine(1, item.strategy.paidAmount)
     : null;
 
   // Golden Rule comparison (Bárbara's ebook): for any route that earns
@@ -466,6 +485,8 @@ function RouteBox({
   // Avios directly + cashback; converting the cashback to MORE Avios
   // is meaningless because you already chose the Avios route).
   const aviosCompare = useMemo(() => {
+    // A student discount is a lower price, not cashback to convert.
+    if (item.strategy?.type === 'student') return null;
     // Auto: pure points route (BA Avios eStore alone).
     if (item.source === 'auto' && item.strategy?.type === 'points') return null;
     // Auto: stack that includes a points layer (e.g. cashback + Avios).
@@ -503,6 +524,7 @@ function RouteBox({
   // shape: for auto stacks, walk layers[]; for curated, use
   // today's return (live) and bonus_points.
   const mixedAvios = useMemo(() => {
+    if (item.strategy?.type === 'student') return null;
     let gbpPortion = 0;
     let aviosPortion = 0;
     if (item.source === 'auto' && Array.isArray(item.strategy?.layers)) {
@@ -776,6 +798,9 @@ function RouteBox({
  * that resolves the affiliate URL via lib/affiliateLinks.
  */
 function AutoRouteDetail({ strategy, storeSlug, amount, now }) {
+  if (strategy.type === 'student') {
+    return <StudentRouteDetail strategy={strategy} storeSlug={storeSlug} amount={amount} />;
+  }
   const layers = strategy.layers || [];
   const openUrl =
     strategy.openUrl ||
@@ -847,6 +872,61 @@ function AutoRouteDetail({ strategy, storeSlug, amount, now }) {
             <Button size="sm" className="w-full">
               {external && <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
               Open
+            </Button>
+          </a>
+        )}
+        {storeSlug && (
+          <Link
+            to={`/strategy?store=${encodeURIComponent(storeSlug)}&amount=${amount}&route=${encodeURIComponent(strategy.id || '')}`}
+            className="shrink-0"
+          >
+            <Button size="sm" variant="ghost">
+              See full
+              <ArrowRight className="w-3.5 h-3.5 ml-1" />
+            </Button>
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * StudentRouteDetail — the steps of a student route (handover 17/11/2026):
+ * get the code on the platform (no link), open the store through the
+ * cashback / points / gift-card platform, enter the code. The only button
+ * opens the partner platform, never Student Beans or UNiDAYS.
+ */
+function StudentRouteDetail({ strategy, storeSlug, amount }) {
+  const steps = strategy.steps || [];
+  const partnerStep = steps.find((s) => s.actionUrl);
+  const external = partnerStep && /^https?:\/\//i.test(partnerStep.actionUrl);
+  return (
+    <div className="space-y-3">
+      <ol className="space-y-2">
+        {steps.map((step, i) => (
+          <li key={i} className="flex gap-3 items-start text-sm">
+            <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">
+              {i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium">{step.title}</div>
+              {step.detail && <div className="text-xs text-muted-foreground">{step.detail}</div>}
+              {step.warning && <div className="text-xs text-amber-700 mt-1">{step.warning}</div>}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div className="flex flex-wrap gap-2 pt-1">
+        {partnerStep && (
+          <a
+            href={external ? partnerStep.actionUrl : undefined}
+            {...(external ? { target: '_blank', rel: 'sponsored noopener noreferrer' } : {})}
+            className="flex-1 min-w-[140px]"
+          >
+            <Button size="sm" className="w-full">
+              {external && <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
+              {partnerStep.actionLabel || 'Open'}
             </Button>
           </a>
         )}
@@ -1093,6 +1173,7 @@ function ComparePage() {
     pointOffers,
     giftCardOffers,
     bonusOffers,
+    studentOffers,
     loading: offersLoading,
   } = useStoreOffers(storeId);
   const { programs: milesPrograms } = useMilesPrograms();
@@ -1102,7 +1183,7 @@ function ComparePage() {
   );
   const wallet = useUserWallet();
   const { walletOnly } = useWalletOnlyPref();
-  const { isPremium, isAdmin } = useSubscription();
+  const { isPremium, isAdmin, isStudent } = useSubscription();
   // Stacked routes are a subscriber feature, same rule as the store and
   // strategy pages (owner, 18/10/2026). Admins see everything.
   const canSeeStacks = isPremium || isAdmin;
@@ -1145,6 +1226,8 @@ function ComparePage() {
       milesPrograms,
       userWallet: userWalletForStrategy,
       includeStacks: canSeeStacks,
+      // Student routes only for "I'm a student" (handover 17/11/2026).
+      studentOffers: isStudent ? studentOffers : [],
     });
   }, [
     submitted,
@@ -1155,6 +1238,8 @@ function ComparePage() {
     pointOffers,
     giftCardOffers,
     bonusOffers,
+    studentOffers,
+    isStudent,
     milesPrograms,
     userWalletForStrategy,
     canSeeStacks,

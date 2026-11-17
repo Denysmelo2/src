@@ -42,6 +42,8 @@ import { StoreLogo } from '@/components/StoreLogo';
 import { DataAge } from '@/components/DataAge';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 import { platformLabel } from '@/lib/platformNames';
+import { StudentBadge } from '@/components/StudentBadge';
+import { studentOffersForStore, studentLine } from '@/lib/studentDiscount';
 
 // 2026-05-18: collapsed from 5 tabs to 2 per Bárbara's UX feedback —
 // "as pessoas não gostam de pensar, querem a resposta pronta". The
@@ -155,7 +157,7 @@ function StoreDetailPage() {
   const [activeTab, setActiveTab] = useState(null);
 
   const { store, loading: storeLoading } = useStoreBySlug(slug);
-  const { cashbackOffers: rawCashbackOffers, pointOffers, giftCardOffers, bonusOffers, loading: offersLoading } = useStoreOffers(store?.id);
+  const { cashbackOffers: rawCashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, loading: offersLoading } = useStoreOffers(store?.id);
   const { strategies: curatedStrategies, loading: curatedLoading } = useCuratedStrategies(
     store?.id,
     store?.category || null
@@ -184,8 +186,14 @@ function StoreDetailPage() {
   // Stacked routes (two platforms on one purchase) are a subscriber
   // feature, same rule as /compare and the strategy page (owner,
   // 18/10/2026). Admins see everything.
-  const { isPremium, isAdmin } = useSubscription();
+  const { isPremium, isAdmin, isStudent } = useSubscription();
   const canSeeStacks = isPremium || isAdmin;
+  // Student discounts, best first (handover 17/11/2026): only for
+  // "I'm a student"; both platforms listed so the student sees which pays more.
+  const studentList = useMemo(
+    () => (isStudent ? studentOffersForStore(studentOffers) : []),
+    [isStudent, studentOffers]
+  );
 
   const strategies = useMemo(
     () =>
@@ -199,8 +207,9 @@ function StoreDetailPage() {
         milesPrograms,
         userWallet: userWalletForStrategy,
         includeStacks: canSeeStacks,
+        studentOffers: isStudent ? studentOffers : [],
       }),
-    [store, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, milesPrograms, userWalletForStrategy, canSeeStacks]
+    [store, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, isStudent, milesPrograms, userWalletForStrategy, canSeeStacks]
   );
 
   // (bestStrategy was previously used by the standalone "Best strategy"
@@ -438,6 +447,7 @@ function StoreDetailPage() {
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                 {store.name}
               </h1>
+              <StudentBadge best={studentList[0]} />
               <button
                 onClick={() => toggleFav(store.id)}
                 aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
@@ -454,6 +464,19 @@ function StoreDetailPage() {
             <p className="text-muted-foreground">
               Compare cashback, points, and gift card routes for {store.name}.
             </p>
+            {studentList.length > 0 && (
+              <ul className="mt-1 text-sm text-sky-800 space-y-0.5">
+                {studentList.map((o) => (
+                  <li key={o.platform}>
+                    {studentLine(o)}
+                    {studentList.length > 1 && o === studentList[0] && ' · best today'}
+                  </li>
+                ))}
+                <li className="text-xs text-muted-foreground">
+                  Get the code in the platform's app after verifying you're a student.
+                </li>
+              </ul>
+            )}
           </div>
           <Button
             onClick={() =>
