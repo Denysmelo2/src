@@ -52,11 +52,11 @@ import {
   useCuratedStrategies,
   useStores,
 } from '@/hooks/useCatalog';
-import { useUserWallet } from '@/hooks/useUserState';
+import { useUserWallet, useBestCard } from '@/hooks/useUserState';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { useSubscription } from '@/hooks/useSubscription';
-import { computeStrategies } from '@/lib/strategies';
-import { rankStores, hasNoOffers } from '@/lib/storeSearch';
+import { computeStrategies, searchStepTitle } from '@/lib/strategies';
+import { rankStores, hasNoOffers, storeCountText } from '@/lib/storeSearch';
 import { StoreLogo } from '@/components/StoreLogo';
 import { CuratedStrategyCard } from '@/components/CuratedStrategyCard';
 import { buildWalletFilter } from '@/lib/walletFilter';
@@ -70,6 +70,7 @@ import { PumpUpBadge } from '@/components/PumpUpBadge';
 import { StudentBadge } from '@/components/StudentBadge';
 import { studentSearchView } from '@/lib/studentDiscount';
 import { rankRoutes, splitCurated, mergeCopies } from '@/lib/rankRoutes';
+import { withCard, cardInclLine } from '@/lib/cardEarn';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
@@ -219,7 +220,7 @@ function AllStoresPicker({ open, onClose, onSelect }) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${stores.length.toLocaleString('en-GB')} stores… (or scroll the list)`}
+            placeholder={`Search ${storeCountText(stores.length) || 'all'} stores… (or scroll the list)`}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
           <button
@@ -282,7 +283,7 @@ function AllStoresPicker({ open, onClose, onSelect }) {
             ? 'Loading full catalogue…'
             : query
             ? `${filtered.length.toLocaleString('en-GB')} matching · scroll or load more`
-            : `${stores.length.toLocaleString('en-GB')} stores total · type to filter`}
+            : `${storeCountText(stores.length) || stores.length} stores · type to filter`}
         </div>
       </div>
     </>
@@ -456,6 +457,7 @@ function RouteBox({
   amountText,
   onAmountChange,
   storeSlug,
+  storeName,
   directAvios = 0,
   defaultOpen = false,
   now,
@@ -464,7 +466,12 @@ function RouteBox({
   const badge = routeBadge(item);
   const isCurated = item.source === 'curated';
   const isStudentRoute = item.strategy?.type === 'student';
-  const cardExtra = isCurated
+  // With a saved card, its £ is inside the total and shown apart
+  // ("incl. £1.00 from your Amex"); without one, today's line, out of
+  // the total (owner's tests 21/11/2026, A2).
+  const cardExtra = item.cardName
+    ? cardInclLine(item)
+    : isCurated
     ? cardLine(item.curated?.live?.cardPct, amount)
     : ['cashback', 'points'].includes(item.strategy?.type)
     ? cardLine(1, amount)
@@ -504,7 +511,8 @@ function RouteBox({
     ) {
       return null;
     }
-    const gbp = Number(item.gbpReturn) || 0;
+    // The route's own £, without the user's card (that is not cashback).
+    const gbp = Number(item.baseGbpReturn ?? item.gbpReturn) || 0;
     if (gbp <= 0) return null;
     return compareCashbackVsAvios({ cashbackGbp: gbp, directAvios });
   }, [item, directAvios]);
@@ -651,10 +659,10 @@ function RouteBox({
               {item.gbpReturnDisplay}
             </div>
 
-            {/* The card's 1% is never in the £ above (owner, 05/11/2026,
-                option a): one extra line, the same on every route paid
-                by card. Not on gift-card routes (paid with the gift card
-                in the shop). */}
+            {/* The card. With a saved card (owner's tests 21/11/2026,
+                A2), its £ is in the total above and this line says how
+                much ("incl. £1.00 from your Amex"). Without one, the old
+                line, out of the total (owner, 05/11/2026, option a). */}
             {cardExtra && (
               <div className="text-[11px] text-muted-foreground leading-snug max-w-[11rem]">
                 {cardExtra}
@@ -671,6 +679,7 @@ function RouteBox({
                 title="Estimate: Avios valued at £0.0092 each; other points at their programme's value"
               >
                 ≈ £{item.gbpReturn.toFixed(2)}
+                {item.cardGbp > 0 ? ' in total' : ''}
               </div>
             )}
 
@@ -768,6 +777,7 @@ function RouteBox({
               <AutoRouteDetail
                 strategy={item.strategy}
                 storeSlug={storeSlug}
+                storeName={storeName}
                 amount={amount}
                 now={now}
               />
@@ -797,7 +807,7 @@ function RouteBox({
  * layer of the stack as a step-like row, then a primary "Open" button
  * that resolves the affiliate URL via lib/affiliateLinks.
  */
-function AutoRouteDetail({ strategy, storeSlug, amount, now }) {
+function AutoRouteDetail({ strategy, storeSlug, storeName, amount, now }) {
   if (strategy.type === 'student') {
     return <StudentRouteDetail strategy={strategy} storeSlug={storeSlug} amount={amount} />;
   }
@@ -832,6 +842,13 @@ function AutoRouteDetail({ strategy, storeSlug, amount, now }) {
                 {layer.gbpDisplay && (
                   <div className="text-xs text-muted-foreground">
                     {layer.gbpDisplay}
+                  </div>
+                )}
+                {/* The platform lists the shop under another name
+                    (owner's tests 21/11/2026, A3). */}
+                {layer.kind === 'cashback' && storeName && searchStepTitle(layer, storeName, platformLabel(layer.platform)) !== `Search for ${storeName}` && (
+                  <div className="text-xs text-muted-foreground">
+                    {searchStepTitle(layer, storeName, platformLabel(layer.platform))}
                   </div>
                 )}
                 {/* Per-layer age, for stacks only. The header already
@@ -1092,7 +1109,7 @@ function BrowseByCategory({ onPickStore, amount }) {
             <Tag className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <p className="text-sm text-muted-foreground">
               Looking for something else? Search all{' '}
-              <span className="font-semibold text-foreground">12,000+ stores</span>{' '}
+              <span className="font-semibold text-foreground">{storeCountText(stores.length) || 'all the'} stores</span>{' '}
               in the catalogue.
             </p>
           </div>
@@ -1182,6 +1199,9 @@ function ComparePage() {
     selected?.category || null
   );
   const wallet = useUserWallet();
+  // The best card the user saved; its earnings go inside each total
+  // (owner's tests 21/11/2026, A2; lib/cardEarn.js). Null without one.
+  const bestCard = useBestCard(wallet.cards);
   const { walletOnly } = useWalletOnlyPref();
   const { isPremium, isAdmin, isStudent } = useSubscription();
   // Stacked routes are a subscriber feature, same rule as the store and
@@ -1278,13 +1298,17 @@ function ComparePage() {
       rankedCurated.map((c) => curatedToItem(c, amount)),
       autoStrategies.map(autoToItem)
     );
-    return rankRoutes([...curated, ...auto]);
+    // The user's card is added after mergeCopies (which compares the
+    // routes without it) and before ranking, so the order follows what
+    // the user really gets.
+    return rankRoutes([...curated, ...auto].map((it) => withCard(it, amount, bestCard)));
   }, [
     submitted,
     rankedCurated,
     autoStrategies,
     amountParsed.value,
     milesPrograms,
+    bestCard,
   ]);
 
   // One clock for every card in this result set. Without it each
@@ -1491,6 +1515,7 @@ function ComparePage() {
                       amountText={amountInput}
                       onAmountChange={setAmountInput}
                       storeSlug={selected.slug}
+                      storeName={selected.name}
                       directAvios={bestDirectAvios}
                       defaultOpen={false}
                       now={routesComputedAt}

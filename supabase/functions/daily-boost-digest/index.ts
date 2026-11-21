@@ -81,6 +81,8 @@ function isAuthorized(req: Request): boolean {
 type BoostEvent = {
   store_id: string;
   platform: string;
+  // 'cashback' | 'gift_card' | 'points' (Avios eStore, src 0047).
+  offer_table?: string;
   event: string;
   old_rate: number | null;
   new_rate: number | null;
@@ -88,6 +90,11 @@ type BoostEvent = {
   store_name?: string;
   store_slug?: string;
 };
+
+/** "6%" for cashback and gift cards, "6 Avios/£" for points. */
+function rate(e: BoostEvent, v: number | null): string {
+  return e.offer_table === 'points' ? `${v} Avios/£` : `${v}%`;
+}
 
 function renderEmail(opts: {
   userName: string | null;
@@ -122,9 +129,9 @@ function renderEmail(opts: {
         .map((e) => {
           const rateMsg =
             e.event === 'rate_up' && e.old_rate != null && e.new_rate != null
-              ? `${platformLabel(e.platform)}: ${e.old_rate}% → <strong>${e.new_rate}%</strong>`
+              ? `${platformLabel(e.platform)}: ${rate(e, e.old_rate)} → <strong>${rate(e, e.new_rate)}</strong>`
               : e.event === 'entered_boost'
-              ? `${platformLabel(e.platform)}: now boosted${e.new_rate != null ? ` (${e.new_rate}%)` : ''}`
+              ? `${platformLabel(e.platform)}: now boosted${e.new_rate != null ? ` (${rate(e, e.new_rate)})` : ''}`
               : `${platformLabel(e.platform)}: ${e.event}`;
           return `<div style="font-size:14px;color:#555;line-height:20px;">${rateMsg}</div>`;
         })
@@ -136,8 +143,8 @@ function renderEmail(opts: {
     })
     .join('');
 
-  const text = `Hi${userName ? ' ' + userName : ''},\n\n${n} of your favourite store${n === 1 ? '' : 's'} got a cashback boost in the last 24 hours.\n\n${events
-    .map((e) => `- ${e.store_name || e.store_id} (${platformLabel(e.platform)}): ${e.event}${e.new_rate ? ` → ${e.new_rate}%` : ''}`)
+  const text = `Hi${userName ? ' ' + userName : ''},\n\n${n} of your favourite store${n === 1 ? '' : 's'} got a boost in the last 24 hours.\n\n${events
+    .map((e) => `- ${e.store_name || e.store_id} (${platformLabel(e.platform)}): ${e.event}${e.new_rate ? ` → ${rate(e, e.new_rate)}` : ''}`)
     .join('\n')}\n\nSee the full list: ${appUrl}/home\n\nYou're getting this because you switched on boost emails. Turn them off: ${unsubscribeUrl} (or email support@snapgain.uk)\n\nSnapGain is a trading name of Denys Ferreira Goncalves de Melo, 3 Union Way, Ambrose House, London NW10 6FH, United Kingdom.`;
 
   const html = `<!doctype html>
@@ -294,7 +301,7 @@ Deno.serve(async (req) => {
 
     const { data: rawEvents } = await supabase
       .from('booster_events')
-      .select('store_id, platform, event, old_rate, new_rate, detected_at')
+      .select('store_id, platform, offer_table, event, old_rate, new_rate, detected_at')
       .in('store_id', storeIds)
       .in('event', ['entered_boost', 'rate_up'])
       .not('platform', 'in', `(${RETIRED_PLATFORMS.join(',')})`)

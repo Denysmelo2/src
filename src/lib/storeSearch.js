@@ -82,3 +82,19 @@ export function dedupeByName(stores) {
 export function hasNoOffers(store, live) {
   return live instanceof Set && !live.has(store?.id);
 }
+
+/**
+ * How many stores the site says it has (owner's tests 21/11/2026, A4):
+ * the active stores, the same rows "Browse all" lists (hooks/useCatalog
+ * useStores: stores.is_active, which is also the RLS rule
+ * stores_public_read), rounded DOWN to the hundred: 8,621 -> "8,600+".
+ * The old "12,000+" was typed by hand and counted inactive rows too.
+ * Browse all showed 7,144 before the student robots added ~1,300 stores
+ * (17-18/11/2026); it lists every active store, students' or not.
+ * Returns null for no number (still loading).
+ */
+export function storeCountText(n) {
+  const v = Math.floor(Number(n) / 100) * 100;
+  if (!(v > 0)) return null;
+  return `${v.toLocaleString('en-GB')}+`;
+}

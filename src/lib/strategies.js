@@ -229,6 +229,9 @@ export function computeStrategies({
       conditions: o.conditions || null,
       isUpTo,
       rateBreakdown,
+      // The shop's name on the platform, when it is not the store's
+      // ("Currys Partsmaster" on NX; src 0047, owner's tests A3).
+      sourceName: o.source_name || null,
     };
   };
 
@@ -604,6 +607,19 @@ export function computeStrategies({
  *                    cashback / open points portal, then click through and
  *                    pay with the gift card)
  */
+const sameName = (a, b) =>
+  String(a || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '') ===
+  String(b || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
+
+/** "On NX Rewards, search for 'Currys Partsmaster'" when the platform
+ *  lists the shop under another name (owner's tests 21/11/2026, A3),
+ *  else "Search for Currys". */
+export function searchStepTitle(layer, storeName, providerName) {
+  const src = layer?.sourceName;
+  if (src && !sameName(src, storeName)) return `On ${providerName || label(layer?.platform)}, search for '${src}'`;
+  return `Search for ${storeName}`;
+}
+
 export function buildStrategySteps(strategy, store) {
   if (!strategy) return [];
 
@@ -630,8 +646,11 @@ export function buildStrategySteps(strategy, store) {
         actionLabel: `Open ${strategy.providerName}`,
       },
       {
-        title: `Search for ${storeName}`,
-        detail: `Find ${storeName} on the cashback page and click through to the retailer.`,
+        title: searchStepTitle(layer, storeName, strategy.providerName),
+        detail:
+          layer?.sourceName && !sameName(layer.sourceName, storeName)
+            ? `${strategy.providerName} lists ${storeName} as "${layer.sourceName}". Click through to the retailer from there.`
+            : `Find ${storeName} on the cashback page and click through to the retailer.`,
       },
       {
         title: 'Complete the purchase',
@@ -700,8 +719,9 @@ export function buildStrategySteps(strategy, store) {
       },
     ];
     if (partner?.kind === 'cashback') {
+      const listed = partner.sourceName && !sameName(partner.sourceName, storeName) ? ` (listed as '${partner.sourceName}')` : '';
       steps.push({
-        title: `Open ${storeName} through ${label(partner.platform)}`,
+        title: `Open ${storeName}${listed} through ${label(partner.platform)}`,
         detail: 'Sign in first so cashback tracks to your account.',
         actionUrl: urlFor(partner),
         actionLabel: `Open ${label(partner.platform)}`,
@@ -745,8 +765,9 @@ export function buildStrategySteps(strategy, store) {
       });
     }
     if (cb) {
+      const listed = cb.sourceName && !sameName(cb.sourceName, storeName) ? ` (listed as '${cb.sourceName}')` : '';
       steps.push({
-        title: `Open ${label(cb.platform)} and click through to ${storeName}`,
+        title: `Open ${label(cb.platform)} and click through to ${storeName}${listed}`,
         detail: 'Sign in first so cashback tracks to your account.',
         actionUrl: urlFor(cb),
         actionLabel: `Open ${label(cb.platform)}`,

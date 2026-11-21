@@ -53,3 +53,12 @@ test('dedupe keys: the same as the autocomplete used before', () => {
   const rows = [s('1', "Sainsbury's Grocery"), s('2', 'Sainsburys Grocery'), s('3', 'The Body Shop'), s('4', 'Body Shop'), s('5', 'Adidas')];
   assert.deepEqual(dedupeByName(rows).map((x) => x.id), ['1', '3', '5']);
 });
+
+import { storeCountText } from '../src/lib/storeSearch.js';
+
+test('store count: rounded down to the hundred (owner, 21/11/2026, A4)', () => {
+  assert.equal(storeCountText(8621), '8,600+');
+  assert.equal(storeCountText(7144), '7,100+');
+  assert.equal(storeCountText(99), null);
+  assert.equal(storeCountText(undefined), null);
+});
