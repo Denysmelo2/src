@@ -46,7 +46,8 @@ const WATCHED: Record<string, { label: string; run: string }> = {
   quidco: { label: 'Quidco', run: '09:00 run through the Mac (member-scrape)' },
   'british airways avios': { label: 'Avios eStore', run: '09:00 run through the Mac (member-scrape)' },
   jamdoughnut: { label: 'JamDoughnut', run: '08:00 daily run (scrape-daily)' },
-  cheddar: { label: 'Cheddar', run: '08:00 daily run (scrape-daily)' },
+  // Cheddar is off since 21/11/2026: cheddar.me shows only marketing
+  // "up to" rates (handover "taxas erradas", task 2; snapgain-scraper#62).
   everup: { label: 'EverUp', run: '08:00 daily run (scrape-daily)' },
   // Student discounts (handover 17/11/2026; table student_offers, 0045).
   studentbeans: { label: 'Student Beans', run: '08:00 daily run (scrape-daily)' },
