@@ -52,7 +52,8 @@ import {
   useCuratedStrategies,
   useStores,
 } from '@/hooks/useCatalog';
-import { useUserWallet, useBestCard } from '@/hooks/useUserState';
+import { useUserWallet, useBestCard, useRecentSearches } from '@/hooks/useUserState';
+import { recentQuery } from '@/lib/recentSearch';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { useSubscription } from '@/hooks/useSubscription';
 import { computeStrategies, searchStepTitle } from '@/lib/strategies';
@@ -1173,6 +1174,11 @@ function ComparePage() {
   // store the first time, never re-apply. Otherwise clearing the field
   // (X button or "Search another store") gets stomped on the next tick
   // because urlStore is still truthy and selected just went to null.
+  // Recent searches (owner's tests 21/11/2026, C5): opening a store's
+  // comparison writes "Currys · £100", once per store opened.
+  const { push: pushRecent } = useRecentSearches();
+  const lastRecentRef = useRef(null);
+
   const { store: urlStore } = useStoreBySlug(initialSlug || null);
   const bootstrappedRef = useRef(false);
   useEffect(() => {
@@ -1184,6 +1190,13 @@ function ComparePage() {
   }, [urlStore, selected]);
 
   const amountParsed = parseAmount(amountInput);
+
+  useEffect(() => {
+    if (!submitted || !selected?.id || lastRecentRef.current === selected.id) return;
+    lastRecentRef.current = selected.id;
+    pushRecent(recentQuery(selected.name, amountParsed.ok ? amountParsed.value : null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted, selected?.id]);
   const canCompare = Boolean(selected) && amountParsed.ok;
 
   const handleCompare = () => {

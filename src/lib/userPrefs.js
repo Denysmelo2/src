@@ -3,11 +3,17 @@ import { supabase } from '@/lib/customSupabaseClient';
 /**
  * User preferences storage.
  *
- * Tries Supabase `user_profiles.preferences` (jsonb) first. If that
- * column doesn't exist (or RLS blocks the write), falls back to
- * localStorage scoped by user id. This way the Profile page works
- * out of the box without DB migrations — when you add the column
- * later, existing localStorage prefs migrate up on first save.
+ * Saved to the account in `user_profiles.preferences` (jsonb, migration
+ * 0048), so what is set on the phone shows on the PC (owner's tests
+ * 21/11/2026, C1). localStorage keeps a copy for the first paint and for
+ * when the database cannot be reached.
+ *   * load: the account wins over the browser. If the account is still
+ *     empty ('{}', right after 0048) and this browser has settings, they
+ *     are uploaded once;
+ *   * save: an UPDATE of the user's own row (the profile row always
+ *     exists, handle_new_user creates it), never a new row.
+ * Before 0048 is applied the reads and writes fail and everything stays
+ * in localStorage, as before.
  */
 
 const LS_KEY = (userId) => `snapgain:prefs:${userId}`;
@@ -107,6 +113,10 @@ export const PRONOUN_PRESETS = [
   'he/they',
 ];
 
+function differsFromDefaults(prefs) {
+  return Object.keys(prefs || {}).some((k) => JSON.stringify(prefs[k]) !== JSON.stringify(DEFAULTS[k]));
+}
+
 function readLocal(userId) {
   if (!userId) return { ...DEFAULTS };
   try {
@@ -136,8 +146,17 @@ export async function loadUserPrefs(userId) {
       .select('preferences')
       .eq('user_id', userId)
       .maybeSingle();
-    if (error || !data?.preferences) return local;
-    return { ...DEFAULTS, ...local, ...data.preferences };
+    if (error || !data) return local;
+    const remote = data.preferences && typeof data.preferences === 'object' ? data.preferences : {};
+    if (Object.keys(remote).length === 0) {
+      // The account has nothing yet: upload this browser's settings once
+      // (only when there is something besides the defaults).
+      if (differsFromDefaults(local)) await saveUserPrefs(userId, local);
+      return local;
+    }
+    const merged = { ...DEFAULTS, ...remote };
+    writeLocal(userId, merged);
+    return merged;
   } catch (err) {
     console.warn('[userPrefs] load fallback to local:', err);
     return local;
@@ -152,10 +171,8 @@ export async function saveUserPrefs(userId, prefs) {
   try {
     const { error } = await supabase
       .from('user_profiles')
-      .upsert(
-        { user_id: userId, preferences: merged },
-        { onConflict: 'user_id' }
-      );
+      .update({ preferences: merged })
+      .eq('user_id', userId);
     if (error) {
       console.warn(
         '[userPrefs] Supabase save failed (using localStorage only):',

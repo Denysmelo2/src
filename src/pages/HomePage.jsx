@@ -36,6 +36,11 @@ import {
 } from '@/hooks/useUserState';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useTranslation } from '@/lib/i18n';
+import { useUserPrefs } from '@/hooks/useUserPrefs';
+import { displayNames } from '@/lib/displayName';
+import { recentHref } from '@/lib/recentSearch';
+import { storeCountText } from '@/lib/storeSearch';
+import { useNxStoreCount } from '@/hooks/useCatalog';
 
 /**
  * Format a date as a friendly "X ago" — used by the Recent Activities feed.
@@ -94,7 +99,9 @@ const QUICK_ACTIONS = [
 const COMPARE_LINKS = [
   {
     label: 'The Playbook',
-    sub: 'Every curated strategy — NX 10% at 1,000+ stores, Sainsbury\'s NX or Avios, and more',
+    // "{nx}" is filled with today's count of stores with an NX offer
+    // (owner's tests 21/11/2026, C6; it said "1,000+" when it was ~1,900).
+    sub: 'Every curated strategy — NX 10% at {nx} stores, Sainsbury\'s NX or Avios, and more',
     to: '/playbook',
     Icon: BookOpen,
     gradient: 'from-primary to-secondary',
@@ -117,6 +124,8 @@ const COMPARE_LINKS = [
 
 function HomePage() {
   const { user } = useAuth();
+  const { prefs: userPrefs } = useUserPrefs();
+  const nxStoreCount = useNxStoreCount();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { searches } = useRecentSearches();
@@ -145,10 +154,8 @@ function HomePage() {
     navigate(qs ? `/search?${qs}` : '/search');
   };
 
-  const firstName =
-    user?.user_metadata?.name?.split(' ')[0] ||
-    user?.email?.split('@')[0] ||
-    'there';
+  // Preferred name from /profile first (owner's tests 21/11/2026, C2).
+  const firstName = displayNames({ preferredName: userPrefs?.preferredName, user }).short;
 
   // ─── Recent Activities: merge real events from multiple sources ────
   const activities = useMemo(() => {
@@ -305,7 +312,9 @@ function HomePage() {
         <section className="space-y-3">
           <h2 className="text-lg font-bold">Compare</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            {COMPARE_LINKS.map(({ label, sub, to, Icon, gradient }) => (
+            {COMPARE_LINKS.map(({ label, sub: rawSub, to, Icon, gradient }) => {
+              const sub = rawSub.replace('{nx}', storeCountText(nxStoreCount) || 'nearly 2,000');
+              return (
               <Link key={label} to={to}>
                 <Card className="card-hover h-full">
                   <CardContent className="p-4 md:p-5 flex items-start gap-4">
@@ -326,7 +335,8 @@ function HomePage() {
                   </CardContent>
                 </Card>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -352,7 +362,7 @@ function HomePage() {
                 (searches || []).slice(0, 4).map((s) => (
                   <Link
                     key={s.id}
-                    to={`/compare?q=${encodeURIComponent(s.query || '')}`}
+                    to={recentHref(s.query)}
                     className="flex items-start gap-3 py-2 border-b last:border-b-0 hover:bg-muted/40 -mx-2 px-2 rounded-md transition-colors"
                   >
                     <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-light-pink/60 text-secondary">

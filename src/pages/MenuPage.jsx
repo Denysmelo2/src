@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useUserPrefs } from '@/hooks/useUserPrefs';
+import { displayNames } from '@/lib/displayName';
 import { useSubscription } from '@/hooks/useSubscription';
 
 function MenuRow({ to, icon: Icon, label, sublabel, onClick, danger = false }) {
@@ -56,8 +58,9 @@ function MenuPage() {
   // `role: 'admin'` on themselves. See migration 0007.
   const { isAdmin } = useSubscription();
 
-  const displayName =
-    user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
+  // Preferred name from /profile first (owner's tests 21/11/2026, C2).
+  const { prefs: userPrefs } = useUserPrefs();
+  const displayName = displayNames({ preferredName: userPrefs?.preferredName, user }).full;
 
   const handleLogout = async () => {
     await signOut();
