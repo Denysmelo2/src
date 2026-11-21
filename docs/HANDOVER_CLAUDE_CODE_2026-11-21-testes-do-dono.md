@@ -33,22 +33,9 @@ Agrupei em 4 PRs. A ordem é a prioridade.
 
 ### PR A. Comparação: números e estratégia certos
 
-**A1. Gift card + NX na Currys (exceção testada pelo dono).** Hoje
-`computeStrategies` nunca junta gift card com NX, por causa dos Special
-Terms da NX (Deliveroo e Boots, 18/10). O dono testou na Currys em 21/11:
-comprou o gift card da Currys, entrou na NX, buscou Currys (aparece como
-"Partmaster.co.uk"), foi para a Currys, pagou com o gift card e a NX
-registrou os 10%.
-- Migração: `stores.nx_gift_card_ok boolean not null default false`.
-- Em `strategies.js`, a pilha gift card × NX entra **só** quando
-  `store.nx_gift_card_ok`. Quidco e Picodi continuam fora.
-- Passos da pilha: 1) comprar o gift card na plataforma de maior % (nome e
-  %); 2) entrar na NX e buscar a loja pelo nome que a NX usa (A3);
-  3) comprar e pagar com o gift card.
-- Aviso no card: "Tested by SnapGain on Currys. NX may still decline it
-  later." O Cowork liga a Currys depois do merge.
-- Teste: Currys £100 com EverUp 5,1% e NX 10% → pilha £15,10 em #1; Boots
-  (sem a marca) continua sem a pilha.
+**A1. Gift card + NX: não mexer** (dono, 21/11, 21:33). A regra de hoje
+em `computeStrategies` fica como está, porque já está funcionando. Nada de
+coluna nova nem de pilha gift card × NX.
 
 **A2. Ganho do cartão dentro do total.** Hoje aparece só a linha "+ ~£1.00
 if you pay with a 1% card", fixa em 1% e fora do total. O dono quer que o
@@ -120,15 +107,28 @@ claro e a borda roxa, e no PC o dono a vê "cinza como as outras". Dar
 destaque claro: faixa "Best route" com cor cheia, borda mais grossa e
 fundo de cor. As outras ficam neutras.
 
-**B6. "#1, #2…" feio.** Trocar os números pela forma do resto do app: a
-primeira com o selo "Best route", as outras sem número (a ordem já diz) ou
-com um selo discreto "2nd best". Vale também para os `#tag` dos cards
-curados: tirar o "#".
+**B6. Trocar "#1, #2…" por "Best option", com a conta que explica.**
+Hoje cada card mostra "#1", "#2", "#3". O dono quer algo mais bonito, que
+diga por que a primeira é a melhor.
+- A primeira rota leva o selo **"Best option"**, na cor do app.
+- Logo abaixo, um bloco **"Why it's the best option"**, com a conta feita
+  com os números da tela. Exemplo para a Currys, £100:
+  - "NX Rewards: 10% of £100 = **£10.00**"
+  - "Next best, Avios eStore: 6 Avios × £100 = 600 Avios ≈ £5.52"
+  - "You get **£4.48 more** with NX Rewards."
+  - Quando a rota é uma estratégia (gift card + cashback, estudante, Avios
+    bonus), a conta mostra cada parte: "5.1% off the gift card = £5.10 +
+    …", até o total.
+  - Pontos sempre com o valor em £ que o app já usa (o mesmo do "≈ £5.52").
+- As outras rotas ficam sem número. Cada uma mostra quanto fica atrás da
+  melhor: "£4.48 less than the best option". A ordem continua a mesma.
+- Nos cards curados, tirar o "#" das etiquetas (`#tag` → `tag`).
+- O texto da conta vem de uma função só (por exemplo `explainBest(routes)`
+  em `lib/strategies.js`), com teste: Currys £100 dá £10.00, £5.52 e
+  £4.48.
 
-**B7. Botão dos passos.** Hoje só fica verde ao passar o mouse, e não
-parece um botão. Botão visível o tempo todo: "See steps", com ícone,
-contorno na cor do app. No celular, a área de toque inteira do card abre os
-passos (já é assim), e o botão continua visível.
+**B7. Botão dos passos: não mexer** (dono, 21/11, 21:33). O botão que
+aparece ao passar o mouse fica como está.
 
 **B8. Imagem quebrada no carregamento.** Ao abrir `/profile`, a tela de
 "Save time. Save money. Every time." mostra o ícone de imagem quebrada no
@@ -194,9 +194,8 @@ que o `daily-boost-digest` já faz. Então:
 
 ## Depois do merge (Cowork)
 
-- Aplicar as migrações (`nx_gift_card_ok`, `card_earn_*`, `preferences`,
-  gatilho de pontos), ligar `nx_gift_card_ok` na Currys e preencher as
-  taxas dos cartões, conferidas com cada banco.
+- Aplicar as migrações (`card_earn_*`, `preferences`, gatilho de pontos) e
+  preencher as taxas dos cartões, conferidas com cada banco.
 - Testar de novo cada item no site com a conta de teste, no PC e em 390 px.
 - Conferir no dia seguinte o e-mail de boost das 11:00 e o Hot deals com o
   Avios.
