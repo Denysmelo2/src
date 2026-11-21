@@ -37,8 +37,8 @@ const DEFAULTS = {
   notifWeekly: false,
   notifDeals: false,
   marketingEmails: false,
-  // ─── Security ────────────────────────────────────────────────────
-  twoFactorEnabled: false,
+  // Two-factor sign-in is Supabase Auth MFA now (lib/mfa.js, owner's
+  // tests 21/11/2026, D1), not a preference.
   // ─── Display & accessibility ─────────────────────────────────────
   // theme: 'light' | 'dark' | 'auto' | 'cream' | 'yellow' | 'peach' | 'calm'
   theme: 'light',
