@@ -782,9 +782,11 @@ function OrganicTopDealCard({ offer, rank }) {
             </div>
             {/* Label by kind so users know whether it's % cashback,
                 % off a gift card or Avios per £1. */}
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              {offer.kind === 'gift_card' ? 'off gift card' : offer.kind === 'points' ? 'per £1' : 'cashback'}
-            </div>
+            {offer.kind !== 'points' && (
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {offer.kind === 'gift_card' ? 'off gift card' : 'cashback'}
+              </div>
+            )}
           </div>
           {external && <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />}
         </div>
