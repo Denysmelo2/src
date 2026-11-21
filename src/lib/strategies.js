@@ -16,6 +16,8 @@ import { platformLabel as label } from '@/lib/platformNames';
 import { bonusSubtitle, matchesContext as matchesBonusContext, pickBonuses } from '@/lib/bonusOffers';
 import { pumpUpInfo, pumpUpLine } from '@/lib/pumpUp';
 import { bestStudentOffer, studentMath, pctText as studentPct, STUDENT_WARNING } from '@/lib/studentDiscount';
+// "Why it's the best option" (owner's tests 21/11/2026, B6).
+export { explainBest, routeLine } from '@/lib/explainBest';
 
 const POINT_LABELS_BY_PROGRAM = [
   { match: /avios/i, unit: 'Avios' },
@@ -607,6 +609,22 @@ export function computeStrategies({
  *                    cashback / open points portal, then click through and
  *                    pay with the gift card)
  */
+/** The label of a route's kind, the same words as /compare ("Cashback",
+ *  "Gift card", "Avios"), never the raw "GIFT_CARD" (owner's tests
+ *  21/11/2026, B3). */
+export function routeTypeLabel(strategy) {
+  const t = strategy?.type;
+  if (t === 'cashback') return 'Cashback';
+  if (t === 'gift_card') return 'Gift card';
+  if (t === 'points') return /avios/i.test(strategy?.layers?.[0]?.platform || strategy?.title || '') ? 'Avios' : 'Points';
+  if (t === 'student') return 'Student';
+  if (t === 'stack') {
+    const kinds = (strategy.layers || []).map((l) => l.kind);
+    return kinds.includes('points') ? 'Gift card + points' : 'Gift card + cashback';
+  }
+  return 'Route';
+}
+
 const sameName = (a, b) =>
   String(a || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '') ===
   String(b || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
@@ -659,7 +677,8 @@ export function buildStrategySteps(strategy, store) {
       {
         title: 'Wait for cashback to track',
         detail: 'Cashback usually appears within 7 days as "pending" and confirms after the retailer’s return window.',
-        warning: 'Some retailers exclude gift card purchases from cashback eligibility.',
+        // No gift-card warning here: this route has no gift card (owner's
+        // tests 21/11/2026, B3). The stack steps below keep theirs.
       },
     ];
   }

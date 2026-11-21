@@ -227,7 +227,11 @@ export function CuratedStrategyCard({
       )}
     >
       <CardHeader className={cn('pb-3', compact && 'pb-2')}>
-        <div className="flex items-start justify-between gap-3">
+        {/* Phone (below sm, owner's tests 21/11/2026, B4): the number
+            block goes under the title, on one line, at body size. A
+            7.5rem column with "Compare" in text-3xl cut the word
+            ("Compar") and left the title two words per line. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -266,22 +270,22 @@ export function CuratedStrategyCard({
               an Avios bonus, compared live") wraps under the number
               instead of squeezing the title to one word per line on a
               phone (owner, 23/10/2026). */}
-          <div className="shrink-0 text-right max-w-[7.5rem] sm:max-w-[11rem]">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 sm:block sm:shrink-0 sm:text-right sm:max-w-[11rem]">
             <div
               className={cn(
-                'font-extrabold gradient-text leading-none',
-                compact ? 'text-xl' : 'text-3xl'
+                'font-extrabold gradient-text leading-none text-base',
+                compact ? 'sm:text-xl' : 'sm:text-3xl'
               )}
             >
               {isCompare ? 'Compare' : !liveMissing && headline ? headline : '★'}
             </div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
+            <div className="text-xs sm:text-[10px] uppercase tracking-wider text-muted-foreground sm:mt-1">
               {heroLabel}
             </div>
             {/* The card's % is never in the number above (owner,
                 05/11/2026, option a). */}
             {!isCompare && live?.cardPct > 0 && (
-              <div className="text-[10px] text-muted-foreground mt-0.5">
+              <div className="text-xs sm:text-[10px] text-muted-foreground sm:mt-0.5">
                 + {live.cardPct}% if you pay with a card
               </div>
             )}
@@ -296,7 +300,7 @@ export function CuratedStrategyCard({
                 key={t}
                 className="text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded"
               >
-                #{t}
+                {t}
               </span>
             ))}
           </div>
