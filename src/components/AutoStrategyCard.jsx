@@ -8,7 +8,7 @@
  * Per Bárbara: "as pessoas não gostam de pensar, querem a resposta
  * pronta, só clicar nos botões".
  */
-import { ExternalLink, ArrowRight } from 'lucide-react';
+import { ExternalLink, ArrowRight, Trophy } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -50,13 +50,17 @@ export function labelForStrategy(strategy) {
   return type ? type.replace('_', ' ') : 'Route';
 }
 
+// "Best option" on the best route and "£X less than the best option" on
+// the others, like /compare (owner, 22/11/2026: no "#1, #2"); the page
+// works both out with lib/explainBest.js.
 export function AutoStrategyCard({
   strategy,
-  rank,
+  isBest = false,
+  behindText = null,
   storeSlug,
   amount = 100,
-  highlight = false,
 }) {
+  const highlight = isBest;
   if (!strategy) return null;
   const label = labelForStrategy(strategy);
   const url = strategy.openUrl || null;
@@ -69,18 +73,22 @@ export function AutoStrategyCard({
   return (
     <Card
       className={cn(
-        'transition-shadow',
-        highlight && 'border-primary/40'
+        'transition-shadow overflow-hidden',
+        isBest && 'border-[3px] border-primary bg-light-pink/60'
       )}
     >
+      {isBest && (
+        <div className="bg-primary text-primary-foreground px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+          <Trophy className="w-3.5 h-3.5" />
+          Best option
+        </div>
+      )}
       <CardContent className="py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              {rank != null && (
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  #{rank}
-                </span>
+              {!isBest && behindText && (
+                <span className="text-[11px] font-medium text-muted-foreground">{behindText}</span>
               )}
               <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/70 bg-muted px-2 py-0.5 rounded-full">
                 {label}
