@@ -71,6 +71,7 @@ import { StudentBadge } from '@/components/StudentBadge';
 import { studentSearchView } from '@/lib/studentDiscount';
 import { rankRoutes, splitCurated, mergeCopies } from '@/lib/rankRoutes';
 import { withCard, cardInclLine } from '@/lib/cardEarn';
+import { explainBest } from '@/lib/explainBest';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
@@ -453,6 +454,8 @@ function RouteBox({
   item,
   rank,
   isBest,
+  whyLines = null,
+  behindText = null,
   amount,
   amountText,
   onAmountChange,
@@ -568,11 +571,20 @@ function RouteBox({
         // alternatives get a softer pink tint so they cohere as a group
         // while still being clearly secondary. Hover lift signals they're
         // tappable. All cards now visibly differ from the page bg.
+        // Owner's tests 21/11/2026, B5: on a PC the best route read
+        // "grey like the others". Now it has a full-colour band, a
+        // thicker border and a coloured background; the rest are neutral.
         isBest
-          ? 'border-2 border-primary/60 shadow-lg bg-light-pink/40'
-          : 'border-2 border-primary/15 bg-light-pink/15 hover:border-primary/40 hover:bg-light-pink/25 hover:shadow-md'
+          ? 'border-[3px] border-primary shadow-xl bg-light-pink/60'
+          : 'border border-border bg-card hover:border-primary/40 hover:shadow-md'
       )}
     >
+      {isBest && (
+        <div className="bg-primary text-primary-foreground px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+          <Trophy className="w-3.5 h-3.5" />
+          Best option
+        </div>
+      )}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -586,19 +598,18 @@ function RouteBox({
             Previous layout stacked everything on the left and felt
             cluttered; right-aligning the numeric stuff gives the eye
             a clear two-column rhythm. */}
-        <div className="px-4 py-3 flex items-start gap-4">
+        {/* Phone (below sm, owner's tests 21/11/2026, B4): the number
+            goes under the title instead of a narrow column beside it. */}
+        <div className="px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
           {/* ── LEFT COLUMN: title block ── */}
           <div className="min-w-0 flex-1 space-y-1">
-            {isBest ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-primary">
-                <Trophy className="w-3 h-3" />
-                Best route
+            {/* No "#2", "#3" (B6): each other route says how far it is
+                behind the best one. The order stays the same. */}
+            {!isBest && behindText && (
+              <span className="text-[11px] font-medium text-muted-foreground">
+                {behindText}
               </span>
-            ) : rank != null ? (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                #{rank}
-              </span>
-            ) : null}
+            )}
             <h3 className="text-base font-semibold leading-snug">
               {item.title}
             </h3>
@@ -635,7 +646,7 @@ function RouteBox({
           </div>
 
           {/* ── RIGHT COLUMN: badge + value + Avios + verdict ── */}
-          <div className="shrink-0 text-right flex flex-col items-end gap-1.5 min-w-[140px]">
+          <div className="flex flex-col items-start gap-1.5 sm:shrink-0 sm:text-right sm:items-end sm:min-w-[140px]">
             <div className="flex items-center gap-1.5">
               <span
                 className={cn(
@@ -761,6 +772,23 @@ function RouteBox({
           </div>
         </div>
       </button>
+
+      {/* "Why it's the best option" (owner's tests 21/11/2026, B6): the
+          sum with the numbers on the screen (lib/explainBest.js). */}
+      {isBest && whyLines?.length > 0 && (
+        <div className="border-t border-primary/20 bg-background/70 px-4 py-3">
+          <div className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
+            Why it&rsquo;s the best option
+          </div>
+          <ul className="space-y-0.5 text-sm">
+            {whyLines.map((line, i) => (
+              <li key={i} className={i === whyLines.length - 1 && whyLines.length > 1 ? 'font-semibold' : 'text-muted-foreground'}>
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {open && (
         <div className="border-t bg-muted/20 p-4">
@@ -1311,6 +1339,13 @@ function ComparePage() {
     bestCard,
   ]);
 
+  // "Why it's the best option" and "£X less than the best option"
+  // (owner's tests 21/11/2026, B6; lib/explainBest.js).
+  const bestWhy = useMemo(
+    () => explainBest(rankedRoutes.slice(0, 5), amountParsed.value || 0),
+    [rankedRoutes, amountParsed.value]
+  );
+
   // One clock for every card in this result set. Without it each
   // DataAge would read Date.now() at its own mount, so two rates
   // verified on the same day could render as different ages if the list
@@ -1511,6 +1546,8 @@ function ComparePage() {
                       item={item}
                       rank={i + 1}
                       isBest={i === 0}
+                      whyLines={i === 0 ? bestWhy?.lines : null}
+                      behindText={i > 0 ? bestWhy?.behind.get(item.id) : null}
                       amount={amountParsed.value || 0}
                       amountText={amountInput}
                       onAmountChange={setAmountInput}

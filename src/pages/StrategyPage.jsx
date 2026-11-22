@@ -25,13 +25,11 @@ import {
   useStoreBySlug,
   useStoreOffers,
   useMilesPrograms,
-  useCuratedStrategies,
 } from '@/hooks/useCatalog';
-import { CuratedStrategyCard } from '@/components/CuratedStrategyCard';
 import { useSavedStrategies, useUserWallet } from '@/hooks/useUserState';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { useSubscription } from '@/hooks/useSubscription';
-import { computeStrategies, buildStrategySteps } from '@/lib/strategies';
+import { computeStrategies, buildStrategySteps, routeTypeLabel } from '@/lib/strategies';
 import { buildWalletFilter } from '@/lib/walletFilter';
 import { RateBreakdown } from '@/components/RateBreakdown';
 import { gbpToAviosBooster } from '@/lib/aviosMath';
@@ -53,14 +51,6 @@ function StrategyPage() {
   const { store, loading: storeLoading } = useStoreBySlug(storeSlug);
   const { cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, loading: offersLoading } = useStoreOffers(store?.id);
   const { programs: milesPrograms } = useMilesPrograms();
-  const { strategies: curatedStrategies } = useCuratedStrategies(
-    store?.id,
-    store?.category || null
-  );
-  // The top-ranked curated strategy (by today's % from live rates, see useCuratedStrategies). If
-  // present, we render it ABOVE the auto-generated highlighted route
-  // because curated routes routinely beat single-platform stacks.
-  const topCurated = curatedStrategies[0] || null;
   const { strategies: savedStrategies, save, reachedFreeCap, FREE_SAVED_CAP } = useSavedStrategies();
   const { isPremium, isAdmin, isStudent } = useSubscription();
   const wallet = useUserWallet();
@@ -91,6 +81,13 @@ function StrategyPage() {
   // Pick the highlighted strategy: routeId from URL > best by GBP return
   const highlighted =
     (routeId && strategies.find((s) => s.id === routeId)) || strategies[0] || null;
+
+  // Back to the comparison the user came from, same store and amount
+  // (owner's tests 21/11/2026, B2). A page opened directly has no
+  // comparison behind it, so this is also where it goes then.
+  const compareHref = storeSlug
+    ? `/compare?store=${encodeURIComponent(storeSlug)}&amount=${encodeURIComponent(amount)}`
+    : '/compare';
 
   // Direct Avios eStore baseline for this store: best earn_rate among
   // BA Avios point offers × amount. Used below to compare against the
@@ -214,13 +211,11 @@ function StrategyPage() {
           route. Check back soon.
         </p>
         <Button asChild variant="outline">
-          <Link to={`/store/${store.slug}`}>Back to {store.name}</Link>
+          <Link to={compareHref}>Back to the comparison</Link>
         </Button>
       </div>
     );
   }
-
-  const alternatives = strategies.filter((s) => s.id !== highlighted.id);
 
   // For ANY strategy, pull the cashback breakdown if one of its layers
   // has it (covers flat cashback AND gift_card×cashback stacks).
@@ -242,24 +237,14 @@ function StrategyPage() {
 
       <div className="container mx-auto px-4 py-8 space-y-6">
         <Link
-          to={`/store/${store.slug}`}
+          to={compareHref}
           className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to {store.name}
+          Back to the comparison
         </Link>
 
         <AffiliateDisclosure />
-
-        {topCurated && (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <CuratedStrategyCard strategy={topCurated} defaultOpen amount={amount} />
-          </motion.section>
-        )}
 
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -271,11 +256,9 @@ function StrategyPage() {
               <div className="flex items-center gap-2 text-primary">
                 <Trophy className="w-5 h-5" />
                 <span className="text-sm font-semibold uppercase tracking-wide">
-                  {topCurated
-                    ? 'Single-platform alternative'
-                    : highlighted.id === strategies[0].id
-                    ? 'Best route'
-                    : 'Selected route'}
+                  {highlighted.id === strategies[0].id ? 'Best option' : 'Selected route'}
+                  {' · '}
+                  {routeTypeLabel(highlighted)}
                 </span>
               </div>
               <CardTitle className="text-2xl pt-1">
@@ -444,45 +427,16 @@ function StrategyPage() {
           </ol>
         </section>
 
-        {alternatives.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-xl font-bold">Alternative routes</h2>
-            <p className="text-sm text-muted-foreground">
-              Sorted by estimated return on £{amount}.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {alternatives.map((s) => {
-                const bd = breakdownFor(s);
-                return (
-                  <Link
-                    key={s.id}
-                    to={`/strategy?store=${encodeURIComponent(
-                      store.slug
-                    )}&route=${encodeURIComponent(s.id)}&amount=${amount}`}
-                  >
-                    <Card className="card-hover h-full">
-                      <CardHeader className="pb-2">
-                        <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                          {s.type}
-                        </span>
-                        <CardTitle className="text-lg pt-1">{s.title}</CardTitle>
-                        <CardDescription>{s.subtitle}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="text-xl font-bold gradient-text">
-                          {s.gbpReturnDisplay}
-                        </div>
-                        {bd && (
-                          <RateBreakdown breakdown={bd} defaultOpen={false} compact />
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        {/* Only the chosen route and its steps (owner's tests 21/11/2026,
+            B1): the other routes are on the comparison, one tap back. */}
+        <div className="flex justify-center">
+          <Button asChild variant="outline">
+            <Link to={compareHref}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Compare all routes
+            </Link>
+          </Button>
+        </div>
 
         <Card className="bg-light-green/30 border-accent/30">
           <CardContent className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -491,7 +445,7 @@ function StrategyPage() {
               <div>
                 <p className="font-semibold">Want to understand why this wins?</p>
                 <p className="text-sm text-muted-foreground">
-                  Read the chapter on stacking {highlighted.type} routes.
+                  Read the chapter on {routeTypeLabel(highlighted).toLowerCase()} routes.
                 </p>
               </div>
             </div>

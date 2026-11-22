@@ -15,7 +15,7 @@ export function SplashScreen({ message = 'Loading SnapGain…' }) {
         className="text-center space-y-6"
       >
         <motion.img
-          src="/snapgain-logo.jpg"
+          src="/snapgain-logo.png"
           alt="SnapGain"
           animate={{ scale: [1, 1.04, 1] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
