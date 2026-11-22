@@ -323,13 +323,24 @@ export function useStoreOffers(storeId) {
           .eq('is_active', true)
           .gte('last_verified_at', cutoff)
           .order('discount_pct', { ascending: false }),
+        // The shop's name on the platform when it differs ("Currys
+        // Partsmaster" on NX), src 0047. On its own: before the column
+        // exists this read fails and only the step text goes back to
+        // the store's name, never the offers above (lesson of 17/11).
+        supabase
+          .from('cashback_offers')
+          .select('id, source_name')
+          .eq('store_id', storeId)
+          .eq('is_active', true)
+          .not('source_name', 'is', null),
       ]);
     };
 
-    const apply = ([cbRes, ptRes, gcRes, bnRes, stRes]) => {
+    const apply = ([cbRes, ptRes, gcRes, bnRes, stRes, snRes]) => {
       if (!alive) return;
+      const sourceNames = new Map(snRes?.error ? [] : (snRes?.data || []).map((r) => [r.id, r.source_name]));
       if (cbRes.error) setError(cbRes.error);
-      else setCashbackOffers(cbRes.data || []);
+      else setCashbackOffers((cbRes.data || []).map((o) => (sourceNames.has(o.id) ? { ...o, source_name: sourceNames.get(o.id) } : o)));
       if (ptRes.error) setError(ptRes.error);
       else setPointOffers(ptRes.data || []);
       if (gcRes.error) setError(gcRes.error);

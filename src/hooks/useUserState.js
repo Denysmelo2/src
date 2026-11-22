@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { bestUserCard } from '@/lib/cardEarn';
 
 /**
  * useRecentSearches — user's last 10 search queries from public.recent_searches.
@@ -363,4 +364,43 @@ export function useUserWallet() {
     updateCashbackBalance,
     refresh,
   };
+}
+
+/**
+ * useBestCard — the best card the user saved, valued from platform rows
+ * (card_earn_rate / card_earn_unit / card_point_value_gbp, src 0047), or
+ * null. Owner's tests 21/11/2026, A2: that card's earnings go inside the
+ * /compare totals (lib/cardEarn.js). Read on its own query: before 0047
+ * is applied the columns are missing, the read fails and only this
+ * feature goes off (the rest of the page never depends on it).
+ */
+export function useBestCard(cards) {
+  const [card, setCard] = useState(null);
+  const codes = (cards || []).map((c) => c.card_provider).filter(Boolean);
+  const key = codes.join('|');
+  useEffect(() => {
+    let alive = true;
+    if (!codes.length) {
+      setCard(null);
+      return undefined;
+    }
+    (async () => {
+      const { data, error } = await supabase
+        .from('platform')
+        .select('code, name, card_earn_rate, card_earn_unit, card_point_value_gbp')
+        .eq('type', 'card')
+        .in('code', codes);
+      if (!alive) return;
+      if (error) {
+        setCard(null);
+        return;
+      }
+      setCard(bestUserCard(cards, data || []));
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return card;
 }

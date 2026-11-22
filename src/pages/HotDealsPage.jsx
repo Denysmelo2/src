@@ -90,8 +90,10 @@ function HotDealsPage() {
   }, []);
 
   // ── Boosters grouped by platform ──────────────────────────────────
-  // Pull offers flagged is_boosted=true across BOTH cashback_offers
-  // (TC/Quidco) AND gift_card_offers (JamDoughnut "Pumped Up").
+  // Pull offers flagged is_boosted=true across cashback_offers
+  // (TC/Quidco) and gift_card_offers (JamDoughnut "Pumped Up"), and
+  // point_offers with booster_available (Avios eStore Special Offers,
+  // owner's tests 21/11/2026, A5).
   // 2026-06-29 (Bárbara): instead of dedup+round-robin into one mixed
   // grid, group by platform so each platform gets its own section.
   // A store boosted on both TC AND Quidco appears in both sections —
@@ -107,7 +109,7 @@ function HotDealsPage() {
       const cutoff = hiddenBeforeIso();
       const STORE_SEL =
         'store:stores(id, slug, name, category, logo_url, domain, is_active)';
-      const [{ data: cbRows, error: cbErr }, { data: gcRows, error: gcErr }] =
+      const [{ data: cbRows, error: cbErr }, { data: gcRows, error: gcErr }, { data: ptRows, error: ptErr }, { data: evRows }] =
         await Promise.all([
           supabase
             .from('cashback_offers')
@@ -125,10 +127,40 @@ function HotDealsPage() {
             .gte('last_verified_at', cutoff)
             .order('discount_pct', { ascending: false })
             .limit(200),
+          // Avios eStore "Special Offers" (owner's tests 21/11/2026, A5):
+          // the robot sets booster_available; until now no page read it.
+          supabase
+            .from('point_offers')
+            .select(`id, airline, earn_rate, affiliate_link, conditions, valid_to, ${STORE_SEL}`)
+            .eq('is_active', true)
+            .eq('booster_available', true)
+            .gte('last_verified_at', cutoff)
+            .order('earn_rate', { ascending: false })
+            .limit(400),
+          // "Was X, now Y": the rate before the boost, from the last
+          // 'entered_boost' event of each offer (triggers on the three
+          // offer tables; points since src 0047).
+          supabase
+            .from('booster_events')
+            .select('store_id, platform, offer_table, old_rate, new_rate, detected_at')
+            .eq('event', 'entered_boost')
+            .gte('detected_at', new Date(Date.now() - 60 * 86400 * 1000).toISOString())
+            .order('detected_at', { ascending: false })
+            .limit(1000),
         ]);
       if (!alive) return;
       if (cbErr) console.warn('[HotDealsPage boosters cb] error:', cbErr.message);
       if (gcErr) console.warn('[HotDealsPage boosters gc] error:', gcErr.message);
+      if (ptErr) console.warn('[HotDealsPage boosters points] error:', ptErr.message);
+      const wasBy = new Map();
+      for (const ev of evRows || []) {
+        const k = `${ev.offer_table}|${ev.store_id}|${String(ev.platform || '').toLowerCase()}`;
+        if (!wasBy.has(k)) wasBy.set(k, Number(ev.old_rate) || 0);
+      }
+      const withWas = (o, table) => {
+        const was = wasBy.get(`${table}|${o.store?.id}|${String(o.platform || '').toLowerCase()}`) || 0;
+        return was > 0 && was < o.rateValue ? { ...o, wasRate: was } : o;
+      };
 
       const cb = (cbRows || []).map((o) => ({
         ...o,
@@ -140,12 +172,22 @@ function HotDealsPage() {
         kind: 'gift_card',
         rateValue: Number(o.discount_pct) || 0,
       }));
+      const pt = (ptRows || []).map((o) => ({
+        ...o,
+        platform: o.airline,
+        kind: 'points',
+        rateValue: Number(o.earn_rate) || 0,
+      }));
 
       // Group by platform. Within each platform, dedup by store (same
       // merchant could have two boosted offers on the same platform —
       // keep the better one).
       const byPlatform = {};
-      for (const o of [...cb, ...gc]) {
+      for (const o of [
+        ...cb.map((x) => withWas(x, 'cashback')),
+        ...gc.map((x) => withWas(x, 'gift_card')),
+        ...pt.map((x) => withWas(x, 'points')),
+      ]) {
         if (!o.store || o.store.is_active === false) continue;
         const platform = String(o.platform || 'other');
         if (!byPlatform[platform]) byPlatform[platform] = new Map();
@@ -175,8 +217,9 @@ function HotDealsPage() {
   // offers from a mixed grid).
   const visibleBoostersByPlatform = useMemo(() => {
     if (!walletFilter?.cashbackPlatformNames) return boostersByPlatform;
+    // Avios is a miles programme in the wallet, not a cashback platform.
     const allowed = new Set(
-      walletFilter.cashbackPlatformNames.map((p) => String(p).toLowerCase())
+      [...walletFilter.cashbackPlatformNames, ...(walletFilter.milesProgramNames || [])].map((p) => String(p).toLowerCase())
     );
     const filtered = {};
     for (const [platform, offers] of Object.entries(boostersByPlatform)) {
@@ -436,7 +479,7 @@ function HotDealsPage() {
                       <div className="flex items-baseline justify-between gap-2 flex-wrap">
                         <h3 className="text-lg font-bold tracking-tight capitalize flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-secondary" />
-                          {platform.replace(/-/g, ' ')}
+                          {platformLabel(platform) || platform.replace(/-/g, ' ')}
                           <span className="text-xs font-normal text-muted-foreground">
                             ({offers.length} boosted)
                           </span>
@@ -492,6 +535,12 @@ function FilterRow({ label, options, active, onChange }) {
       </div>
     </div>
   );
+}
+
+/** "6%" for cashback and gift cards, "6 Avios/£" for points. */
+function rateText(kind, value) {
+  const v = Math.round((Number(value) || 0) * 100) / 100;
+  return kind === 'points' ? `${v} Avios/£` : `${v}%`;
 }
 
 function HotDealCard({ deal }) {
@@ -619,7 +668,7 @@ function RecentBoostCard({ event }) {
       <CardContent className="pt-0 flex items-baseline justify-between gap-2">
         <div className="flex items-baseline gap-2">
           <div className="text-2xl font-bold gradient-text leading-none">
-            {newRate}%
+            {rateText(event.offer_table, newRate)}
           </div>
           {oldRate > 0 && delta > 0 && (
             <span className="text-xs text-emerald-700 font-semibold inline-flex items-center gap-0.5">
@@ -729,16 +778,24 @@ function OrganicTopDealCard({ offer, rank }) {
                   this, users saw "80% cashback" for Angel VPN when TC's
                   own page says "Up to 80%" and the base tier is 50%. */}
               {offer.conditions === 'Up to' ? 'Up to ' : ''}
-              {offer.rateValue}%
+              {rateText(offer.kind, offer.rateValue)}
             </div>
-            {/* Label by kind so users know whether it's % cashback or
-                % off a gift card. */}
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              {offer.kind === 'gift_card' ? 'off gift card' : 'cashback'}
-            </div>
+            {/* Label by kind so users know whether it's % cashback,
+                % off a gift card or Avios per £1. */}
+            {offer.kind !== 'points' && (
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {offer.kind === 'gift_card' ? 'off gift card' : 'cashback'}
+              </div>
+            )}
           </div>
           {external && <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />}
         </div>
+        {offer.wasRate > 0 && (
+          <div className="text-xs text-muted-foreground">
+            Was {rateText(offer.kind, offer.wasRate)}, now{' '}
+            <span className="font-semibold text-foreground">{rateText(offer.kind, offer.rateValue)}</span>
+          </div>
+        )}
         {countdown && (
           <div
             className={cn(
