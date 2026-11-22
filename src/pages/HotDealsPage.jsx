@@ -762,9 +762,8 @@ function OrganicTopDealCard({ offer, rank }) {
               )}
             </div>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted text-foreground/70 shrink-0">
-            #{rank}
-          </span>
+          {/* No "#1, #2…" (handover 22/11/2026): like /compare, the order
+              says it; the first card only keeps its border. */}
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-2">
