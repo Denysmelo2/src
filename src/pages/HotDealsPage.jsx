@@ -10,7 +10,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, ArrowLeft, Filter, ExternalLink, Wallet, Sparkles, TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import { Zap, ArrowLeft, Filter, ExternalLink, Wallet, Sparkles, TrendingUp, TrendingDown, Clock, Trophy } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -32,6 +32,7 @@ import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 import { platformLabel } from '@/lib/platformNames';
 import { pumpUpInfo, pumpUpLine, baseConditions } from '@/lib/pumpUp';
 import { PumpUpBadge } from '@/components/PumpUpBadge';
+import { boostGaps } from '@/lib/boostGap';
 
 const isExternal = (url) => /^https?:\/\//i.test(url || '');
 
@@ -474,6 +475,9 @@ function HotDealsPage() {
                   const LIMIT = 12;
                   const shown = offers.slice(0, LIMIT);
                   const more = offers.length - shown.length;
+                  // "Best option" on the first, "£X less than the best
+                  // option" on the others, like /compare (22/11/2026).
+                  const gaps = boostGaps(shown);
                   return (
                     <section key={platform} className="space-y-3">
                       <div className="flex items-baseline justify-between gap-2 flex-wrap">
@@ -490,7 +494,8 @@ function HotDealsPage() {
                           <OrganicTopDealCard
                             key={offer.id}
                             offer={offer}
-                            rank={i + 1}
+                            isBest={i === 0}
+                            behindText={i > 0 ? gaps.get(offer.id) : null}
                           />
                         ))}
                       </div>
@@ -710,7 +715,7 @@ function formatExpiryCountdown(validTo) {
   return remH > 0 ? `Ends in ${days}d ${remH}h` : `Ends in ${days}d`;
 }
 
-function OrganicTopDealCard({ offer, rank }) {
+function OrganicTopDealCard({ offer, isBest = false, behindText = null }) {
   const store = offer.store || {};
   const href = resolveOpenUrl({
     rowUrl: offer.affiliate_link,
@@ -719,7 +724,6 @@ function OrganicTopDealCard({ offer, rank }) {
     fallback: store.slug ? `/store/${store.slug}` : null,
   });
   const external = isExternal(href);
-  const isBest = rank === 1;
   const countdown = formatExpiryCountdown(offer.valid_to);
   // JamDoughnut Pump Up (handover 15/11/2026): badge + how to pay, and
   // the conditions without the long Pump Up text.
@@ -738,8 +742,22 @@ function OrganicTopDealCard({ offer, rank }) {
   const showBreakdown = breakdown.length > 1;
 
   const inner = (
-    <Card className={cn('card-hover h-full', isBest && 'border-primary/40')}>
+    <Card
+      className={cn(
+        'card-hover h-full overflow-hidden',
+        isBest && 'border-[3px] border-primary bg-light-pink/60'
+      )}
+    >
+      {isBest && (
+        <div className="bg-primary text-primary-foreground px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+          <Trophy className="w-3.5 h-3.5" />
+          Best option
+        </div>
+      )}
       <CardHeader className="pb-2">
+        {!isBest && behindText && (
+          <div className="text-[11px] font-medium text-muted-foreground -mt-1 mb-1">{behindText}</div>
+        )}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <StoreLogo store={store} size="sm" />
@@ -762,8 +780,6 @@ function OrganicTopDealCard({ offer, rank }) {
               )}
             </div>
           </div>
-          {/* No "#1, #2…" (handover 22/11/2026): like /compare, the order
-              says it; the first card only keeps its border. */}
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-2">

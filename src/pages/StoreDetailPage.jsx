@@ -31,6 +31,9 @@ import { resolveOpenUrl } from '@/lib/affiliateLinks';
 import { useUserFavourites, useUserWallet } from '@/hooks/useUserState';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
 import { computeStrategies, withSyntheticNxOffer } from '@/lib/strategies';
+import { rankRoutes, splitCurated } from '@/lib/rankRoutes';
+import { explainBest } from '@/lib/explainBest';
+import { curatedGbp } from '@/lib/curatedReturn';
 import { buildWalletFilter } from '@/lib/walletFilter';
 import { useSubscription } from '@/hooks/useSubscription';
 import { StoreLogo } from '@/components/StoreLogo';
@@ -215,6 +218,33 @@ function StoreDetailPage() {
   // (bestStrategy was previously used by the standalone "Best strategy"
   // tab; that tab was folded into Strategies in 2026-05-18 refactor.)
 
+  // "Best option" and "£X less than the best option" on £100, like
+  // /compare (owner, 22/11/2026: no "#1, #2"). The curated routes with
+  // a £ of their own and the automatic ones are ranked together
+  // (lib/rankRoutes.js); "compare" cards carry no £ and stay out.
+  const autoId = (s, i) => s.id || `auto-${i}`;
+  const routeRanking = useMemo(() => {
+    const { ranked } = splitCurated(curatedStrategies);
+    const items = rankRoutes([
+      ...ranked.map((c) => ({
+        source: 'curated',
+        id: `curated-${c.id}`,
+        title: c.title,
+        gbpReturn: curatedGbp(c.live, DEFAULT_AMOUNT) || 0,
+        curated: c,
+      })),
+      ...strategies.map((s, i) => ({
+        source: 'auto',
+        id: autoId(s, i),
+        title: s.title,
+        gbpReturn: Number(s.gbpReturn) || 0,
+        strategy: s,
+      })),
+    ]);
+    const why = explainBest(items, DEFAULT_AMOUNT);
+    return { bestId: items[0]?.id ?? null, behind: why?.behind ?? new Map() };
+  }, [curatedStrategies, strategies]);
+
   if (storeLoading) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
@@ -266,9 +296,16 @@ function StoreDetailPage() {
                 user taps "Show steps" when they're ready to execute. */}
             {curatedStrategies[0] && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary flex-wrap">
                   <Sparkles className="w-3.5 h-3.5" />
-                  SnapGain Choice — best return
+                  {routeRanking.bestId === `curated-${curatedStrategies[0].id}`
+                    ? 'SnapGain Choice — Best option'
+                    : 'SnapGain Choice'}
+                  {routeRanking.behind.get(`curated-${curatedStrategies[0].id}`) && (
+                    <span className="normal-case tracking-normal font-medium text-muted-foreground">
+                      {routeRanking.behind.get(`curated-${curatedStrategies[0].id}`)}
+                    </span>
+                  )}
                 </div>
                 <CuratedStrategyCard
                   strategy={curatedStrategies[0]}
@@ -308,10 +345,10 @@ function StoreDetailPage() {
                     <AutoStrategyCard
                       key={s.id || i}
                       strategy={s}
-                      rank={i + 1}
+                      isBest={routeRanking.bestId === autoId(s, i)}
+                      behindText={routeRanking.behind.get(autoId(s, i)) || null}
                       storeSlug={store.slug}
                       amount={DEFAULT_AMOUNT}
-                      highlight={i === 0 && curatedStrategies.length === 0}
                     />
                   ))}
                 </div>
