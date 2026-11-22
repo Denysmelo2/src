@@ -26,6 +26,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
+import { useUserPrefs } from '@/hooks/useUserPrefs';
+import { displayNames } from '@/lib/displayName';
 
 const AUTHED_NAV = [
   { to: '/home', key: 'nav.dashboard', icon: LayoutDashboard },
@@ -69,8 +71,9 @@ export function Header() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const displayName =
-    user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
+  // Preferred name from /profile first (owner's tests 21/11/2026, C2).
+  const { prefs: userPrefs } = useUserPrefs();
+  const displayName = displayNames({ preferredName: userPrefs?.preferredName, user }).full;
   // Admin comes from `user_profiles.role`, surfaced by useSubscription.
   // It used to read `user.user_metadata.role` — the bag
   // `supabase.auth.updateUser({ data })` writes, so any user could set

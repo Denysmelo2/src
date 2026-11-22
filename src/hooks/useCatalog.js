@@ -64,6 +64,33 @@ export function useStores({ featuredOnly = false } = {}) {
 }
 
 /**
+ * useNxStoreCount — how many stores have a live NX Rewards offer today
+ * (active, verified in the last 30 days: the site's own rule), for the
+ * Dashboard's "NX 10% at N+ stores" (owner's tests 21/11/2026, C6). One
+ * offer per store and platform, so counting offers counts stores.
+ * null while loading or on error.
+ */
+export function useNxStoreCount() {
+  const [count, setCount] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    supabase
+      .from('cashback_offers')
+      .select('id', { count: 'exact', head: true })
+      .eq('platform', 'NX Rewards')
+      .eq('is_active', true)
+      .gte('last_verified_at', hiddenBeforeIso())
+      .then(({ count: c, error }) => {
+        if (alive && !error) setCount(c ?? null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return count;
+}
+
+/**
  * useStoreSearch — server-side search across the full stores catalogue.
  *
  * The plain `useStores()` above can only see the first ~1000 rows

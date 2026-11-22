@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import {
@@ -13,9 +14,12 @@ import {
   Info,
   CheckCircle2,
   X,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { ToastAction } from '@/components/ui/toast';
+import { notifyPrefsChanged } from '@/hooks/useUserPrefs';
 import {
   Card,
   CardContent,
@@ -57,6 +61,8 @@ function ProfilePage() {
 
   // ─── Personal preferences (localStorage + Supabase) ─────────────
   const [prefs, setPrefs] = useState(null);
+  // What is saved, to tell unsaved edits apart (owner's tests 21/11/2026, C3).
+  const [savedPrefs, setSavedPrefs] = useState(null);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [editingInfo, setEditingInfo] = useState(false);
 
@@ -64,21 +70,34 @@ function ProfilePage() {
     let alive = true;
     if (!user) {
       setPrefs(null);
+      setSavedPrefs(null);
       return;
     }
     loadUserPrefs(user.id).then((p) => {
-      if (alive) setPrefs(p);
+      if (!alive) return;
+      setPrefs(p);
+      setSavedPrefs(p);
     });
     return () => {
       alive = false;
     };
   }, [user]);
 
+  // The text fields (name, phone, place…) change only on Save; the
+  // lists below save at once. Unsaved = a text field differs.
+  const dirty = useMemo(
+    () => !!prefs && !!savedPrefs && INFO_FIELDS.some((k) => (prefs[k] ?? '') !== (savedPrefs[k] ?? '')),
+    [prefs, savedPrefs]
+  );
+  useConfirmLeave(dirty, 'You have unsaved changes on your profile. Leave without saving?');
+
   const handleSaveInfo = async () => {
     if (!user || !prefs) return;
     setSavingPrefs(true);
     try {
-      await saveUserPrefs(user.id, prefs);
+      const saved = await saveUserPrefs(user.id, prefs);
+      setSavedPrefs(saved);
+      notifyPrefsChanged();
       toast({
         title: t('profile.updated'),
         description: t('profile.updatedDesc'),
@@ -88,6 +107,28 @@ function ProfilePage() {
       setSavingPrefs(false);
     }
   };
+
+  const handleDiscardInfo = () => {
+    if (!savedPrefs) return;
+    setPrefs((p) => ({ ...p, ...Object.fromEntries(INFO_FIELDS.map((k) => [k, savedPrefs[k]])) }));
+    if (savedPrefs.language) setLanguage(savedPrefs.language);
+    setEditingInfo(false);
+  };
+
+  // Adding or removing a list item saves at once (C4); a removal can be
+  // undone for a few seconds.
+  const removedToast = (label, undo) =>
+    toast({
+      title: 'Removed',
+      description: label,
+      duration: 6000,
+      action: (
+        <ToastAction altText="Undo" onClick={() => undo()}>
+          Undo
+        </ToastAction>
+      ),
+    });
+  const savedToast = (label) => toast({ title: 'Saved', description: label, duration: 2500 });
 
   // ─── Selected ID sets for each multi-select ─────────────────────
   const selectedBankIds = useMemo(
@@ -175,38 +216,49 @@ function ProfilePage() {
   );
 
   // ─── Handlers for each multi-select ─────────────────────────────
+  // Banks live in prefs: only bankIds changes, so an unsaved name or
+  // phone being typed is not saved along with them.
+  const saveBanks = async (bankIds) => {
+    setPrefs((p) => ({ ...p, bankIds }));
+    const saved = await saveUserPrefs(user.id, { ...(savedPrefs || prefs), bankIds });
+    setSavedPrefs(saved);
+  };
+  const bankLabel = (id) => UK_BANKS.find((b) => b.id === id)?.label || id;
   const handleAddBank = async (id) => {
     if (!prefs) return;
-    const next = { ...prefs, bankIds: [...(prefs.bankIds || []), id] };
-    setPrefs(next);
-    await saveUserPrefs(user.id, next);
+    await saveBanks([...(prefs.bankIds || []), id]);
+    savedToast(bankLabel(id));
   };
   const handleRemoveBank = async (id) => {
     if (!prefs) return;
-    const next = {
-      ...prefs,
-      bankIds: (prefs.bankIds || []).filter((x) => x !== id),
-    };
-    setPrefs(next);
-    await saveUserPrefs(user.id, next);
+    const before = prefs.bankIds || [];
+    await saveBanks(before.filter((x) => x !== id));
+    removedToast(bankLabel(id), () => saveBanks(before));
   };
 
   const handleAddCard = async (providerCode) => {
     const opt = cardOptions.find((c) => c.id === providerCode);
     if (!opt) return;
     await wallet.addCard({ cardProvider: providerCode, nickname: opt.label });
+    savedToast(opt.label);
   };
   const handleRemoveCard = async (providerCode) => {
     const row = wallet.cards.find((c) => c.card_provider === providerCode);
-    if (row) await wallet.removeCard(row.id);
+    if (!row) return;
+    await wallet.removeCard(row.id);
+    removedToast(row.nickname || providerCode, () =>
+      wallet.addCard({ cardProvider: row.card_provider, nickname: row.nickname, last4: row.last_4 })
+    );
   };
 
+  const programLabel = (id) => programOptions.find((o) => o.id === id)?.label || 'Programme';
   const handleAddProgram = async (id) => {
     if (id.startsWith('miles:')) {
       await wallet.addMilesProgram({ milesProgramId: id.slice(6) });
     } else if (id.startsWith('platform:')) {
       await wallet.addCashbackPlatform({ platformId: id.slice(9) });
     }
+    savedToast(programLabel(id));
   };
   const handleRemoveProgram = async (id) => {
     if (id.startsWith('miles:')) {
@@ -220,10 +272,17 @@ function ProfilePage() {
       );
       if (row) await wallet.removeCashbackPlatform(row.id);
     }
+    removedToast(programLabel(id), () => handleAddProgram(id));
   };
 
-  const handleToggleStore = async (id) => {
+  const storeLabel = (id) => (stores || []).find((x) => x.id === id)?.name || 'Store';
+  const handleAddStore = async (id) => {
     await favourites.toggle(id);
+    savedToast(storeLabel(id));
+  };
+  const handleRemoveStore = async (id) => {
+    await favourites.toggle(id);
+    removedToast(storeLabel(id), () => favourites.toggle(id));
   };
 
   // ─── Profile completion ─────────────────────────────────────────
@@ -270,7 +329,7 @@ function ProfilePage() {
         <title>Profile — SnapGain</title>
       </Helmet>
 
-      <div className="container mx-auto px-4 py-8 max-w-3xl space-y-5">
+      <div className={`container mx-auto px-4 py-8 max-w-3xl space-y-5 ${dirty ? 'pb-28' : ''}`}>
         {/* ─── Title ─────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -516,18 +575,47 @@ function ProfilePage() {
               <CountBadge n={selectedStoreIds.size} />
             </CardTitle>
             <CardDescription>{t('profile.favoriteStoresDesc')}</CardDescription>
+            {/* Boosts are e-mailed for these stores only (owner, 21/11/2026, D2). */}
+            <Link
+              to="/settings#boost-email"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline pt-1"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              Get an email when these get a boost
+            </Link>
           </CardHeader>
           <CardContent>
             <PillMultiSelect
               options={storeOptions}
               selectedIds={selectedStoreIds}
-              onAdd={handleToggleStore}
-              onRemove={handleToggleStore}
+              onAdd={handleAddStore}
+              onRemove={handleRemoveStore}
               placeholder={t('profile.selectStore')}
               busy={favourites.loading}
             />
           </CardContent>
         </Card>
+
+        {/* Save bar (owner's tests 21/11/2026, C3): the Save button sat
+            in the card's corner and went off screen on a phone. While a
+            text field has an unsaved change, this bar stays at the foot
+            of the screen. */}
+        {dirty && (
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+            <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+              <span className="text-sm text-muted-foreground">You have unsaved changes</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleDiscardInfo} disabled={savingPrefs}>
+                  Discard
+                </Button>
+                <Button size="sm" onClick={handleSaveInfo} disabled={savingPrefs}>
+                  <Save className="w-3.5 h-3.5 mr-1.5" />
+                  {savingPrefs ? 'Saving…' : 'Save changes'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ─── Profile Completion ────────────────────────────────── */}
         <Card className="bg-gradient-to-br from-light-pink/30 to-light-green/30 border-primary/30">
@@ -558,6 +646,38 @@ function ProfilePage() {
       </div>
     </>
   );
+}
+
+// The text fields saved with "Save changes" (the lists save at once).
+const INFO_FIELDS = ['preferredName', 'phone', 'pronouns', 'location', 'language', 'homeCountry', 'displayCurrency'];
+
+/** Ask before leaving with unsaved changes: closing or reloading the tab,
+ *  and links inside the site (BrowserRouter has no navigation blocker). */
+function useConfirmLeave(when, message) {
+  useEffect(() => {
+    if (!when) return undefined;
+    const onBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = message;
+      return message;
+    };
+    const onClick = (e) => {
+      const a = e.target?.closest?.('a[href]');
+      if (!a || a.target === '_blank' || e.defaultPrevented) return;
+      const href = a.getAttribute('href') || '';
+      if (href.startsWith('#') || /^(mailto|tel):/i.test(href)) return;
+      if (!window.confirm(message)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    document.addEventListener('click', onClick, true);
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      document.removeEventListener('click', onClick, true);
+    };
+  }, [when, message]);
 }
 
 function Field({ label, hint, children }) {
