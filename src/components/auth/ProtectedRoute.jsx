@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { SplashScreen } from '@/components/SplashScreen';
+import { MfaGate } from '@/components/auth/MfaGate';
 
 const PROFILE_TIMEOUT_MS = 4000;
 
@@ -110,7 +111,9 @@ function ProtectedRoute({
     return <Navigate to="/pricing?subscribe=required" replace />;
   }
 
-  return children;
+  // Two-factor sign-in (owner's tests 21/11/2026, D1): a user who turned
+  // it on gives the code before the page opens (MfaGate, lib/mfa.js).
+  return <MfaGate>{children}</MfaGate>;
 }
 
 export default ProtectedRoute;

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { motion } from 'framer-motion';
 import {
   Bell,
-  Shield,
   Megaphone,
   Palette,
   Eye,
@@ -39,6 +38,7 @@ import {
 import { useSubscription } from '@/hooks/useSubscription';
 import { ManageBillingButton } from '@/components/ManageBillingButton';
 import { AccountDataSection } from '@/components/settings/AccountDataSection';
+import { TwoFactorSection } from '@/components/settings/TwoFactorSection';
 import { loadUserPrefs, saveUserPrefs } from '@/lib/userPrefs';
 import { notifyPrefsChanged } from '@/hooks/useUserPrefs';
 import { applyDisplaySettings } from '@/lib/displaySettings';
@@ -95,6 +95,15 @@ function SettingsPage() {
   // switching it on here, which writes boost_email_enabled = true.
   const [boostEmailEnabled, setBoostEmailEnabled] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  // /settings#boost-email (the Profile's "Get an email when these get a
+  // boost" link) scrolls to that card once the page has rendered.
+  useEffect(() => {
+    if (!prefs || !location.hash) return;
+    const el = document.getElementById(location.hash.slice(1));
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [prefs, location.hash]);
 
   // Load saved preferences
   useEffect(() => {
@@ -263,6 +272,30 @@ function SettingsPage() {
           </p>
         </motion.div>
 
+        {/* ─── Boost e-mail for favourite stores (DB-backed, drives the
+              daily-boost-digest function). At the top: it is the only
+              notification SnapGain sends (owner's tests 21/11/2026, D2). */}
+        <Card id="boost-email" className="scroll-mt-24 border-primary/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Bell className="w-5 h-5 text-primary" />
+              Boost email for your favourite stores
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <ToggleRow
+              id="boost-email-switch"
+              label="Email me when a favourite store gets a boost (optional, off unless you switch it on)"
+              description="At most one email a day, sent around 11am UK time, when a store you've favourited gets a boost or a higher rate on a cashback site, a gift-card app or the Avios eStore. Every email has a link to turn it off, or switch it off here at any time."
+              checked={boostEmailEnabled}
+              onChange={setBoostEmail}
+            />
+            <Link to="/profile" className="text-xs font-semibold text-primary hover:underline">
+              Choose your favourite stores
+            </Link>
+          </CardContent>
+        </Card>
+
         {/* ─── Subscription ────────────────────────────────────── */}
         <Card>
           <CardHeader>
@@ -396,79 +429,13 @@ function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* ─── Boost digest email (DB-backed, drives the daily-boost-digest fn) ─ */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Bell className="w-5 h-5 text-primary" />
-              Boost email digest
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ToggleRow
-              id="boost-email"
-              label="Daily boost email (optional, off unless you switch it on)"
-              description="At most one email a day when a store you've favourited gets a cashback boost or rate increase, sent around 9am UK time. Every email has a link to turn it off, or switch it off here at any time."
-              checked={boostEmailEnabled}
-              onChange={setBoostEmail}
-            />
-          </CardContent>
-        </Card>
+        {/* The four notification switches (email, push, weekly reports,
+            deal alerts) only wrote to localStorage and sent nothing; they
+            are gone (owner's tests 21/11/2026, D2). The one e-mail that is
+            sent, the boost e-mail, is at the top of the page. */}
 
-        {/* ─── Notifications (local-only display prefs) ────────────────── */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Bell className="w-5 h-5 text-primary" />
-              {t('settings.notifications')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ToggleRow
-              id="notif-email"
-              label={t('settings.emailNotifications')}
-              checked={prefs.notifEmail}
-              onChange={(v) => updatePref({ notifEmail: v })}
-            />
-            <ToggleRow
-              id="notif-push"
-              label={t('settings.pushNotifications')}
-              checked={prefs.notifPush}
-              onChange={(v) => updatePref({ notifPush: v })}
-            />
-            <ToggleRow
-              id="notif-weekly"
-              label={t('settings.weeklyReports')}
-              checked={prefs.notifWeekly}
-              onChange={(v) => updatePref({ notifWeekly: v })}
-            />
-            <ToggleRow
-              id="notif-deals"
-              label={t('settings.dealAlerts')}
-              checked={prefs.notifDeals}
-              onChange={(v) => updatePref({ notifDeals: v })}
-            />
-          </CardContent>
-        </Card>
-
-        {/* ─── Security ────────────────────────────────────────── */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              {t('settings.security')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ToggleRow
-              id="two-factor"
-              label={t('settings.twoFactor')}
-              description={t('settings.twoFactorDesc')}
-              checked={prefs.twoFactorEnabled}
-              onChange={(v) => updatePref({ twoFactorEnabled: v })}
-            />
-          </CardContent>
-        </Card>
+        {/* ─── Two-factor sign-in (Supabase MFA, D1) ──────────────── */}
+        <TwoFactorSection />
 
         {/* ─── Marketing Preferences ──────────────────────────── */}
         <Card>
