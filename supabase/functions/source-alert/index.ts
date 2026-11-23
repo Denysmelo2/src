@@ -42,9 +42,12 @@ const STALE_HOURS = 48;
 // read, so it would always have looked stale. Picodi left on 03/11/2026,
 // when it came off the 08:00 list (scraper #49, owner's call).
 const WATCHED: Record<string, { label: string; run: string }> = {
-  'nx rewards': { label: 'NX Rewards', run: '09:00 run through the Mac (member-scrape)' },
-  quidco: { label: 'Quidco', run: '09:00 run through the Mac (member-scrape)' },
-  'british airways avios': { label: 'Avios eStore', run: '09:00 run through the Mac (member-scrape)' },
+  // The Mac run moved from 09:00 to 04:00 (owner, 22/11/2026).
+  'nx rewards': { label: 'NX Rewards', run: '04:00 run through the Mac (member-scrape)' },
+  quidco: { label: 'Quidco', run: '04:00 run through the Mac (member-scrape)' },
+  'british airways avios': { label: 'Avios eStore', run: '04:00 run through the Mac (member-scrape)' },
+  // Rakuten is back (handover 23/11/2026), read with the owner's account.
+  rakuten: { label: 'Rakuten', run: '04:00 run through the Mac (member-scrape)' },
   jamdoughnut: { label: 'JamDoughnut', run: '08:00 daily run (scrape-daily)' },
   // Cheddar is off since 21/11/2026: cheddar.me shows only marketing
   // "up to" rates (handover "taxas erradas", task 2; snapgain-scraper#62).

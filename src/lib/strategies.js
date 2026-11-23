@@ -16,6 +16,9 @@ import { platformLabel as label } from '@/lib/platformNames';
 import { bonusSubtitle, matchesContext as matchesBonusContext, pickBonuses } from '@/lib/bonusOffers';
 import { pumpUpInfo, pumpUpLine } from '@/lib/pumpUp';
 import { bestStudentOffer, studentMath, pctText as studentPct, STUDENT_WARNING } from '@/lib/studentDiscount';
+import { isRakutenPlatform, exclusionLine } from '@/lib/cashbackTerms';
+
+export { isRakutenPlatform };
 // "Why it's the best option" (owner's tests 21/11/2026, B6).
 export { explainBest, routeLine } from '@/lib/explainBest';
 
@@ -234,6 +237,8 @@ export function computeStrategies({
       // The shop's name on the platform, when it is not the store's
       // ("Currys Partsmaster" on NX; src 0047, owner's tests A3).
       sourceName: o.source_name || null,
+      // The shop's "Terms & Exclusions" on the platform (Rakuten; src 0050).
+      terms: o.terms || null,
     };
   };
 
@@ -537,11 +542,15 @@ export function computeStrategies({
   // or shopping card, for every retailer, Deliveroo included.
   // Never with Picodi: owner's decision of 26/10/2026, until Picodi's own
   // rules on paying with a gift card are confirmed.
+  // Never with Rakuten (handover 23/11/2026): its shop pages say "Cashback
+  // is not available on gift cards", and its terms that gift-card
+  // purchases may not qualify. Per-shop exceptions would be another task.
   const cashbackForGiftCardStacks = cashbackToUse.filter(
     (c) =>
       !isNxPlatform(c.platform) &&
       !isQuidcoPlatform(c.platform) &&
-      !isPicodiPlatform(c.platform)
+      !isPicodiPlatform(c.platform) &&
+      !isRakutenPlatform(c.platform)
   );
   giftCardOffers.forEach((g) => {
     const gc = giftCardLayer(g);
@@ -673,6 +682,11 @@ export function buildStrategySteps(strategy, store) {
       {
         title: 'Complete the purchase',
         detail: 'Add items to your cart and check out without leaving the tracked session. Avoid coupon-injecting browser extensions.',
+        // What the platform excludes ("No cashback on gift cards or
+        // non-Rakuten codes") and the shop's own terms under "See terms"
+        // (Rakuten handover 23/11/2026; lib/cashbackTerms.js).
+        warning: exclusionLine(layer?.platform) || undefined,
+        terms: layer?.terms || undefined,
       },
       {
         title: 'Wait for cashback to track',
