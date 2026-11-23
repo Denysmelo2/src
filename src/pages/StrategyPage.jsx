@@ -41,6 +41,7 @@ import { gbpToAviosBooster } from '@/lib/aviosMath';
 import { DataAge } from '@/components/DataAge';
 import { oldestVerifiedAt } from '@/lib/dataFreshness';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
+import { termsLines } from '@/lib/cashbackTerms';
 
 function StrategyPage() {
   const [searchParams] = useSearchParams();
@@ -391,6 +392,17 @@ function StrategyPage() {
                             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                             <span>{step.warning}</span>
                           </div>
+                        )}
+                        {/* The shop's own terms on the platform (Rakuten, src 0050). */}
+                        {termsLines(step.terms).length > 0 && (
+                          <details className="text-sm">
+                            <summary className="cursor-pointer text-primary font-medium">See terms</summary>
+                            <ul className="mt-1 space-y-1 text-muted-foreground list-disc pl-5">
+                              {termsLines(step.terms).map((t, j) => (
+                                <li key={j}>{t}</li>
+                              ))}
+                            </ul>
+                          </details>
                         )}
                         {/* Per-step Open button. Each step now carries
                             its own action URL (affiliate first, then

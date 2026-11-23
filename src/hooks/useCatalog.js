@@ -360,14 +360,31 @@ export function useStoreOffers(storeId) {
           .eq('store_id', storeId)
           .eq('is_active', true)
           .not('source_name', 'is', null),
+        // The shop's "Terms & Exclusions" (Rakuten), src 0050. On its own
+        // for the same reason: before the column exists only "See terms"
+        // is missing.
+        supabase
+          .from('cashback_offers')
+          .select('id, terms')
+          .eq('store_id', storeId)
+          .eq('is_active', true)
+          .not('terms', 'is', null),
       ]);
     };
 
-    const apply = ([cbRes, ptRes, gcRes, bnRes, stRes, snRes]) => {
+    const apply = ([cbRes, ptRes, gcRes, bnRes, stRes, snRes, tmRes]) => {
       if (!alive) return;
       const sourceNames = new Map(snRes?.error ? [] : (snRes?.data || []).map((r) => [r.id, r.source_name]));
+      const terms = new Map(tmRes?.error ? [] : (tmRes?.data || []).map((r) => [r.id, r.terms]));
       if (cbRes.error) setError(cbRes.error);
-      else setCashbackOffers((cbRes.data || []).map((o) => (sourceNames.has(o.id) ? { ...o, source_name: sourceNames.get(o.id) } : o)));
+      else
+        setCashbackOffers(
+          (cbRes.data || []).map((o) => ({
+            ...o,
+            ...(sourceNames.has(o.id) ? { source_name: sourceNames.get(o.id) } : {}),
+            ...(terms.has(o.id) ? { terms: terms.get(o.id) } : {}),
+          }))
+        );
       if (ptRes.error) setError(ptRes.error);
       else setPointOffers(ptRes.data || []);
       if (gcRes.error) setError(gcRes.error);

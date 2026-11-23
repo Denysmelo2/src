@@ -73,6 +73,7 @@ import { studentSearchView } from '@/lib/studentDiscount';
 import { rankRoutes, splitCurated, mergeCopies } from '@/lib/rankRoutes';
 import { withCard, cardInclLine } from '@/lib/cardEarn';
 import { explainBest } from '@/lib/explainBest';
+import { termsLines } from '@/lib/cashbackTerms';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
@@ -959,6 +960,17 @@ function StudentRouteDetail({ strategy, storeSlug, amount }) {
               <div className="font-medium">{step.title}</div>
               {step.detail && <div className="text-xs text-muted-foreground">{step.detail}</div>}
               {step.warning && <div className="text-xs text-amber-700 mt-1">{step.warning}</div>}
+              {/* The shop's own terms on the platform (Rakuten, src 0050). */}
+              {termsLines(step.terms).length > 0 && (
+                <details className="text-xs mt-1">
+                  <summary className="cursor-pointer text-primary font-medium">See terms</summary>
+                  <ul className="mt-1 space-y-0.5 text-muted-foreground list-disc pl-4">
+                    {termsLines(step.terms).map((t, j) => (
+                      <li key={j}>{t}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </div>
           </li>
         ))}
