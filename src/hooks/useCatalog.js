@@ -530,13 +530,13 @@ async function attachLiveReturns(strategies, contextStoreId = null) {
     const [gc, cb] = await Promise.all([
       supabase
         .from('gift_card_offers')
-        .select('store_id, platform, discount_pct, conditions, valid_to, last_verified_at')
+        .select('store_id, platform, discount_pct, conditions, valid_to, last_verified_at, affiliate_link')
         .in('store_id', storeIds)
         .eq('is_active', true)
         .gte('last_verified_at', cutoff),
       supabase
         .from('cashback_offers')
-        .select('store_id, platform, rate, last_verified_at')
+        .select('store_id, platform, rate, last_verified_at, affiliate_link')
         .in('store_id', storeIds)
         .eq('is_active', true)
         .gte('last_verified_at', cutoff),

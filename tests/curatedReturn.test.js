@@ -147,11 +147,14 @@ test('the card line: same on every route, on the whole purchase', () => {
 test('each live step has today\'s rate and platform for its badge (24/11/2026 b, task 2)', () => {
   // Written in the step: 6.5% via Cheddar. Today: 5.1% EverUp is the best.
   const gc = [
-    { platform: 'everup', discount_pct: 5.1, last_verified_at: '2026-11-24T08:00:00Z' },
+    { platform: 'everup', discount_pct: 5.1, last_verified_at: '2026-11-24T08:00:00Z', affiliate_link: 'https://everup.onelink.me/9lgD/kyk6rcj8' },
     { platform: 'jamdoughnut', discount_pct: 3, last_verified_at: '2026-11-24T08:00:00Z' },
   ];
   const live = computeCuratedLive(amazonViaCurrys, ctx({ giftCards: { currys: gc } }));
-  assert.deepEqual(live.liveSteps, { 0: { value: 5.1, platform: 'EverUp' } });
+  // The badge, the "Open" button and the code follow today's best: EverUp.
+  assert.deepEqual(live.liveSteps, {
+    0: { value: 5.1, platform: 'EverUp', platformCode: 'everup', affiliateLink: 'https://everup.onelink.me/9lgD/kyk6rcj8' },
+  });
   // The card step (index 1) and the EVERYWISH step are not live: no entry.
   assert.equal(live.liveSteps[1], undefined);
   // No rate today: no entry, so the badge is hidden.
