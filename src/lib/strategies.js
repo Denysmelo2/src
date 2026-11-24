@@ -11,7 +11,7 @@
  * common case and mirrors the original mock data shape.
  */
 
-import { getAffiliateLink, resolveOpenUrl } from '@/lib/affiliateLinks';
+import { getAffiliateLink, getReferral, resolveOpenUrl } from '@/lib/affiliateLinks';
 import { platformLabel as label } from '@/lib/platformNames';
 import { bonusSubtitle, matchesContext as matchesBonusContext, pickBonuses } from '@/lib/bonusOffers';
 import { pumpUpInfo, pumpUpLine } from '@/lib/pumpUp';
@@ -661,6 +661,12 @@ export function buildStrategySteps(strategy, store) {
       storeDomain: store?.domain,
       fallback: store?.slug ? `/store/${store.slug}` : null,
     });
+  // The platform's referral code under its "Open" button, when there is
+  // one (handover "testes reais", 24/11/2026, task 2).
+  const refFor = (layer) => {
+    const r = getReferral(layer?.platform);
+    return r.code ? r : undefined;
+  };
 
   if (strategy.type === 'cashback') {
     const layer = strategy.layers?.[0];
@@ -670,6 +676,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Open ${strategy.providerName}`,
         detail: `Sign in to ${strategy.providerName} so cashback is tracked to your account.`,
         actionUrl: url,
+        referral: refFor(layer),
         actionLabel: `Open ${strategy.providerName}`,
       },
       {
@@ -705,6 +712,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Open the ${strategy.providerName} partner portal`,
         detail: `Sign in to your ${strategy.providerName} account so the points are credited correctly.`,
         actionUrl: url,
+        referral: refFor(layer),
         actionLabel: `Open ${strategy.providerName}`,
       },
       {
@@ -730,6 +738,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Open ${label(layer?.platform) || 'the gift card app'}`,
         detail: `Buy a ${storeName} gift card at ${layer?.discountPct || 0}% off the face value.`,
         actionUrl: url,
+        referral: refFor(layer),
         actionLabel: `Open ${label(layer?.platform) || 'gift card app'}`,
       },
       {
@@ -757,6 +766,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Open ${storeName}${listed} through ${label(partner.platform)}`,
         detail: 'Sign in first so cashback tracks to your account.',
         actionUrl: urlFor(partner),
+        referral: refFor(partner),
         actionLabel: `Open ${label(partner.platform)}`,
       });
     } else if (partner?.kind === 'points') {
@@ -764,6 +774,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Open ${storeName} through the ${label(partner.platform)} portal`,
         detail: 'Sign in to your programme account so the points credit correctly.',
         actionUrl: urlFor(partner),
+        referral: refFor(partner),
         actionLabel: `Open ${label(partner.platform)}`,
       });
     } else if (partner?.kind === 'gift_card') {
@@ -771,6 +782,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Buy a £${paid.toFixed(2)} ${storeName} gift card via ${label(partner.platform)}`,
         detail: `${partner.discountPct}% off — saves £${(Number(partner.gbpReturn) || 0).toFixed(2)}.`,
         actionUrl: urlFor(partner),
+        referral: refFor(partner),
         actionLabel: `Open ${label(partner.platform)}`,
       });
     }
@@ -794,6 +806,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Buy a ${storeName} gift card via ${label(gc.platform)}`,
         detail: `${gc.discountPct}% off — saves £${gc.gbpReturn.toFixed(2)} on this purchase.`,
         actionUrl: urlFor(gc),
+        referral: refFor(gc),
         actionLabel: `Open ${label(gc.platform)}`,
       });
     }
@@ -803,6 +816,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Open ${label(cb.platform)} and click through to ${storeName}${listed}`,
         detail: 'Sign in first so cashback tracks to your account.',
         actionUrl: urlFor(cb),
+        referral: refFor(cb),
         actionLabel: `Open ${label(cb.platform)}`,
       });
     } else if (pt) {
@@ -810,6 +824,7 @@ export function buildStrategySteps(strategy, store) {
         title: `Open the ${label(pt.platform)} partner portal and click through to ${storeName}`,
         detail: 'Sign in to your program account so the points credit correctly.',
         actionUrl: urlFor(pt),
+        referral: refFor(pt),
         actionLabel: `Open ${label(pt.platform)}`,
       });
     }

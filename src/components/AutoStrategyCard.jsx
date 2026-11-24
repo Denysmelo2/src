@@ -18,6 +18,8 @@ import { RateBreakdown } from '@/components/RateBreakdown';
 import { DataAge } from '@/components/DataAge';
 import { oldestVerifiedAt } from '@/lib/dataFreshness';
 import { cn } from '@/lib/utils';
+import { getReferral } from '@/lib/affiliateLinks';
+import { ReferralCode } from '@/components/ReferralCode';
 
 /**
  * Pick a short human label for an auto-generated strategy so the user
@@ -150,6 +152,9 @@ export function AutoStrategyCard({
             </a>
           )}
         </div>
+        {/* The first platform's referral code (handover "testes reais",
+            24/11/2026, task 2). */}
+        {url && <ReferralCode referral={getReferral(strategy.layers?.[0]?.platform)} className="mt-2" />}
       </CardContent>
     </Card>
   );

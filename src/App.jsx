@@ -10,6 +10,7 @@ import ResetPassword from '@/pages/Reset-password';
 import RequestReset from '@/pages/RequestReset';
 import SettingsPage from '@/pages/SettingsPage';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { usePlatformReferrals } from '@/hooks/usePlatformReferrals';
 import { AuthLinkErrorRedirect } from '@/components/auth/AuthLinkErrorRedirect';
 import { Layout } from '@/components/layout/Layout';
 import FeaturesPage from '@/pages/FeaturesPage';
@@ -56,6 +57,10 @@ import { DisplaySettingsBoot } from '@/components/DisplaySettingsBoot';
 import { I18nProvider } from '@/lib/i18n';
 
 function AppContent() {
+  // Referral links and codes from the database, read once at the start
+  // so every "Open" button has them (lib/affiliateLinks.js; handover
+  // "testes reais", 24/11/2026, task 2).
+  usePlatformReferrals();
   return (
     <Routes>
       <Route element={<Layout />}>

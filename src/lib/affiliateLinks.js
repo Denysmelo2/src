@@ -17,6 +17,13 @@
  * if you ever want to.
  *
  * Last refresh: 2026-05-17 (Bárbara's full referral set).
+ *
+ * ONE PLACE (handover "testes reais", 24/11/2026, task 2): the database
+ * table `platform` (affiliate_url, referral_code, referral_reward,
+ * referral_note; src 0051) wins. This file is only the fallback for a
+ * platform the database has nothing for. Links that disagreed with the
+ * database (EverUp, Airtime, JamDoughnut) and Rakuten's broken /r/ link
+ * were removed from here. Read it all through getReferral().
  */
 
 // ─── Cashback platforms ────────────────────────────────────────────
@@ -24,28 +31,21 @@ export const CASHBACK_AFFILIATE_LINKS = {
   topcashback: 'https://www.topcashback.co.uk/ref/denys%20melo',
   quidco: 'https://quidco.com/raf/14425585/',
   cheddar: 'https://get.cheddar.me/app/CPLTBMB',
-  airtime: 'https://airtimerewards.app.link/B3GxIXjhbYb', // 2026-05-20: canonical key (matches platform='airtime' in DB seed)
-  airtime_rewards: 'https://airtimerewards.app.link/B3GxIXjhbYb',
-  airtimerewards: 'https://airtimerewards.app.link/B3GxIXjhbYb',
-  everup: 'https://everup.onelink.me/9lgD/r2phpwig',
+  // Airtime, EverUp and Rakuten: in the database (platform.affiliate_url).
   shopmium: 'https://www.shopmium.com/uk/referral/u53bu8',
-  rakuten: 'https://www.rakuten.co.uk/r/denysf20',
   snoop: 'https://click.snoop.app/M2Tu/zlmka778',
   greenjinn: '', // ⚠️ paste your GreenJinn referral link here (or leave blank)
 };
 
 // ─── Gift card / instant cashback platforms ────────────────────────
 export const GIFT_CARD_AFFILIATE_LINKS = {
-  jamdoughnut: 'https://jamdoughnut.onelink.me/vv6d/referrals?&deep_link_sub10=UFDN',
+  // JamDoughnut: in the database (platform.affiliate_url, code UFDN).
   // NX Rewards — operated by Webloyalty Intl, NOT National Express
   // (that was an old mistake — fixed in /learn/platforms 2026-05-19).
   // Bárbara: drop your real NX referral code in here when you have it.
   nx_rewards: 'https://www.nxrewards.com/',
   nxrewards: 'https://www.nxrewards.com/',
   'NX Rewards': 'https://www.nxrewards.com/', // canonical platform label
-  // Secondary Everup link kept here in case we want to A/B split
-  // gift-card flow vs cashback flow:
-  everup_gift: 'https://everup.onelink.me/9lgD/t8t7luj6',
 };
 
 // ─── Loyalty / miles programs ──────────────────────────────────────
@@ -130,16 +130,83 @@ function norm(s) {
  *   getAffiliateLink({ code: 'TOPCASHBACK', slug: 'topcashback' })
  */
 export function getAffiliateLink(platform) {
-  if (!platform) return '';
+  return getReferral(platform).url;
+}
+
+// ─── The database, loaded once per visit (hooks/usePlatformReferrals) ──
+// Names that reach this file in other spellings than the platform row's
+// code/slug/name (offer rows say 'airtime'; the row is 'airtime-rewards').
+const ALIASES = {
+  airtime: 'airtime_rewards',
+  airtimerewards: 'airtime_rewards',
+  nxrewards: 'nx_rewards',
+  nx: 'nx_rewards',
+  rakuten_uk: 'rakuten',
+  curve: 'curve_rewards',
+};
+const DB = new Map(); // norm key -> { url, code, reward, note }
+let dbVersion = 0;
+
+const clean = (v) => {
+  const s = String(v ?? '').trim();
+  return s || null;
+};
+
+/** Load platform rows ({ code, slug, name, affiliate_url, referral_code,
+ *  referral_reward, referral_note }) as the source for links and codes. */
+export function setPlatformReferrals(rows) {
+  DB.clear();
+  for (const r of rows || []) {
+    const entry = {
+      url: clean(r.affiliate_url),
+      code: clean(r.referral_code),
+      reward: clean(r.referral_reward),
+      note: clean(r.referral_note),
+    };
+    for (const k of [r.code, r.slug, r.name]) {
+      const key = norm(k);
+      if (key && !DB.has(key)) DB.set(key, entry);
+    }
+  }
+  dbVersion += 1;
+}
+
+/** Changes each time the database rows are loaded (for useMemo deps). */
+export function referralsVersion() {
+  return dbVersion;
+}
+
+/**
+ * A platform's referral: { url, code, reward, note }. The database row
+ * wins; this file only fills a link the database does not have. Pass a
+ * platform object `{ code, slug, name }` or a string.
+ */
+export function getReferral(platform) {
+  const empty = { url: '', code: null, reward: null, note: null };
+  if (!platform) return empty;
   const candidates =
-    typeof platform === 'string'
-      ? [platform]
-      : [platform.code, platform.slug, platform.name].filter(Boolean);
+    typeof platform === 'string' ? [platform] : [platform.code, platform.slug, platform.name].filter(Boolean);
+  let db = null;
+  let file = '';
   for (const c of candidates) {
     const key = norm(c);
-    if (ALL_LINKS[key]) return ALL_LINKS[key];
+    const k = ALIASES[key] || key;
+    db = db || DB.get(k) || DB.get(key) || null;
+    file = file || ALL_LINKS[key] || ALL_LINKS[k] || '';
   }
-  return '';
+  return {
+    url: db?.url || file || '',
+    code: db?.code || null,
+    reward: db?.reward || null,
+    note: db?.note || null,
+  };
+}
+
+/** "Use code DENYD11D when you sign up — you get £25 after your first
+ *  rent payment", or null without a code. */
+export function referralLine(ref) {
+  if (!ref?.code) return null;
+  return `Use code ${ref.code} when you sign up${ref.reward ? ` — you get ${ref.reward}` : ''}`;
 }
 
 /**

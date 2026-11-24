@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useHotDeals } from '@/hooks/useCatalog';
 import { useUserWallet } from '@/hooks/useUserState';
 import { useWalletOnlyPref } from '@/hooks/useUserPrefs';
@@ -104,6 +105,10 @@ function HotDealsPage() {
   // on automatically.
   const [boostersByPlatform, setBoostersByPlatform] = useState({});
   const [boostersLoading, setBoostersLoading] = useState(true);
+  // How many boosts each platform section shows (handover "testes reais",
+  // 24/11/2026, task 1): 12, then "Show all N … boosts" and "Show more",
+  // 24 at a time, on the same page.
+  const [shownByPlatform, setShownByPlatform] = useState({});
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -473,8 +478,14 @@ function HotDealsPage() {
                 {orderedPlatforms.map((platform) => {
                   const offers = visibleBoostersByPlatform[platform];
                   const LIMIT = 12;
-                  const shown = offers.slice(0, LIMIT);
+                  const STEP = 24;
+                  const count = shownByPlatform[platform] || LIMIT;
+                  const shown = offers.slice(0, count);
                   const more = offers.length - shown.length;
+                  const label = platformLabel(platform) || platform.replace(/-/g, ' ');
+                  const showMore = () =>
+                    setShownByPlatform((prev) => ({ ...prev, [platform]: (prev[platform] || LIMIT) + STEP }));
+                  const showFewer = () => setShownByPlatform((prev) => ({ ...prev, [platform]: LIMIT }));
                   // "Best option" on the first, "£X less than the best
                   // option" on the others, like /compare (22/11/2026).
                   const gaps = boostGaps(shown);
@@ -499,10 +510,24 @@ function HotDealsPage() {
                           />
                         ))}
                       </div>
-                      {more > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          + {more} more {platform} booster{more === 1 ? '' : 's'} not shown.
-                        </p>
+                      {(more > 0 || count > LIMIT) && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {more > 0 && (
+                            <Button type="button" variant="outline" size="sm" onClick={showMore}>
+                              {count === LIMIT
+                                ? `Show all ${offers.length} ${label} boosts`
+                                : `Show more (${more} left)`}
+                            </Button>
+                          )}
+                          {count > LIMIT && (
+                            <Button type="button" variant="ghost" size="sm" onClick={showFewer}>
+                              Show fewer
+                            </Button>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            Showing {shown.length} of {offers.length}
+                          </span>
+                        </div>
                       )}
                     </section>
                   );
