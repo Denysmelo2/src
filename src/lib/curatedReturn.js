@@ -107,6 +107,9 @@ function stepStoreId(step, strategy, ctx) {
  *   pct,         // sum of the percentage steps (card excluded), or null
  *   cardPct,     // the card step's %, shown apart, never ranked
  *   liveParts,   // [{kind, platform, value}] per live step
+ *   liveSteps,   // { [step index]: {value, platform} }: today's rate of
+ *                //   each live step, for its "+X% via …" badge; a live
+ *                //   step with no rate today is absent
  *   flatGbp,     // sum of the fixed £ per order
  *   isLive,      // at least one step reads a rate from the tables
  *   verifiedAt,  // oldest last_verified_at among the live steps
@@ -128,8 +131,9 @@ export function computeCuratedLive(strategy, ctx = {}) {
   const parts = [];
   let pumpUp = null; // the first gift-card step's live Pump Up, if any
   let notByCard = false;
+  const liveSteps = {};
 
-  for (const step of steps) {
+  for (const [i, step] of steps.entries()) {
     const kind = liveStepKind(step);
     if (kind) {
       isLive = true;
@@ -158,6 +162,7 @@ export function computeCuratedLive(strategy, ctx = {}) {
       pct += best.value;
       hasPct = true;
       liveParts.push({ kind, platform: norm(best.platform), value: best.value });
+      liveSteps[i] = { value: best.value, platform: label(best.platform) };
       if (best.at && (!oldest || new Date(best.at) < new Date(oldest))) oldest = best.at;
       const pu = kind === 'gift_card' ? pumpUpInfo(best.offer, ctx.now) : null;
       if (pu) {
@@ -194,6 +199,7 @@ export function computeCuratedLive(strategy, ctx = {}) {
     cardPct: notByCard ? 0 : round2(cardPct),
     pumpUp,
     liveParts,
+    liveSteps,
     flatGbp: round2(flatGbp),
     isLive,
     verifiedAt: isLive && missing.length === 0 ? oldest : null,

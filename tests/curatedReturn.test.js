@@ -143,3 +143,17 @@ test('the card line: same on every route, on the whole purchase', () => {
   assert.equal(cardLine(0, 100), null);
   assert.equal(cardLine(1, 0), null);
 });
+
+test('each live step has today\'s rate and platform for its badge (24/11/2026 b, task 2)', () => {
+  // Written in the step: 6.5% via Cheddar. Today: 5.1% EverUp is the best.
+  const gc = [
+    { platform: 'everup', discount_pct: 5.1, last_verified_at: '2026-11-24T08:00:00Z' },
+    { platform: 'jamdoughnut', discount_pct: 3, last_verified_at: '2026-11-24T08:00:00Z' },
+  ];
+  const live = computeCuratedLive(amazonViaCurrys, ctx({ giftCards: { currys: gc } }));
+  assert.deepEqual(live.liveSteps, { 0: { value: 5.1, platform: 'EverUp' } });
+  // The card step (index 1) and the EVERYWISH step are not live: no entry.
+  assert.equal(live.liveSteps[1], undefined);
+  // No rate today: no entry, so the badge is hidden.
+  assert.deepEqual(computeCuratedLive(amazonViaCurrys, ctx({})).liveSteps, {});
+});

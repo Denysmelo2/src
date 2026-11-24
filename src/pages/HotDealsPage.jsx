@@ -124,7 +124,9 @@ function HotDealsPage() {
             .eq('is_boosted', true)
             .gte('last_verified_at', cutoff)
             .order('rate', { ascending: false })
-            .limit(200),
+            // 1000, like booster_events: 200 cut Quidco's 321 boosts
+            // (handover 24/11/2026 b, task 1).
+            .limit(1000),
           supabase
             .from('gift_card_offers')
             .select(`id, platform, discount_pct, affiliate_link, conditions, valid_to, ${STORE_SEL}`)
@@ -132,7 +134,7 @@ function HotDealsPage() {
             .eq('is_boosted', true)
             .gte('last_verified_at', cutoff)
             .order('discount_pct', { ascending: false })
-            .limit(200),
+            .limit(1000),
           // Avios eStore "Special Offers" (owner's tests 21/11/2026, A5):
           // the robot sets booster_available; until now no page read it.
           supabase
