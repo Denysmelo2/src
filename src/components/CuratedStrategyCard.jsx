@@ -52,7 +52,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { reviewedLabel } from '@/lib/dataFreshness';
-import { curatedHeadline, liveStepKind } from '@/lib/curatedReturn';
+import { curatedHeadline, liveStepKind, norm } from '@/lib/curatedReturn';
 import { DataAge } from '@/components/DataAge';
 import { LiveCompare } from '@/components/LiveCompare';
 import { ReferralCode } from '@/components/ReferralCode';
@@ -103,9 +103,20 @@ function DifficultyBadge({ level }) {
 
 function Step({ step, idx, onOpen, locked, live }) {
   const Icon = stepIcon(step.icon);
-  const hasAction = Boolean(step.action_url);
   const inStore = step.is_online === false;
   const isLive = Boolean(liveStepKind(step));
+  // A live step opens the platform that pays most today, the one on its
+  // badge, with that platform's code (24/11/2026: "Amazon via Currys" said
+  // "+5.1% via EverUp" and opened JamDoughnut). Its offer's own link
+  // first, then the platform's link (lib/affiliateLinks.js).
+  const livePlatform = isLive && live ? live.platformCode : null;
+  const switched = livePlatform && norm(livePlatform) !== norm(step.platform_slug || step.platform);
+  const actionUrl = switched
+    ? live.affiliateLink || getReferral(livePlatform).url || step.action_url
+    : step.action_url;
+  const actionLabel = switched ? `Open ${live.platform}` : step.action_label;
+  const referralPlatform = livePlatform || step.platform;
+  const hasAction = Boolean(actionUrl);
   const pctShown = isLive ? (live ? Math.round(live.value * 100) / 100 : null) : step.earn_pct;
   const viaShown = isLive ? (live ? live.platform : null) : step.platform ? platformLabel(step.platform) : null;
 
@@ -173,7 +184,7 @@ function Step({ step, idx, onOpen, locked, live }) {
               </Button>
             ) : (
               <a
-                href={step.action_url}
+                href={actionUrl}
                 target="_blank"
                 rel="sponsored noopener noreferrer"
                 onClick={handleClick}
@@ -185,7 +196,7 @@ function Step({ step, idx, onOpen, locked, live }) {
                   ) : (
                     <ExternalLink className="w-3.5 h-3.5 mr-1" />
                   )}
-                  {step.action_label || (inStore ? 'Find store' : 'Open')}
+                  {actionLabel || (inStore ? 'Find store' : 'Open')}
                 </Button>
               </a>
             )
@@ -197,8 +208,8 @@ function Step({ step, idx, onOpen, locked, live }) {
         </div>
         {/* The platform's referral code under its "Open" (handover
             "testes reais", 24/11/2026, task 2). */}
-        {hasAction && step.platform && !locked && (
-          <ReferralCode referral={getReferral(step.platform)} className="mt-2" />
+        {hasAction && referralPlatform && !locked && (
+          <ReferralCode referral={getReferral(referralPlatform)} className="mt-2" />
         )}
       </div>
     </li>

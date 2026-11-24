@@ -107,9 +107,11 @@ function stepStoreId(step, strategy, ctx) {
  *   pct,         // sum of the percentage steps (card excluded), or null
  *   cardPct,     // the card step's %, shown apart, never ranked
  *   liveParts,   // [{kind, platform, value}] per live step
- *   liveSteps,   // { [step index]: {value, platform} }: today's rate of
- *                //   each live step, for its "+X% via …" badge; a live
- *                //   step with no rate today is absent
+ *   liveSteps,   // { [step index]: {value, platform, platformCode,
+ *                //   affiliateLink} }: today's best offer of each live
+ *                //   step, for its "+X% via …" badge, its "Open" button
+ *                //   and its referral code; a live step with no rate
+ *                //   today is absent
  *   flatGbp,     // sum of the fixed £ per order
  *   isLive,      // at least one step reads a rate from the tables
  *   verifiedAt,  // oldest last_verified_at among the live steps
@@ -152,7 +154,7 @@ export function computeCuratedLive(strategy, ctx = {}) {
           const p = norm(o.platform);
           const same = wantNx ? p === 'nx' || p === 'nxrewards' : p === want;
           const r = Number(o.rate);
-          if (same && r > 0 && (!best || r > best.value)) best = { value: r, platform: o.platform, at: o.last_verified_at };
+          if (same && r > 0 && (!best || r > best.value)) best = { value: r, platform: o.platform, at: o.last_verified_at, offer: o };
         }
       }
       if (!best) {
@@ -162,7 +164,12 @@ export function computeCuratedLive(strategy, ctx = {}) {
       pct += best.value;
       hasPct = true;
       liveParts.push({ kind, platform: norm(best.platform), value: best.value });
-      liveSteps[i] = { value: best.value, platform: label(best.platform) };
+      liveSteps[i] = {
+        value: best.value,
+        platform: label(best.platform),
+        platformCode: best.platform,
+        affiliateLink: best.offer?.affiliate_link || null,
+      };
       if (best.at && (!oldest || new Date(best.at) < new Date(oldest))) oldest = best.at;
       const pu = kind === 'gift_card' ? pumpUpInfo(best.offer, ctx.now) : null;
       if (pu) {
