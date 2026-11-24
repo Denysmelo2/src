@@ -12,11 +12,12 @@
  * (computeStrategies with includeStacks off), so the numbers agree.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Trophy, Info } from 'lucide-react';
 import { useStoreOffers, useMilesPrograms } from '@/hooks/useCatalog';
 import { computeStrategies, isNxPlatform } from '@/lib/strategies';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const DEFAULT_AMOUNT = 100;
 
@@ -39,7 +40,26 @@ function routeValue(route) {
  *  (both fields show the same number and the routes above follow it;
  *  23/10/2026 the owner typed £100 here while the list stayed at £50).
  *  With only `amount`, it is the starting value; with neither, £100. */
-export function LiveCompare({ storeId, storeName, amount: givenAmount, onAmountChange }) {
+export function LiveCompare({ storeId, storeName: givenName, amount: givenAmount, onAmountChange }) {
+  // The store's name for the questions ("First Sainsbury's order through
+  // the Avios eStore?"); the curated card that shows this has only the id.
+  const [loadedName, setLoadedName] = useState(null);
+  useEffect(() => {
+    if (givenName || !storeId) return undefined;
+    let alive = true;
+    supabase
+      .from('stores')
+      .select('name')
+      .eq('id', storeId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (alive && data?.name) setLoadedName(data.name);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [givenName, storeId]);
+  const storeName = givenName || loadedName;
   const [ownAmount, setOwnAmount] = useState(String(givenAmount || DEFAULT_AMOUNT));
   const shared = typeof onAmountChange === 'function';
   const amountText = shared ? String(givenAmount ?? '') : ownAmount;
@@ -96,20 +116,30 @@ export function LiveCompare({ storeId, storeName, amount: givenAmount, onAmountC
 
       {(asksCustomer || asksChannel) && (
         <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2 text-sm">
+          {/* Owner's tests 24/11/2026 (handover "testes reais", task 3): the
+              old "Bought through Avios before? Yes/No" did not say what it
+              changes. Avios pays new eStore customers more; "No" (ordered
+              before) is the common case and the default. */}
           {asksCustomer && (
-            <label className="flex items-center gap-1">
-              <span className="text-muted-foreground">
-                Bought{storeName ? ` at ${storeName}` : ''} through Avios before?
-              </span>
-              <select
-                value={customerType}
-                onChange={(e) => setCustomerType(e.target.value)}
-                className="rounded border border-border bg-background px-1 py-0.5 text-sm"
-              >
-                <option value="existing">Yes</option>
-                <option value="new">No, first time</option>
-              </select>
-            </label>
+            <div className="w-full space-y-0.5">
+              <label className="flex flex-wrap items-center gap-1">
+                <span className="text-muted-foreground">
+                  First{storeName ? ` ${storeName}` : ''} order through the Avios eStore?
+                </span>
+                <select
+                  value={customerType}
+                  onChange={(e) => setCustomerType(e.target.value)}
+                  className="rounded border border-border bg-background px-1 py-0.5 text-sm"
+                >
+                  <option value="existing">No, I&rsquo;ve ordered before</option>
+                  <option value="new">Yes, first order</option>
+                </select>
+              </label>
+              <p className="text-[11px] text-muted-foreground">
+                Avios pays new eStore customers more. Pick &lsquo;No&rsquo; if you have bought
+                {storeName ? ` ${storeName}` : ' here'} through the Avios eStore before.
+              </p>
+            </div>
           )}
           {asksChannel && (
             <label className="flex items-center gap-1">

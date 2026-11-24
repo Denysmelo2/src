@@ -34,6 +34,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { FilterChip } from '@/components/FilterChip';
 import { usePlatformsExplained } from '@/hooks/useCatalog';
+import { getReferral } from '@/lib/affiliateLinks';
+import { usePlatformReferrals } from '@/hooks/usePlatformReferrals';
+import { ReferralCode } from '@/components/ReferralCode';
 
 const CATEGORY_LABELS = {
   cashback: 'Cashback portals',
@@ -73,7 +76,11 @@ function DifficultyBadge({ level }) {
 }
 
 function PlatformCard({ platform }) {
-  const url = platform.signup_url || platform.homepage_url;
+  // One place for referral links and codes (handover "testes reais",
+  // 24/11/2026, task 2): the `platform` table first, then this guide's own
+  // signup_url, then the homepage.
+  const ref = getReferral({ code: platform.slug, slug: platform.slug, name: platform.name });
+  const url = ref.url || platform.signup_url || platform.homepage_url;
 
   return (
     <Card className="h-full flex flex-col">
@@ -232,6 +239,7 @@ function PlatformCard({ platform }) {
             </Button>
           </a>
         ) : null}
+        <ReferralCode referral={ref} className="mt-2" />
       </div>
     </Card>
   );
@@ -239,6 +247,8 @@ function PlatformCard({ platform }) {
 
 function PlatformsLearnPage() {
   const { platforms, loading } = usePlatformsExplained();
+  // Re-render when the referral codes arrive.
+  usePlatformReferrals();
   const [activeCategory, setActiveCategory] = useState('all');
 
   const grouped = useMemo(() => {
@@ -302,8 +312,9 @@ function PlatformsLearnPage() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-2">
-                If you&rsquo;re brand new, sign up for these 4-5 platforms
-                first. They unlock the biggest curated strategies.
+                If you&rsquo;re brand new, sign up for{' '}
+                {featured.length === 1 ? 'this platform' : `these ${featured.length} platforms`} first.
+                They unlock the biggest curated strategies.
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {featured.map((p) => (

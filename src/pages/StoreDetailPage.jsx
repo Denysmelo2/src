@@ -34,6 +34,7 @@ import { computeStrategies, withSyntheticNxOffer } from '@/lib/strategies';
 import { rankRoutes, splitCurated } from '@/lib/rankRoutes';
 import { explainBest } from '@/lib/explainBest';
 import { curatedGbp } from '@/lib/curatedReturn';
+import { usePlatformReferrals } from '@/hooks/usePlatformReferrals';
 import { buildWalletFilter } from '@/lib/walletFilter';
 import { useSubscription } from '@/hooks/useSubscription';
 import { StoreLogo } from '@/components/StoreLogo';
@@ -198,6 +199,8 @@ function StoreDetailPage() {
     [isStudent, studentOffers]
   );
 
+  // Referral links and codes from the database (lib/affiliateLinks.js).
+  const refVersion = usePlatformReferrals();
   const strategies = useMemo(
     () =>
       computeStrategies({
@@ -212,7 +215,7 @@ function StoreDetailPage() {
         includeStacks: canSeeStacks,
         studentOffers: isStudent ? studentOffers : [],
       }),
-    [store, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, isStudent, milesPrograms, userWalletForStrategy, canSeeStacks]
+    [store, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, isStudent, milesPrograms, userWalletForStrategy, canSeeStacks, refVersion]
   );
 
   // (bestStrategy was previously used by the standalone "Best strategy"

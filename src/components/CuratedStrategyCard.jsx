@@ -55,6 +55,9 @@ import { reviewedLabel } from '@/lib/dataFreshness';
 import { curatedHeadline } from '@/lib/curatedReturn';
 import { DataAge } from '@/components/DataAge';
 import { LiveCompare } from '@/components/LiveCompare';
+import { ReferralCode } from '@/components/ReferralCode';
+import { getReferral } from '@/lib/affiliateLinks';
+import { usePlatformReferrals } from '@/hooks/usePlatformReferrals';
 import { platformLabel } from '@/lib/platformNames';
 
 const ICONS = {
@@ -185,6 +188,11 @@ function Step({ step, idx, onOpen, locked }) {
             </span>
           ) : null}
         </div>
+        {/* The platform's referral code under its "Open" (handover
+            "testes reais", 24/11/2026, task 2). */}
+        {hasAction && step.platform && !locked && (
+          <ReferralCode referral={getReferral(step.platform)} className="mt-2" />
+        )}
       </div>
     </li>
   );
@@ -201,6 +209,8 @@ export function CuratedStrategyCard({
   onAmountChange,
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  // Re-render when the referral codes arrive (lib/affiliateLinks.js).
+  usePlatformReferrals();
 
   if (!strategy) return null;
   const steps = Array.isArray(strategy.steps) ? strategy.steps : [];

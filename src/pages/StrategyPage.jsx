@@ -42,6 +42,8 @@ import { DataAge } from '@/components/DataAge';
 import { oldestVerifiedAt } from '@/lib/dataFreshness';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
 import { termsLines } from '@/lib/cashbackTerms';
+import { ReferralCode } from '@/components/ReferralCode';
+import { usePlatformReferrals } from '@/hooks/usePlatformReferrals';
 
 function StrategyPage() {
   const [searchParams] = useSearchParams();
@@ -61,6 +63,8 @@ function StrategyPage() {
     [walletOnly, wallet]
   );
 
+  // Referral links and codes from the database (lib/affiliateLinks.js).
+  const refVersion = usePlatformReferrals();
   const strategies = useMemo(
     () =>
       computeStrategies({
@@ -76,7 +80,7 @@ function StrategyPage() {
         // Student routes only for "I'm a student" (handover 17/11/2026).
         studentOffers: isStudent ? studentOffers : [],
       }),
-    [store, amount, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, isStudent, milesPrograms, userWalletForStrategy, isPremium, isAdmin]
+    [store, amount, cashbackOffers, pointOffers, giftCardOffers, bonusOffers, studentOffers, isStudent, milesPrograms, userWalletForStrategy, isPremium, isAdmin, refVersion]
   );
 
   // Pick the highlighted strategy: routeId from URL > best by GBP return
@@ -131,7 +135,8 @@ function StrategyPage() {
 
   const steps = useMemo(
     () => buildStrategySteps(highlighted, store),
-    [highlighted, store]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [highlighted, store, refVersion]
   );
 
   // Check if this exact (store, route, amount) combo was already saved
@@ -393,6 +398,7 @@ function StrategyPage() {
                             <span>{step.warning}</span>
                           </div>
                         )}
+                        <ReferralCode referral={step.referral} />
                         {/* The shop's own terms on the platform (Rakuten, src 0050). */}
                         {termsLines(step.terms).length > 0 && (
                           <details className="text-sm">

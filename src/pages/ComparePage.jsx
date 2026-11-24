@@ -73,7 +73,10 @@ import { studentSearchView } from '@/lib/studentDiscount';
 import { rankRoutes, splitCurated, mergeCopies } from '@/lib/rankRoutes';
 import { withCard, cardInclLine } from '@/lib/cardEarn';
 import { explainBest } from '@/lib/explainBest';
-import { termsLines } from '@/lib/cashbackTerms';
+import { termsLines, exclusionLine } from '@/lib/cashbackTerms';
+import { getReferral } from '@/lib/affiliateLinks';
+import { ReferralCode } from '@/components/ReferralCode';
+import { usePlatformReferrals } from '@/hooks/usePlatformReferrals';
 import { DataAge } from '@/components/DataAge';
 import { cn } from '@/lib/utils';
 import { AffiliateDisclosure } from '@/components/AffiliateDisclosure';
@@ -903,6 +906,24 @@ function AutoRouteDetail({ strategy, storeSlug, storeName, amount, now }) {
                     <RateBreakdown breakdown={layer.rateBreakdown} compact />
                   </div>
                 )}
+                {/* What the platform excludes and the shop's own terms
+                    (Rakuten, src 0050), on the route itself. */}
+                {layer.kind === 'cashback' && exclusionLine(layer.platform) && (
+                  <div className="text-xs text-amber-700 mt-1">{exclusionLine(layer.platform)}</div>
+                )}
+                {layer.kind === 'cashback' && termsLines(layer.terms).length > 0 && (
+                  <details className="text-xs mt-1">
+                    <summary className="cursor-pointer text-primary font-medium">See terms</summary>
+                    <ul className="mt-1 space-y-0.5 text-muted-foreground list-disc pl-4">
+                      {termsLines(layer.terms).map((t, j) => (
+                        <li key={j}>{t}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+                {/* The platform's referral code (handover "testes reais",
+                    24/11/2026, task 2). */}
+                <ReferralCode referral={getReferral(layer.platform)} className="mt-2" />
               </div>
             </li>
           ))}
@@ -960,6 +981,7 @@ function StudentRouteDetail({ strategy, storeSlug, amount }) {
               <div className="font-medium">{step.title}</div>
               {step.detail && <div className="text-xs text-muted-foreground">{step.detail}</div>}
               {step.warning && <div className="text-xs text-amber-700 mt-1">{step.warning}</div>}
+              <ReferralCode referral={step.referral} className="mt-1" />
               {/* The shop's own terms on the platform (Rakuten, src 0050). */}
               {termsLines(step.terms).length > 0 && (
                 <details className="text-xs mt-1">
@@ -1287,6 +1309,8 @@ function ComparePage() {
     });
   }, [submitted, offersLoading]);
 
+  // Referral links and codes from the database (lib/affiliateLinks.js).
+  const refVersion = usePlatformReferrals();
   const autoStrategies = useMemo(() => {
     if (!submitted || !selected || !amountParsed.ok) return [];
     return computeStrategies({
@@ -1316,6 +1340,7 @@ function ComparePage() {
     milesPrograms,
     userWalletForStrategy,
     canSeeStacks,
+    refVersion,
   ]);
 
   // Direct Avios eStore baseline for THIS store: max earn_rate among
