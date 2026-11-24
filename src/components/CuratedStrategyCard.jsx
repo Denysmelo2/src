@@ -52,7 +52,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { reviewedLabel } from '@/lib/dataFreshness';
-import { curatedHeadline } from '@/lib/curatedReturn';
+import { curatedHeadline, liveStepKind } from '@/lib/curatedReturn';
 import { DataAge } from '@/components/DataAge';
 import { LiveCompare } from '@/components/LiveCompare';
 import { ReferralCode } from '@/components/ReferralCode';
@@ -101,10 +101,13 @@ function DifficultyBadge({ level }) {
   );
 }
 
-function Step({ step, idx, onOpen, locked }) {
+function Step({ step, idx, onOpen, locked, live }) {
   const Icon = stepIcon(step.icon);
   const hasAction = Boolean(step.action_url);
   const inStore = step.is_online === false;
+  const isLive = Boolean(liveStepKind(step));
+  const pctShown = isLive ? (live ? Math.round(live.value * 100) / 100 : null) : step.earn_pct;
+  const viaShown = isLive ? (live ? live.platform : null) : step.platform ? platformLabel(step.platform) : null;
 
   const handleClick = () => {
     if (locked || !hasAction) return;
@@ -134,12 +137,16 @@ function Step({ step, idx, onOpen, locked }) {
               </p>
             )}
 
-            {/* Earnings line */}
-            {(step.earn_pct != null || step.earn_points != null) && (
+            {/* Earnings line. A live step (lib/curatedReturn.js) shows
+                today's rate and platform, like the live box above, not
+                the written earn_pct (handover 24/11/2026 b, task 2:
+                Amazon via Currys said "+6.5% via JamDoughnut" while the
+                box said 5.1% EverUp); with no rate today, no badge. */}
+            {(pctShown != null || step.earn_points != null) && (
               <div className="flex flex-wrap gap-2 mt-1.5">
-                {step.earn_pct != null && (
+                {pctShown != null && (
                   <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                    +{step.earn_pct}%
+                    +{pctShown}%
                   </span>
                 )}
                 {step.earn_points != null && (
@@ -148,9 +155,9 @@ function Step({ step, idx, onOpen, locked }) {
                     {step.earn_points_program?.split(' ').slice(-1)[0] || 'pts'}
                   </span>
                 )}
-                {step.platform && (
+                {viaShown && (
                   <span className="text-xs text-muted-foreground">
-                    via {platformLabel(step.platform)}
+                    via {viaShown}
                   </span>
                 )}
               </div>
@@ -360,6 +367,7 @@ export function CuratedStrategyCard({
                     idx={i}
                     onOpen={onOpenStep}
                     locked={locked}
+                    live={live?.liveSteps?.[i] || null}
                   />
                 ))}
               </ol>
