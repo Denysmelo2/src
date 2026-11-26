@@ -1,9 +1,45 @@
 /* ═══════════════════════════════════════════════════════════════
-   SNAPGAIN E-BOOK DESIGN SYSTEM — 100% FIEL AO PDF
-   (copied by the Cowork on 26/11/2026 from the owner's Claude Project
-   file "ebookDesign_FINAL.css"; used by the chapter HTML classes
-   .sg / .sg4 — handover docs/HANDOVER_CLAUDE_CODE_2026-11-26-ebook.md)
+   EBOOK — "Stop Losing Money", read in /library (handover
+   docs/HANDOVER_CLAUDE_CODE_2026-11-26-ebook.md, 26/11/2026).
+
+   Every rule is scoped to .chapter-content, the reader's wrapper, so
+   nothing reaches the rest of the site; the book's dark mode
+   ([data-theme="dark"] in the original file) follows the site's .dark.
+
+   1. The chapters' own <style> (the same in all 9; DOMPurify drops the
+      tag, so it lives here).
+   2. ebookDesign_FINAL.css (moved from docs/ebook/, copied by the Cowork
+      from the owner's Project file), scoped.
+   3. Site additions: dark mode for the chapter boxes, tables that
+      scroll inside .sg4-twrap on a phone, no horizontal scroll.
    ═══════════════════════════════════════════════════════════════ */
+
+/* ══════════ 1. THE CHAPTERS' OWN STYLE ══════════ */
+.chapter-content .sg {font-family:Georgia,serif}
+.chapter-content .sg-card {margin:0 0 8px}
+.chapter-content .sg-layout,
+.chapter-content .sg-columns {display:flex;flex-wrap:wrap;gap:20px;margin:16px 0}
+.chapter-content .sg-layout>.sg-item {flex:1 1 220px}
+.chapter-content .sg-columns>div {flex:1 1 240px}
+.chapter-content .sg-callout {background:#f3eefe;border-left:4px solid #7d4dfb;padding:12px 16px;border-radius:8px;margin:16px 0}
+.chapter-content .sg-warn {background:#fff4e5;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:8px;margin:14px 0;font-family:system-ui,sans-serif;font-size:15px}
+.chapter-content .sg-todo {background:#eefaf2;border-left:4px solid #16a34a;padding:12px 16px;border-radius:8px;margin:14px 0}
+.chapter-content .sg-math {background:#f3f3f7;padding:2px 6px;border-radius:6px;font-family:ui-monospace,monospace}
+.chapter-content .sg-statnum {font-size:30px;font-weight:800;color:#7d4dfb;line-height:1.1;margin-bottom:4px}
+.chapter-content .sg-diagram {display:flex;flex-wrap:wrap;gap:16px;margin:16px 0}
+.chapter-content .sg-diagram>.sg-item {flex:1 1 240px;background:#faf9fc;border:1px solid #e7e5ee;border-radius:10px;padding:12px 16px}
+.chapter-content video {max-width:100%;height:auto;border-radius:12px;margin:16px 0;display:block}
+.chapter-content .sg-chart {margin:22px 0;padding:14px;border:1px solid #e7e5ee;border-radius:12px;background:#fff}
+.chapter-content .sg-chart-data {width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+.chapter-content .sg-chart-data td {border:1px solid #eee;padding:5px 8px}
+.chapter-content table {width:100%;border-collapse:collapse;margin:18px 0;font-size:14px}
+.chapter-content td,
+.chapter-content th {border:1px solid #e7e5ee;padding:8px 10px;text-align:left}
+.chapter-content img {max-width:100%;height:auto;border-radius:12px;margin:16px 0}
+.chapter-content h3 {margin-top:36px}
+.chapter-content h4 {margin-top:22px}
+
+/* ══════════ 2. ebookDesign_FINAL.css ══════════ */
 
 /* ══════════ RESET DE FUNDOS (REMOVE ROSA!) ══════════ */
 .chapter-content {
@@ -11,7 +47,7 @@
 }
 
 /* ══════════ SISTEMA .SG (Capítulo 1) ══════════ */
-.sg {
+.chapter-content .sg {
   font-family: Georgia, 'Times New Roman', serif;
   line-height: 1.7;
   color: #1a1a1a;
@@ -19,11 +55,11 @@
 }
 
 /* Cover Page */
-.sg-cover {
+.chapter-content .sg-cover {
   background: #ffffff;
 }
 
-.sg-cover h1 {
+.chapter-content .sg-cover h1 {
   font-size: 2.5rem;
   font-weight: 800;
   text-align: center;
@@ -32,7 +68,7 @@
   color: #1a1a1a;
 }
 
-.sg-cover img {
+.chapter-content .sg-cover img {
   width: 100%;
   max-width: 900px;
   margin: 2rem auto;
@@ -42,7 +78,7 @@
 }
 
 /* Stat Row */
-.sg-stat-row {
+.chapter-content .sg-stat-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 2rem;
@@ -51,33 +87,33 @@
   background: #ffffff;
 }
 
-.sg-s {
+.chapter-content .sg-s {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.sg-s .num {
+.chapter-content .sg-s .num {
   font-size: 3.5rem;
   font-weight: 900;
   color: #1a1a1a;
   line-height: 1;
 }
 
-.sg-s .lbl {
+.chapter-content .sg-s .lbl {
   font-size: 1.125rem;
   font-weight: 700;
   color: #1a1a1a;
 }
 
-.sg-s .sub {
+.chapter-content .sg-s .sub {
   font-size: 0.9375rem;
   color: #6b6b6b;
   line-height: 1.5;
 }
 
 /* Dividers */
-.sg-divider {
+.chapter-content .sg-divider {
   border: none;
   height: 2px;
   background: linear-gradient(to right, transparent, #e8e8e8, transparent);
@@ -85,7 +121,7 @@
 }
 
 /* Section Backgrounds */
-.sg-section-bg {
+.chapter-content .sg-section-bg {
   background: #f9f9f9;
   border: 1px solid #e8e8e8;
   border-radius: 16px;
@@ -94,7 +130,7 @@
 }
 
 /* Two Column Layout */
-.sg-two-col {
+.chapter-content .sg-two-col {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
@@ -102,14 +138,14 @@
 }
 
 /* Family & Cost Boxes */
-.sg-family-box {
+.chapter-content .sg-family-box {
   background: #f0f7ff;
   border: 2px solid #d0e7ff;
   border-radius: 12px;
   padding: 1.5rem;
 }
 
-.sg-cost-box {
+.chapter-content .sg-cost-box {
   background: #fff5f0;
   border: 2px solid #ffd4c0;
   border-radius: 12px;
@@ -117,7 +153,7 @@
 }
 
 /* Warning Boxes */
-.sg-warn {
+.chapter-content .sg-warn {
   background: #fff8e6;
   border-left: 4px solid #d9a93a;
   border-radius: 8px;
@@ -128,7 +164,7 @@
   gap: 1rem;
 }
 
-.sg-warn-icon {
+.chapter-content .sg-warn-icon {
   width: 24px;
   height: 24px;
   border: 2px solid #d9a93a;
@@ -137,7 +173,7 @@
   position: relative;
 }
 
-.sg-warn-icon::before {
+.chapter-content .sg-warn-icon::before {
   content: '!';
   position: absolute;
   top: 50%;
@@ -149,7 +185,7 @@
 }
 
 /* Cost Highlight */
-.sg-cost-highlight {
+.chapter-content .sg-cost-highlight {
   background: #d9a93a;
   color: #1a1a1a;
   padding: 0.25rem 0.75rem;
@@ -159,20 +195,20 @@
 }
 
 /* Road Infographic */
-.sg-road-wrap {
+.chapter-content .sg-road-wrap {
   margin: 3rem 0;
   padding: 2rem 0;
   background: #ffffff;
 }
 
-.sg-road {
+.chapter-content .sg-road {
   position: relative;
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
 }
 
-.sg-pins {
+.chapter-content .sg-pins {
   position: absolute;
   top: 0;
   left: 0;
@@ -180,14 +216,14 @@
   height: 100%;
 }
 
-.sg-pin {
+.chapter-content .sg-pin {
   position: absolute;
   transform: translate(-50%, -50%);
   text-align: center;
   max-width: 140px;
 }
 
-.sg-pin-icon {
+.chapter-content .sg-pin-icon {
   width: 48px;
   height: 48px;
   background: #d9a93a;
@@ -201,14 +237,14 @@
 }
 
 /* Quotes Grid */
-.sg-quotes-grid {
+.chapter-content .sg-quotes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
   margin: 2rem 0;
 }
 
-.sg-quote-box {
+.chapter-content .sg-quote-box {
   background: #fef9f3;
   border: 2px solid #f0e6d8;
   border-radius: 12px;
@@ -216,7 +252,7 @@
   position: relative;
 }
 
-.sg-quote-box::before {
+.chapter-content .sg-quote-box::before {
   content: '"';
   position: absolute;
   top: -10px;
@@ -228,14 +264,14 @@
 }
 
 /* Chevrons */
-.sg-chevrons {
+.chapter-content .sg-chevrons {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   margin: 2rem 0;
 }
 
-.sg-chev {
+.chapter-content .sg-chev {
   background: #ffffff;
   border: 2px solid #e8e8e8;
   border-radius: 12px;
@@ -245,7 +281,7 @@
   align-items: flex-start;
 }
 
-.sg-chev .c-num {
+.chapter-content .sg-chev .c-num {
   width: 40px;
   height: 40px;
   background: #d9a93a;
@@ -260,7 +296,7 @@
 }
 
 /* Donut Charts */
-.sg-donut-grid {
+.chapter-content .sg-donut-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 2rem;
@@ -268,11 +304,11 @@
   background: #ffffff;
 }
 
-.sg-donut {
+.chapter-content .sg-donut {
   text-align: center;
 }
 
-.sg-donut svg {
+.chapter-content .sg-donut svg {
   width: 140px;
   height: 140px;
   margin: 0 auto 1rem;
@@ -280,7 +316,7 @@
 }
 
 /* Blockquote */
-.sg-blockquote {
+.chapter-content .sg-blockquote {
   background: #f0f7ff;
   border-left: 4px solid #6366f1;
   border-radius: 8px;
@@ -290,7 +326,7 @@
 }
 
 /* ══════════ SISTEMA .SG4 (Capítulos 2-8) ══════════ */
-.sg4 {
+.chapter-content .sg4 {
   font-family: Georgia, 'Times New Roman', serif;
   line-height: 1.7;
   color: #1a1a1a;
@@ -298,7 +334,7 @@
 }
 
 /* ══════════ COVER IMAGES & BANNERS ══════════ */
-.sg4-cover-img {
+.chapter-content .sg4-cover-img {
   width: 100%;
   max-width: 900px;
   height: 280px;
@@ -315,7 +351,7 @@
   letter-spacing: 2px;
 }
 
-.sg4-banner {
+.chapter-content .sg4-banner {
   width: 100%;
   height: 120px;
   border-radius: 16px;
@@ -323,14 +359,14 @@
   background: linear-gradient(135deg, #d9a93a 0%, #c89030 100%);
 }
 
-.sg4-banner-gold {
+.chapter-content .sg4-banner-gold {
   background: linear-gradient(135deg, #d9a93a 0%, #e8d090 50%, #f0e0a0 100%);
 }
 
 /* ══════════ LAYOUTS ESPECIAIS - TWO COLUMN COM IMAGEM ══════════ */
 
 /* Layout para Type 3: imagem à esquerda, conteúdo à direita */
-#p21 {
+.chapter-content #p21 {
   background: linear-gradient(to right, #d4c8b0 0%, #d4c8b0 35%, #ffffff 35%, #ffffff 100%);
   padding: 2rem;
   border-radius: 16px;
@@ -338,20 +374,20 @@
 }
 
 /* Layout para Type 2: imagem hero no topo, boxes com borda dourada */
-#p20 {
+.chapter-content #p20 {
   background: #ffffff;
   padding: 2rem 0;
 }
 
-#p20 h1 {
+.chapter-content #p20 h1 {
   text-align: center;
   font-size: 2.25rem;
   margin: 2rem 0;
 }
 
 /* Hero image para Type 2 */
-#p20 > img:first-of-type,
-#p21 > img:first-of-type {
+.chapter-content #p20 > img:first-of-type,
+.chapter-content #p21 > img:first-of-type {
   width: 100%;
   max-width: 800px;
   height: auto;
@@ -362,21 +398,21 @@
 }
 
 /* ══════════ GRIDS ══════════ */
-.sg4-g2 {
+.chapter-content .sg4-g2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin: 2rem 0;
 }
 
-.sg4-g3 {
+.chapter-content .sg4-g3 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
   margin: 2rem 0;
 }
 
-.sg4-g4 {
+.chapter-content .sg4-g4 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
@@ -384,14 +420,14 @@
 }
 
 /* ══════════ CHEVRON CARDS (com bordas DOURADAS) ══════════ */
-.sg4-chevron-row {
+.chapter-content .sg4-chevron-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
   margin: 2rem 0;
 }
 
-.sg4-chevron-card {
+.chapter-content .sg4-chevron-card {
   background: #ffffff;
   border: 3px solid #d9a93a; /* DOURADO! */
   border-radius: 12px;
@@ -399,14 +435,14 @@
   text-align: center;
 }
 
-.sg4-chevron-icon {
+.chapter-content .sg4-chevron-icon {
   font-size: 48px;
   display: block;
   margin-bottom: 1rem;
 }
 
 /* ══════════ ICON CARDS ══════════ */
-.sg4-iconcard {
+.chapter-content .sg4-iconcard {
   background: #fafafa;
   border: 2px solid #e8e8e8;
   border-radius: 12px;
@@ -414,14 +450,14 @@
   text-align: center;
 }
 
-.sg4-icon-top {
+.chapter-content .sg4-icon-top {
   font-size: 48px;
   display: block;
   margin-bottom: 1rem;
 }
 
 /* ══════════ TIP BOXES ══════════ */
-.sg4-tip {
+.chapter-content .sg4-tip {
   background: #fff8e6;
   border-left: 4px solid #d9a93a;
   border-radius: 8px;
@@ -432,7 +468,7 @@
   align-items: flex-start;
 }
 
-.sg4-tip-icon {
+.chapter-content .sg4-tip-icon {
   width: 24px;
   height: 24px;
   border: 2px solid #d9a93a;
@@ -446,7 +482,7 @@
 }
 
 /* ══════════ NUMBERED CARDS (com círculos DOURADOS) ══════════ */
-.sg4-numcard {
+.chapter-content .sg4-numcard {
   background: #ffffff;
   border: 3px solid #d9a93a; /* DOURADO! */
   border-radius: 12px;
@@ -456,7 +492,7 @@
   align-items: flex-start;
 }
 
-.sg4-circle {
+.chapter-content .sg4-circle {
   width: 48px;
   height: 48px;
   background: #d9a93a;
@@ -471,7 +507,7 @@
 }
 
 /* ══════════ WIDE CARD ══════════ */
-.sg4-wide {
+.chapter-content .sg4-wide {
   background: #ffffff;
   border: 3px solid #d9a93a;
   border-radius: 12px;
@@ -483,14 +519,14 @@
 }
 
 /* ══════════ STEPS (timeline vertical) ══════════ */
-.sg4-steps {
+.chapter-content .sg4-steps {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   margin: 2rem 0;
 }
 
-.sg4-step {
+.chapter-content .sg4-step {
   background: #ffffff;
   border: 2px solid #e8e8e8;
   border-radius: 12px;
@@ -500,7 +536,7 @@
   align-items: flex-start;
 }
 
-.sg4-step-n {
+.chapter-content .sg4-step-n {
   font-size: 1rem;
   font-weight: 700;
   color: #6b6b6b;
@@ -508,20 +544,20 @@
 }
 
 /* ══════════ DOT LIST (com bullets DOURADOS) ══════════ */
-.sg4-dotlist {
+.chapter-content .sg4-dotlist {
   list-style: none;
   padding-left: 0;
   margin: 1.5rem 0;
 }
 
-.sg4-dotlist li {
+.chapter-content .sg4-dotlist li {
   padding-left: 1.5rem;
   position: relative;
   margin-bottom: 0.75rem;
   line-height: 1.6;
 }
 
-.sg4-dotlist li::before {
+.chapter-content .sg4-dotlist li::before {
   content: '•';
   position: absolute;
   left: 0;
@@ -531,19 +567,19 @@
 }
 
 /* ══════════ LINKS ══════════ */
-.sg4-green {
+.chapter-content .sg4-green {
   color: #22c55e !important;
   font-weight: 600;
   text-decoration: underline;
 }
 
-.sg4-gold {
+.chapter-content .sg4-gold {
   color: #d9a93a !important;
   font-weight: 600;
 }
 
 /* ══════════ BLOCKQUOTE ══════════ */
-.sg4-blockq {
+.chapter-content .sg4-blockq {
   background: #f0f7ff;
   border-left: 4px solid #6366f1;
   border-radius: 8px;
@@ -555,14 +591,14 @@
 }
 
 /* ══════════ QUOTES GRID ══════════ */
-.sg4-quotes {
+.chapter-content .sg4-quotes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin: 2rem 0;
 }
 
-.sg4-quote {
+.chapter-content .sg4-quote {
   background: #fef9f3;
   border: 2px solid #f0e6d8;
   border-radius: 12px;
@@ -570,26 +606,26 @@
 }
 
 /* ══════════ CARDS ══════════ */
-.sg4-card {
+.chapter-content .sg4-card {
   background: #fafafa;
   border: 2px solid #e8e8e8;
   border-radius: 12px;
   padding: 1.5rem;
 }
 
-.sg4-dark {
+.chapter-content .sg4-dark {
   background: #1a1a1a;
   color: #ffffff;
   border-color: #333333;
 }
 
 /* ══════════ TABLES ══════════ */
-.sg4-twrap {
+.chapter-content .sg4-twrap {
   overflow-x: auto;
   margin: 2rem 0;
 }
 
-.sg4-t {
+.chapter-content .sg4-t {
   width: 100%;
   border-collapse: collapse;
   border: 2px solid #e8e8e8;
@@ -597,18 +633,19 @@
   overflow: hidden;
 }
 
-.sg4-t thead {
+.chapter-content .sg4-t thead {
   background: #f5f5f5;
 }
 
-.sg4-t th, .sg4-t td {
+.chapter-content .sg4-t th,
+.chapter-content .sg4-t td {
   border: 1px solid #e8e8e8;
   padding: 0.875rem 1rem;
   text-align: left;
 }
 
 /* ══════════ WARNINGS ══════════ */
-.sg4-warn {
+.chapter-content .sg4-warn {
   background: #fff3cd;
   border-left: 4px solid #ffc107;
   border-radius: 8px;
@@ -617,20 +654,20 @@
 }
 
 /* ══════════ TIPS GRID ══════════ */
-.sg4-tips4 {
+.chapter-content .sg4-tips4 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
   margin: 2rem 0;
 }
 
-.sg4-tip4 {
+.chapter-content .sg4-tip4 {
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
 }
 
-.sg4-tip4-dot {
+.chapter-content .sg4-tip4-dot {
   width: 12px;
   height: 12px;
   background: #d9a93a;
@@ -640,14 +677,14 @@
 }
 
 /* ══════════ ICON ROWS ══════════ */
-.sg4-icon-row {
+.chapter-content .sg4-icon-row {
   display: flex;
   gap: 1rem;
   align-items: flex-start;
   margin-bottom: 1.5rem;
 }
 
-.sg4-icon-box {
+.chapter-content .sg4-icon-box {
   width: 48px;
   height: 48px;
   background: #d9a93a;
@@ -660,7 +697,7 @@
 }
 
 /* ══════════ TIMELINE ══════════ */
-.sg4-tline {
+.chapter-content .sg4-tline {
   display: flex;
   gap: 2rem;
   margin: 2rem 0;
@@ -668,12 +705,12 @@
   border-left: 3px solid #d9a93a;
 }
 
-.sg4-tline-item {
+.chapter-content .sg4-tline-item {
   flex: 1;
   position: relative;
 }
 
-.sg4-tline-item::before {
+.chapter-content .sg4-tline-item::before {
   content: '';
   position: absolute;
   left: -2.75rem;
@@ -686,7 +723,7 @@
 }
 
 /* ══════════ FORMULA ══════════ */
-.sg4-formula {
+.chapter-content .sg4-formula {
   background: #1a1a1a;
   color: #d9a93a;
   font-family: 'Courier New', monospace;
@@ -699,20 +736,20 @@
 }
 
 /* ══════════ NUMBERED LIST ══════════ */
-.sg4-numlist {
+.chapter-content .sg4-numlist {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   margin: 2rem 0;
 }
 
-.sg4-numitem {
+.chapter-content .sg4-numitem {
   display: flex;
   gap: 1.25rem;
   align-items: flex-start;
 }
 
-.sg4-numball {
+.chapter-content .sg4-numball {
   width: 40px;
   height: 40px;
   background: #d9a93a;
@@ -726,7 +763,7 @@
 }
 
 /* ══════════ INFO BOX ══════════ */
-.sg4-info {
+.chapter-content .sg4-info {
   background: #e0f2fe;
   border-left: 4px solid #0ea5e9;
   border-radius: 8px;
@@ -735,7 +772,7 @@
 }
 
 /* ══════════ STATS DISPLAY ══════════ */
-.sg4-stats {
+.chapter-content .sg4-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 2rem;
@@ -744,20 +781,20 @@
   background: #ffffff;
 }
 
-.sg4-stat {
+.chapter-content .sg4-stat {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.sg4-snum {
+.chapter-content .sg4-snum {
   font-size: 3rem;
   font-weight: 900;
   color: #1a1a1a;
   line-height: 1;
 }
 
-.sg4-slbl {
+.chapter-content .sg4-slbl {
   font-size: 1.125rem;
   font-weight: 700;
   color: #1a1a1a;
@@ -766,103 +803,189 @@
 
 /* ══════════ RESPONSIVE ══════════ */
 @media (max-width: 768px) {
-  .sg-cover h1 {
+  .chapter-content .sg-cover h1 {
     font-size: 1.75rem;
   }
 
-  .sg-s .num, .sg4-snum {
+  .chapter-content .sg-s .num,
+.chapter-content .sg4-snum {
     font-size: 2.5rem;
   }
 
-  .sg-stat-row, .sg-two-col, .sg-quotes-grid, .sg-donut-grid,
-  .sg4-g2, .sg4-g3, .sg4-g4, .sg4-chevron-row, .sg4-quotes,
-  .sg4-tips4, .sg4-stats {
+  .chapter-content .sg-stat-row,
+.chapter-content .sg-two-col,
+.chapter-content .sg-quotes-grid,
+.chapter-content .sg-donut-grid,
+.chapter-content .sg4-g2,
+.chapter-content .sg4-g3,
+.chapter-content .sg4-g4,
+.chapter-content .sg4-chevron-row,
+.chapter-content .sg4-quotes,
+.chapter-content .sg4-tips4,
+.chapter-content .sg4-stats {
     grid-template-columns: 1fr;
   }
 
-  .sg-chev, .sg4-step {
+  .chapter-content .sg-chev,
+.chapter-content .sg4-step {
     flex-direction: column;
     text-align: center;
   }
 
-  .sg4-tline {
+  .chapter-content .sg4-tline {
     flex-direction: column;
   }
 
-  #p21 {
+  .chapter-content #p21 {
     background: linear-gradient(to bottom, #d4c8b0 0%, #d4c8b0 300px, #ffffff 300px, #ffffff 100%);
   }
 }
 
 /* ══════════ DARK MODE ══════════ */
-[data-theme="dark"] .sg,
-[data-theme="dark"] .sg4 {
+.dark .chapter-content .sg,
+.dark .chapter-content .sg4 {
   color: #ffffff;
   background: transparent;
 }
 
-[data-theme="dark"] .chapter-content {
+.dark .chapter-content {
   background: transparent !important;
 }
 
-[data-theme="dark"] .sg h1,
-[data-theme="dark"] .sg h2,
-[data-theme="dark"] .sg h3,
-[data-theme="dark"] .sg4 h1,
-[data-theme="dark"] .sg4 h2,
-[data-theme="dark"] .sg4 h3,
-[data-theme="dark"] .sg4 h4 {
+.dark .chapter-content .sg h1,
+.dark .chapter-content .sg h2,
+.dark .chapter-content .sg h3,
+.dark .chapter-content .sg4 h1,
+.dark .chapter-content .sg4 h2,
+.dark .chapter-content .sg4 h3,
+.dark .chapter-content .sg4 h4 {
   color: #ffffff;
 }
 
-[data-theme="dark"] .sg-s .num,
-[data-theme="dark"] .sg-s .lbl,
-[data-theme="dark"] .sg4-snum,
-[data-theme="dark"] .sg4-slbl {
+.dark .chapter-content .sg-s .num,
+.dark .chapter-content .sg-s .lbl,
+.dark .chapter-content .sg4-snum,
+.dark .chapter-content .sg4-slbl {
   color: #ffffff;
 }
 
-[data-theme="dark"] .sg-section-bg,
-[data-theme="dark"] .sg-family-box,
-[data-theme="dark"] .sg-cost-box,
-[data-theme="dark"] .sg-quote-box,
-[data-theme="dark"] .sg-chev,
-[data-theme="dark"] .sg4-chevron-card,
-[data-theme="dark"] .sg4-iconcard,
-[data-theme="dark"] .sg4-numcard,
-[data-theme="dark"] .sg4-step,
-[data-theme="dark"] .sg4-wide,
-[data-theme="dark"] .sg4-card,
-[data-theme="dark"] .sg4-quote {
+.dark .chapter-content .sg-section-bg,
+.dark .chapter-content .sg-family-box,
+.dark .chapter-content .sg-cost-box,
+.dark .chapter-content .sg-quote-box,
+.dark .chapter-content .sg-chev,
+.dark .chapter-content .sg4-chevron-card,
+.dark .chapter-content .sg4-iconcard,
+.dark .chapter-content .sg4-numcard,
+.dark .chapter-content .sg4-step,
+.dark .chapter-content .sg4-wide,
+.dark .chapter-content .sg4-card,
+.dark .chapter-content .sg4-quote {
   background: rgba(30, 41, 59, 0.5);
   border-color: rgba(100, 116, 139, 0.3);
 }
 
-[data-theme="dark"] .sg-warn,
-[data-theme="dark"] .sg4-tip,
-[data-theme="dark"] .sg4-warn,
-[data-theme="dark"] .sg4-info {
+.dark .chapter-content .sg-warn,
+.dark .chapter-content .sg4-tip,
+.dark .chapter-content .sg4-warn,
+.dark .chapter-content .sg4-info {
   background: rgba(51, 65, 85, 0.8);
   color: #ffffff;
 }
 
-[data-theme="dark"] .sg-blockquote,
-[data-theme="dark"] .sg4-blockq {
+.dark .chapter-content .sg-blockquote,
+.dark .chapter-content .sg4-blockq {
   background: rgba(99, 102, 241, 0.15);
   color: #ffffff;
 }
 
-[data-theme="dark"] .sg4-t {
+.dark .chapter-content .sg4-t {
   border-color: rgba(100, 116, 139, 0.3);
 }
 
-[data-theme="dark"] .sg4-t th,
-[data-theme="dark"] .sg4-t td {
+.dark .chapter-content .sg4-t th,
+.dark .chapter-content .sg4-t td {
   border-color: rgba(100, 116, 139, 0.3);
   color: #ffffff;
 }
 
-[data-theme="dark"] #p21,
-[data-theme="dark"] #p20 {
+.dark .chapter-content #p21,
+.dark .chapter-content #p20 {
   background: transparent !important;
+}
+
+/* ══════════ 3. SITE ADDITIONS ══════════ */
+
+/* No horizontal scroll on a phone: long words and links wrap, media fit. */
+.chapter-content {
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.chapter-content svg,
+.chapter-content img,
+.chapter-content video,
+.chapter-content figure {
+  max-width: 100%;
+}
+.chapter-content figure {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Tables scroll inside their own box (the reader wraps each in .sg4-twrap). */
+.chapter-content .sg4-twrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+.chapter-content .sg4-twrap > table {
+  margin: 0;
+  min-width: 480px;
+  overflow-wrap: normal;
+}
+
+/* The chapters' update notes are plain text with an emoji, not the
+   icon-and-text row of ebookDesign_FINAL's .sg-warn: keep them a block. */
+.chapter-content aside.sg-warn {
+  display: block;
+}
+
+.chapter-content a {
+  color: #7d4dfb;
+  text-decoration: underline;
+}
+
+.chapter-content ul,
+.chapter-content ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+.chapter-content ul { list-style: disc; }
+.chapter-content ol { list-style: decimal; }
+.chapter-content p { margin: 0.75rem 0; }
+.chapter-content h3 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }
+.chapter-content h4 { font-size: 1.2rem; font-weight: 700; line-height: 1.35; }
+
+/* Dark mode for the chapters' own boxes (light backgrounds in part 1). */
+.dark .chapter-content .sg-callout,
+.dark .chapter-content .sg-todo,
+.dark .chapter-content .sg-warn,
+.dark .chapter-content .sg-diagram > .sg-item,
+.dark .chapter-content .sg-chart,
+.dark .chapter-content .sg-math {
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+}
+.dark .chapter-content td,
+.dark .chapter-content th,
+.dark .chapter-content .sg-chart-data td {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.dark .chapter-content .sg-statnum,
+.dark .chapter-content a {
+  color: #b9a2ff;
+}
+.dark .chapter-content .sg-chart svg {
+  background: #ffffff;
+  border-radius: 8px;
 }

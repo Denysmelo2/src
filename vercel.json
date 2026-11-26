@@ -118,6 +118,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/library/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/library/:slug/:chapter",
+      "destination": "/index.html"
+    },
+    {
       "source": "/admin/hot-deals",
       "destination": "/index.html"
     },
