@@ -32,6 +32,7 @@ import SavedStrategiesPage from '@/pages/SavedStrategiesPage';
 import WalletPage from '@/pages/WalletPage';
 import AlertsPage from '@/pages/AlertsPage';
 import LibraryPage from '@/pages/LibraryPage';
+import EbookPage from '@/pages/EbookPage';
 import AdminHotDealsPage from '@/pages/AdminHotDealsPage';
 import AdminPlatformChangesPage from '@/pages/AdminPlatformChangesPage';
 import AdminRatesPage from '@/pages/AdminRatesPage';
@@ -147,11 +148,17 @@ function AppContent() {
             <AlertsPage />
           </ProtectedRoute>
         } />
+        {/* The library and the ebook (handover 26/11/2026): signed-in users
+            on any plan see the library; the book's contents and chapter 1
+            are open to everyone, chapters 2+ only to subscribers (the
+            database decides, migration 0053). */}
         <Route path="/library" element={
-          <ProtectedRoute>
+          <ProtectedRoute requirePremium={false}>
             <LibraryPage />
           </ProtectedRoute>
         } />
+        <Route path="/library/:slug" element={<EbookPage />} />
+        <Route path="/library/:slug/:chapter" element={<EbookPage />} />
         <Route path="/admin/hot-deals" element={
           <ProtectedRoute>
             <AdminHotDealsPage />

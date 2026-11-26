@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, ArrowLeft, ExternalLink } from 'lucide-react';
+import { BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { EBOOKS, bookPath } from '@/lib/ebook';
 
 function LibraryPage() {
   return (
@@ -38,28 +39,27 @@ function LibraryPage() {
             Library
           </h1>
           <p className="text-muted-foreground mt-1 max-w-2xl">
-            Premium guides and the SnapGain e-reader live in the SnapGain Shop
-            app.
+            Read the SnapGain ebook here, then apply each strategy in the
+            comparison app. The Introduction is free; the rest is for
+            subscribers.
           </p>
         </motion.section>
 
-        <Card className="bg-gradient-to-br from-light-pink/40 to-light-green/40">
-          <CardHeader>
-            <CardTitle className="text-2xl">From Cashback to Flights</CardTitle>
-            <CardDescription>
-              Step-by-step guide to stacking rewards. Read it in the SnapGain
-              Shop reader and apply each strategy here in the comparison app.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button disabled>
-              Open in SnapGain Shop <ExternalLink className="w-4 h-4 ml-2" />
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              Cross-app linking coming once SnapGain Shop is live.
-            </p>
-          </CardContent>
-        </Card>
+        {EBOOKS.map((book) => (
+          <Card key={book.slug} className="bg-gradient-to-br from-light-pink/40 to-light-green/40">
+            <CardHeader>
+              <CardTitle className="text-2xl">{book.title}</CardTitle>
+              <CardDescription>{book.subtitle}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild>
+                <Link to={bookPath(book)}>
+                  Read the ebook <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </>
   );

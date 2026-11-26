@@ -103,12 +103,21 @@ function PlaybookPage() {
                 </p>
               </div>
             </div>
-            <Button asChild variant="outline" size="sm" className="shrink-0">
-              <Link to="/learn/platforms">
-                Read the guide
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/learn/platforms">
+                  Read the guide
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                </Link>
+              </Button>
+              {/* The ebook (handover 26/11/2026, task 4). */}
+              <Button asChild variant="outline" size="sm">
+                <Link to="/library">
+                  Read the ebook
+                  <BookOpen className="w-3.5 h-3.5 ml-1.5" />
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
