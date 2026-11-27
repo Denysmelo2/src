@@ -10,7 +10,7 @@
 // nothing is sent when every watched source is fresh.
 //
 // Triggered by pg_cron once a day at 12:00 UK (job `source-stale-alert`),
-// after the 08:00 daily run and the 09:00 run through the Mac. Can also
+// after the 03:00 and 04:30 runs through the Mac. Can also
 // be called by hand with ?dry_run=1 to see the result without sending.
 //
 // Auth model (same as daily-boost-digest): verify_jwt=false because
@@ -42,19 +42,21 @@ const STALE_HOURS = 48;
 // read, so it would always have looked stale. Picodi left on 03/11/2026,
 // when it came off the 08:00 list (scraper #49, owner's call).
 const WATCHED: Record<string, { label: string; run: string }> = {
-  // The Mac run moved from 09:00 to 04:00 (owner, 22/11/2026).
-  'nx rewards': { label: 'NX Rewards', run: '04:00 run through the Mac (member-scrape)' },
-  quidco: { label: 'Quidco', run: '04:00 run through the Mac (member-scrape)' },
-  'british airways avios': { label: 'Avios eStore', run: '04:00 run through the Mac (member-scrape)' },
+  // The Mac run moved from 09:00 to 04:00 (owner, 22/11/2026), then to
+  // 03:00 (26/11/2026, Quidco read whole). Both runs go through the Mac's
+  // self-hosted runner since 24/11/2026.
+  'nx rewards': { label: 'NX Rewards', run: '03:00 run through the Mac (member-scrape)' },
+  quidco: { label: 'Quidco', run: '03:00 run through the Mac (member-scrape)' },
+  'british airways avios': { label: 'Avios eStore', run: '03:00 run through the Mac (member-scrape)' },
   // Rakuten is back (handover 23/11/2026), read with the owner's account.
-  rakuten: { label: 'Rakuten', run: '04:00 run through the Mac (member-scrape)' },
-  jamdoughnut: { label: 'JamDoughnut', run: '08:00 daily run (scrape-daily)' },
+  rakuten: { label: 'Rakuten', run: '03:00 run through the Mac (member-scrape)' },
+  jamdoughnut: { label: 'JamDoughnut', run: '04:30 run through the Mac (scrape-daily)' },
   // Cheddar is off since 21/11/2026: cheddar.me shows only marketing
   // "up to" rates (handover "taxas erradas", task 2; snapgain-scraper#62).
-  everup: { label: 'EverUp', run: '08:00 daily run (scrape-daily)' },
+  everup: { label: 'EverUp', run: '04:30 run through the Mac (scrape-daily)' },
   // Student discounts (handover 17/11/2026; table student_offers, 0045).
-  studentbeans: { label: 'Student Beans', run: '08:00 daily run (scrape-daily)' },
-  unidays: { label: 'UNiDAYS', run: '08:00 daily run (scrape-daily)' },
+  studentbeans: { label: 'Student Beans', run: '04:30 run through the Mac (scrape-daily)' },
+  unidays: { label: 'UNiDAYS', run: '04:30 run through the Mac (scrape-daily)' },
 };
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
